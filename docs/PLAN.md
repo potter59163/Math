@@ -47,7 +47,7 @@
   - ใช้ rules แบบง่ายไปก่อน: เดินตามลำดับ skill และปรับระดับ
 - [x] `FeedbackCard` (ทันที), ปุ่ม "ดูวิธีทำ", hint L1–L3 (ข้อความจาก th.ts), XP/combo, `/summary`
 - [x] ข้อความไทยทั้งหมดอยู่ใน `th.ts` และของที่ร่างใหม่ติด `// TODO(review)`
-- [ ] กด keypad และทำ Unit 3 บนมือถือจริง (Potter ลองเอง)
+- [x] กด keypad และทำ Unit 3 บนมือถือจริง (Potter ลองเอง)
 - **Acceptance:** ทำ Unit 3 จบบนมือถือ 360px ได้ · ไม่มี layout shift ตอนขึ้น feedback · Lighthouse mobile performance ≥ 80
 
 ## Phase 3: Scenes (3–6 พ.ย.)
