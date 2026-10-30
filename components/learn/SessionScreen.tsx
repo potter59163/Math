@@ -169,6 +169,10 @@ function ItemScreen({ item, profile, closed, onSubmit, onHint, onNext }: ItemScr
     setIssue(null);
   };
   const press = (key: KeypadKey) => edit((current) => pressKey(current, item, key));
+  const askHint = () => {
+    setIssue(null);
+    onHint();
+  };
 
   const send = () => {
     if (state.ready) {
@@ -280,7 +284,9 @@ function ItemScreen({ item, profile, closed, onSubmit, onHint, onNext }: ItemScr
               />
             ) : isChoice ? (
               <div className="flex h-full flex-col gap-2">
-                <HintButton level={hintLevel} onHint={onHint} />
+                <div className="flex">
+                  <HintButton level={hintLevel} onHint={askHint} />
+                </div>
                 <ChoiceButtons
                   options={item.options ?? []}
                   selected={draft.choice}
@@ -294,13 +300,13 @@ function ItemScreen({ item, profile, closed, onSubmit, onHint, onNext }: ItemScr
             ) : (
               <div className="flex h-full flex-col gap-2">
                 <div className="flex gap-2">
-                  <HintButton level={hintLevel} onHint={onHint} />
+                  <HintButton level={hintLevel} onHint={askHint} />
                   {(item.kind === 'matrix_or_undefined' || item.kind === 'dims_or_undefined') && (
                     <Button
-                      variant="secondary"
+                      variant={draft.isUndefined ? 'selected' : 'secondary'}
                       size="md"
                       aria-pressed={draft.isUndefined}
-                      className={`flex-1 text-sm ${draft.isUndefined ? 'border-brand bg-brand-soft' : ''}`}
+                      className="flex-1 text-sm"
                       onClick={() => edit(toggleUndefined)}
                     >
                       {th.session.undefined}

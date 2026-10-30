@@ -25,7 +25,7 @@ function surface(active: boolean, closedTone?: ClosedTone): string {
   if (closedTone === 'correct') return 'border-good bg-good-soft';
   if (closedTone === 'slip') return 'border-warn bg-warn-soft';
   if (closedTone === 'neutral') return 'border-line bg-sunken';
-  return active ? 'border-brand bg-brand-soft' : 'border-line bg-surface';
+  return active ? 'border-brand bg-brand-soft' : 'border-edge bg-surface';
 }
 
 export function AnswerBox({

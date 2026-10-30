@@ -31,7 +31,12 @@ export function WorkedSolutionSheet({ item, onClose }: WorkedSolutionSheetProps)
           {th.session.close}
         </Button>
       </header>
-      <ol className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
+      {/* Focusable so a keyboard alone can scroll it. */}
+      <ol
+        tabIndex={0}
+        aria-labelledby="worked-title"
+        className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand"
+      >
         {workedSteps(item).map((step, index) => (
           <li key={index} className="flex min-w-0 flex-col">
             <p className="font-medium">{fillTokens(th.worked[step.labelKey], step.params)}</p>

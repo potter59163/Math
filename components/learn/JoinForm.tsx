@@ -35,7 +35,7 @@ function Field({ label, help, error, ...input }: FieldProps) {
         aria-describedby={help || error ? noteId : undefined}
         autoComplete="off"
         className={`h-12 rounded-xl border-2 bg-surface px-3 text-base outline-none focus:border-brand ${
-          error ? 'border-warn' : 'border-line'
+          error ? 'border-warn' : 'border-edge'
         }`}
         {...input}
       />

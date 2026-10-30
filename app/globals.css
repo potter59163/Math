@@ -18,6 +18,7 @@
   --color-surface: var(--surface);
   --color-sunken: var(--sunken);
   --color-line: var(--line);
+  --color-edge: var(--edge);
   --color-ink: var(--ink);
   --color-muted: var(--muted);
   --color-brand: var(--brand);
@@ -66,6 +67,8 @@
     --surface: #ffffff;
     --sunken: #eceff6;
     --line: #d5dbe7;
+    /* The edge is all that shows an empty input is there, so it needs 3:1 against the page. */
+    --edge: #848ea0;
     --ink: #131722;
     --muted: #566072;
     --brand: #1f5fd6;
@@ -76,7 +79,7 @@
     --good-soft: #e3f6ea;
     --warn: #9a4a06;
     --warn-soft: #fdf1da;
-    --xp: #b45f06;
+    --xp: #a85704;
     --flame: #c8460d;
   }
 
@@ -86,6 +89,7 @@
       --surface: #171b24;
       --sunken: #0b0e13;
       --line: #2e3543;
+      --edge: #5f6879;
       --ink: #eef1f7;
       --muted: #a3acbc;
       --brand: #76a7ff;
