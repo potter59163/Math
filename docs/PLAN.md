@@ -16,14 +16,15 @@
 ---
 
 ## Phase 0: Setup (30–31 ต.ค.)
-- [ ] Next.js (App Router) + TS strict + Tailwind + ESLint + Prettier + Vitest + fast-check
+- [x] Next.js (App Router) + TS strict + Tailwind + ESLint + Prettier + Vitest + fast-check
   - โฟลเดอร์มีไฟล์อยู่แล้ว: scaffold ใน temp dir แล้วย้ายเข้ามา โดยห้ามทับ `CLAUDE.md`, `docs/`, `.claude/`, `.env.example`, `.gitignore` (ถ้าต้อง merge `.gitignore` ให้รวมเนื้อหา)
-- [ ] สร้างโครงโฟลเดอร์ตาม CLAUDE.md
+- [x] สร้างโครงโฟลเดอร์ตาม CLAUDE.md
   - `lib/config.ts` ใส่ค่าตาม SPEC §17
   - `lib/content/th.ts` (โครงเปล่า)
-- [ ] ฟอนต์ไทยสำหรับ body + ฟอนต์ตัวเลข tabular สำหรับเมทริกซ์ (ผ่าน `next/font`)
-- [ ] script `npm run check` = typecheck + lint + test
-- [ ] หน้า `/` แสดงข้อความไทยถูกต้องที่ 360px
+- [x] ฟอนต์ไทยสำหรับ body + ฟอนต์ตัวเลข tabular สำหรับเมทริกซ์ (ผ่าน `next/font`)
+- [x] script `npm run check` = typecheck + lint + test
+- [x] หน้า `/` แสดงข้อความไทยถูกต้องที่ 360px
+- [ ] เปิด `/` บนมือถือจริง (Potter ลองเอง)
 - **Acceptance:** `npm run check` ผ่าน · เปิด `/` บนมือถือจริงได้ · commit แรก
 
 ## Phase 1: Math engine (31 ต.ค.–2 พ.ย.)

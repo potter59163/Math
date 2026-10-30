@@ -9,6 +9,16 @@ coverage/
 # env
 .env*.local
 .env
+.env.*
+!.env.example
+
+# secrets
+*.pem
+
+# next.js and typescript (generated)
+/build
+next-env.d.ts
+*.tsbuildinfo
 
 # analysis outputs and research data (contain student records)
 analysis/out/

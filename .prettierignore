@@ -1,0 +1,11 @@
+# Project docs are edited by hand
+docs/
+CLAUDE.md
+START_HERE.md
+.claude/
+.env.example
+
+# Generated
+next-env.d.ts
+package-lock.json
+eslint.config.mjs

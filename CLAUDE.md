@@ -30,6 +30,7 @@ Next.js (App Router) + TypeScript strict + Tailwind · `motion` (Framer Motion) 
 ## Commands
 - `npm run dev`: dev server
 - `npm run check`: typecheck + lint + all tests. Must pass before you say a task is done.
+- `npm run format`: Prettier (skips the hand-edited docs)
 - `npx vitest run <path>`: run one test file
 - `npm run sim`: simulated-learner report (Phase 4+)
 - `npm run eval:director`: LLM director eval (Phase 6+, needs an LLM key)
@@ -68,3 +69,4 @@ analysis/       analyze.py, requirements.txt
 - Thai `.length` counts code units including vowel/tone marks. Length limits in docs are code units.
 - LLM calls are server-only (`app/api/**`) with timeout `LLM_TIMEOUT_MS` (default 4000). Never block the UI: the client shows its own instant rule feedback first.
 - The repo root already contains these docs: when scaffolding, never overwrite `CLAUDE.md`, `docs/`, `.claude/`.
+- This is Next.js 16, and its APIs may differ from what you remember. Check the version-matched docs in `node_modules/next/dist/docs/` before using an unfamiliar API. `cacheComponents` is off on purpose (see `docs/DECISIONS.md`).

@@ -1,0 +1,27 @@
+@import 'tailwindcss';
+
+@theme inline {
+  --font-sans: var(--font-thai), ui-sans-serif, system-ui, sans-serif;
+  --font-matrix: var(--font-numeric), ui-sans-serif, system-ui, sans-serif;
+
+  /* Thai stacks vowels and tone marks, so text needs more line height than Latin. */
+  --text-xs--line-height: 1.7;
+  --text-sm--line-height: 1.7;
+  --text-base--line-height: 1.7;
+  --text-lg--line-height: 1.7;
+  --text-xl--line-height: 1.7;
+}
+
+@layer base {
+  :root {
+    color-scheme: light dark;
+  }
+
+  html {
+    @apply bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100;
+  }
+
+  body {
+    line-height: 1.7;
+  }
+}
