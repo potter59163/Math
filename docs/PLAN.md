@@ -28,17 +28,17 @@
 - **Acceptance:** `npm run check` ผ่าน · เปิด `/` บนมือถือจริงได้ · commit แรก
 
 ## Phase 1: Math engine (31 ต.ค.–2 พ.ย.)
-- [ ] `Rational`, `prng` + `deriveSeed` (SPEC §6), `types`, `parseAnswer` (กฎใน SPEC §5)
-- [ ] `ops.ts`: add, sub, scalar, mul, transpose, det2, det3, inv2, equals
-- [ ] generators ของทุก ★ skill (SPEC §3) ครบ 3 ระดับ (L3 ทำทีหลังได้ เพราะ misconception ★ ทุกแบบมีระดับ L1–L2 รองรับ)
-- [ ] `misconceptions.ts`: ทุก ★ (candidate + applies + scene + hintKey)
-- [ ] `validateItem` (MISCONCEPTIONS §2), `probeLevel` (MISCONCEPTIONS §4.1), `classify`, `regenerate(itemRef)`, `workedSteps`
-- [ ] **tests:**
+- [x] `Rational`, `prng` + `deriveSeed` (SPEC §6), `types`, `parseAnswer` (กฎใน SPEC §5)
+- [x] `ops.ts`: add, sub, scalar, mul, transpose, det2, det3, inv2, equals
+- [x] generators ของทุก ★ skill (SPEC §3) ครบ 3 ระดับ (L3 ทำทีหลังได้ เพราะ misconception ★ ทุกแบบมีระดับ L1–L2 รองรับ)
+- [x] `misconceptions.ts`: ทุก ★ (candidate + applies + scene + hintKey)
+- [x] `validateItem` (MISCONCEPTIONS §2), `probeLevel` (MISCONCEPTIONS §4.1), `classify`, `regenerate(itemRef)`, `workedSteps`
+- [x] **tests:**
   - ตัวอย่างทุกตัวใน MISCONCEPTIONS.md (ตัวเลขต้องตรง)
   - property ≥ 1000 runs ต่อ generator × level: validate ผ่าน · correct → `correct` · ทุก diagnostic → classify เป็นตัวเอง · A·A⁻¹ = I
   - ทุกแถว × ทุกระดับในตาราง MISCONCEPTIONS §4.1 สร้าง probe ได้ และตัวอย่าง `probeLevel` ตรงทุกตัว
   - golden seeds (regenerate ได้เหมือนเดิม)
-- [ ] หน้า `/dev/engine`: เลือก skill/level/target/seed → ดูโจทย์, เฉลย, diagnostics, worked steps แล้วลองพิมพ์คำตอบดู classification
+- [x] หน้า `/dev/engine`: เลือก skill/level/target/seed → ดูโจทย์, เฉลย, diagnostics, worked steps แล้วลองพิมพ์คำตอบดู classification
 - **Acceptance:** `npm run check` ผ่าน · ทุก ★ misconception สร้าง probe ได้และจับได้ · รายงานสรุปว่าตัวไหนยังมีปัญหา (ถ้ามี)
 
 ## Phase 2: Practice UI (2–4 พ.ย.)
