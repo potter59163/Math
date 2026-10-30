@@ -24,7 +24,7 @@
 - [x] ฟอนต์ไทยสำหรับ body + ฟอนต์ตัวเลข tabular สำหรับเมทริกซ์ (ผ่าน `next/font`)
 - [x] script `npm run check` = typecheck + lint + test
 - [x] หน้า `/` แสดงข้อความไทยถูกต้องที่ 360px
-- [ ] เปิด `/` บนมือถือจริง (Potter ลองเอง)
+- [x] เปิด `/` บนมือถือจริง (Potter ลองเอง)
 - **Acceptance:** `npm run check` ผ่าน · เปิด `/` บนมือถือจริงได้ · commit แรก
 
 ## Phase 1: Math engine (31 ต.ค.–2 พ.ย.)
