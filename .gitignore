@@ -1,0 +1,21 @@
+node_modules/
+.next/
+out/
+.vercel/
+coverage/
+*.log
+.DS_Store
+
+# env
+.env*.local
+.env
+
+# analysis outputs and research data (contain student records)
+analysis/out/
+exports/
+*.csv
+!analysis/fixtures/*.csv
+
+# python
+__pycache__/
+.venv/

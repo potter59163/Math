@@ -1,0 +1,15 @@
+# Decisions log
+
+Append-only. 1–3 lines each: date · decision · why. Also log every change made during the trial (13–19 Nov).
+
+- 2026-10-30 · LLM chooses only among rule-generated candidates; all math from the exact-arithmetic engine · a math tutor that shows one wrong answer loses trust; app must also run with no LLM.
+- 2026-10-30 · Items close after one attempt; a wrong answer is followed by an isomorphic "probe" item instead of a retry · prevents copying the revealed solution and gives a clean test of the misconception.
+- 2026-10-30 · Direct-instruction path with light Duolingo-style game mechanics; no story/open-world mode · story adds build time and on-screen text without evidence of learning gains (Mayer, 2014); QEDify pilot asked for less text.
+- 2026-10-30 · Mastery also needs a no-hint correct at L2+ and no open misconception, and it latches once reached; level-up after 2 attempts at a level, or from L1 once P(L) ≥ 0.95 · typed skills used to master at item 3 on L1 (level-up needed 4 attempts), skipping the L2 content on 5 of 14 test items and leaving misconceptions unresolved.
+- 2026-10-30 · Added `probeLevel` and a misconception × level table; moved M04 and M15 to L2; `invertible` levels mix both answers; `mult_noncomm` L2 gives AB and asks for BA · R1 requested probes that cannot exist at some levels (e.g. M05 on addition-only L1), which would throw mid-class. L3 can now be deferred without losing a ★ misconception.
+- 2026-10-30 · `pre_Mxx`/`post_Mxx` are blank, not 0, when a form has no item for Mxx · M04, M15 and M18 are not on the test, and a 0 would read as "no misconception".
+- 2026-10-30 · Teacher picks units before pre-test (locked afterwards); the test shows only those units; prereqs in closed units count as passed; skills correct on the pre-test start at L2 and can pass with one correct answer; a student who finishes keeps getting review items · a planning estimate showed 13 skills do not fit 55 minutes for most students, which would understate gain. The estimate is for planning only, not evidence.
+- 2026-10-30 · The LLM director is the intended mode for the trial, with rules as fallback; go/no-go is unchanged and the LLM is now last in the cut order · the pitch is an AI that decides live for each student, so a rules-only trial must be reported as such.
+- 2026-10-30 · One lead clip before each new skill: the first clip in a unit is its intro (≤ 40 s), others are concept scenes (≤ 20 s), auto-skipped when the pre-test item was correct · matches the "watch, then practice" flow and defines the concept scenes that the help button and R3 already needed. Clips stay pre-built templates; no runtime video.
+- 2026-10-30 · `pathStep.note` shows students why each step was chosen; the server writes it from the chosen candidate, not the LLM · personalization has to be visible to feel real-time, and this keeps it working and number-free in rules mode.
+- 2026-10-30 · Item seeds are `deriveSeed(studentId, counter)`; assessment forms keep fixed seeds · the spec never said where seeds come from, so students could have seen identical numbers and copied.
