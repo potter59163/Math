@@ -16,6 +16,8 @@ export const CONFIG = {
   pathStepsOnMap: 5,
   hintL2CountsAsWrong: true,
   llm: { timeoutMs: 4000, maxCandidates: 4, maxCallsPerMinutePerStudent: 20 },
-  xp: { firstTry: 10, withL1Hint: 7, misconceptionResolved: 20 },
+  xp: { firstTry: 10, withL1Hint: 7, withDeepHint: 3, misconceptionResolved: 20 },
+  // Phase 2 only: moves the level without BKT until the learner model arrives in Phase 4.
+  standInRules: { upAfterCorrect: 2, downAfterWrong: 2 },
   generatorVersion: 1,
 } as const;

@@ -54,6 +54,30 @@ describe('matrix copy', () => {
     expect(Object.keys(th.hints).sort()).toEqual(CATALOG.map((entry) => entry.id).sort());
   });
 
+  it('has an L1 hint for every item form, with no tokens left to fill', () => {
+    for (const item of items) {
+      const hint = th.hintL1[item.data.form];
+      expect(hint.length).toBeGreaterThan(0);
+      expect(tokensIn(hint)).toEqual([]);
+    }
+  });
+
+  it('names every unit', () => {
+    for (const skill of SKILLS) expect(th.units[skill.unit].length).toBeGreaterThan(0);
+  });
+
+  it('marks every line of the new screens for review', () => {
+    const source = readFileSync(new URL('./th.ts', import.meta.url), 'utf8');
+    for (const section of ['common', 'join', 'learn', 'session', 'summary', 'hintFirstStep']) {
+      const start = source.indexOf(`\n  ${section}: {`);
+      const end = source.indexOf('\n  },', start);
+      const body = source.slice(start, end).split('\n').slice(1);
+      body.forEach((line, index) => {
+        if (/^\s+\w+:\s*'/.test(line)) expect(body[index - 1].trim()).toBe('// TODO(review)');
+      });
+    }
+  });
+
   it('marks the seven drafted hints for review', () => {
     const source = readFileSync(new URL('./th.ts', import.meta.url), 'utf8');
     for (const id of [

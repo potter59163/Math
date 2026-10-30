@@ -76,9 +76,14 @@ function productSteps(A: Matrix, B: Matrix, left: string, right: string): Step[]
   });
 }
 
-function det2Latex(A: Matrix): string {
+/** ad − bc with the numbers put in, stopping before the result. */
+function det2Expansion(A: Matrix): string {
   const [[a, b], [c, d]] = A;
-  return `ad - bc = ${factor(a)} \\cdot ${factor(d)} - ${factor(b)} \\cdot ${factor(c)} = ${num(det2(A))}`;
+  return `ad - bc = ${factor(a)} \\cdot ${factor(d)} - ${factor(b)} \\cdot ${factor(c)}`;
+}
+
+function det2Latex(A: Matrix): string {
+  return `${det2Expansion(A)} = ${num(det2(A))}`;
 }
 
 function sarrusSteps(A: Matrix): { steps: Step[]; det: Rational } {
@@ -459,4 +464,39 @@ export function workedSteps(
   if ('step' in focus) return steps.slice(focus.step, focus.step + 1);
   const [row, col] = focus.cell;
   return steps.filter((step) => step.cells?.some(([i, j]) => i === row && j === col));
+}
+
+/** A one-step solution is the answer itself, so its hint stops short of the result. */
+function withoutResult(data: MatrixData, step: Step): Step {
+  switch (data.form) {
+    case 'index':
+      return {
+        labelKey: 'index_row',
+        params: cellParams(data.i, data.j),
+        latex: mat([data.A[data.i - 1]]),
+      };
+    case 'det2':
+      return { labelKey: step.labelKey, latex: `\\det(A) = ${det2Expansion(data.A)}` };
+    case 'det_product': {
+      const [p, q] = [Rational.of(data.p), Rational.of(data.q)];
+      return {
+        labelKey: step.labelKey,
+        latex: `\\det(AB) = \\det(A)\\det(B) = ${factor(p)} \\cdot ${factor(q)}`,
+      };
+    }
+    case 'det_transpose':
+      return { labelKey: step.labelKey, latex: '\\det(A^{T}) = \\det(A)' };
+    case 'det_inverse':
+      return { labelKey: step.labelKey, latex: '\\det(A^{-1}) = \\frac{1}{\\det(A)}' };
+    default:
+      throw new Error(`hintStep: ${data.form} has more than one step`);
+  }
+}
+
+/** Hint L3 (SPEC §9): one cell or one step of the solution, never the finished answer. */
+export function hintStep(item: Pick<MatrixItem, 'data' | 'correct'>): Step {
+  const steps = buildSteps(item.data, item.correct);
+  if (steps.length === 1) return withoutResult(item.data, steps[0]);
+  const [cell] = item.correct.kind === 'matrix' ? workedSteps(item, { cell: [1, 1] }) : [];
+  return cell ?? steps[0];
 }

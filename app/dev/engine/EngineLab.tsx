@@ -8,6 +8,7 @@ import { classify } from '@/lib/core/classify';
 import { parseAnswer, type ParseResult, type RawAnswer } from '@/lib/core/parse';
 import { fillTokens } from '@/lib/core/tokens';
 import type { Answer, DiagnosticAnswer, Dims, Level, Matrix } from '@/lib/core/types';
+import { givenMatrices } from '@/lib/topics/matrix/format';
 import { generateDetailed, regenerate } from '@/lib/topics/matrix/generators';
 import {
   CATALOG,
@@ -19,7 +20,7 @@ import {
 } from '@/lib/topics/matrix/misconceptions';
 import { validateMatrixItem } from '@/lib/topics/matrix/rules';
 import { SKILLS, levelsOf, skillById, type SkillId } from '@/lib/topics/matrix/skills';
-import type { MatrixData, MatrixItem, MisconceptionId } from '@/lib/topics/matrix/types';
+import type { MatrixItem, MisconceptionId } from '@/lib/topics/matrix/types';
 import { workedSteps } from '@/lib/topics/matrix/worked';
 
 // Labels here are English on purpose: this page is a developer tool. Student copy comes from th.ts.
@@ -118,37 +119,6 @@ function MatrixText({ value, label }: { value: Matrix; label?: string }) {
 function Formula({ latex }: { latex: string }) {
   const html = useMemo(() => katex.renderToString(latex, { throwOnError: false }), [latex]);
   return <div className="overflow-x-auto py-1" dangerouslySetInnerHTML={{ __html: html }} />;
-}
-
-function shownMatrices(data: MatrixData): { label: string; value: Matrix }[] {
-  switch (data.form) {
-    case 'addsub':
-    case 'combo':
-    case 'mult':
-    case 'noncomm_pair':
-    case 'det_sum':
-      return [
-        { label: 'A', value: data.A },
-        { label: 'B', value: data.B },
-      ];
-    case 'noncomm_find_ba':
-      return [
-        { label: 'A', value: data.A },
-        { label: 'B', value: data.B },
-        { label: 'AB', value: data.AB },
-      ];
-    case 'dim':
-    case 'index':
-    case 'transpose':
-    case 'scalar':
-    case 'det2':
-    case 'det3':
-    case 'invertible':
-    case 'inv2':
-      return [{ label: 'A', value: data.A }];
-    default:
-      return [];
-  }
 }
 
 function answerText(answer: DiagnosticAnswer): string {
@@ -411,7 +381,7 @@ function ItemView({ result }: { result: Extract<Generated, { ok: true }> }) {
         <p className="text-lg font-medium">
           {fillTokens(th.prompts[item.prompt.key], item.prompt.params)}
         </p>
-        {shownMatrices(item.data).map(({ label, value }) => (
+        {givenMatrices(item.data).map(({ label, value }) => (
           <MatrixText key={label} label={label} value={value} />
         ))}
         <dl className="grid grid-cols-[auto_1fr] gap-x-3 text-sm">

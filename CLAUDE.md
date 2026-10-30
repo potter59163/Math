@@ -47,6 +47,7 @@ lib/core/       rational · prng · types · parse · validate · classify · to
 lib/topics/matrix/  ops · skills · generators/ · misconceptions · worked · assessment
 lib/learner/    bkt · profile · misconceptionStatus
 lib/director/   candidates · rules · fixedPath · llm/ · prompt · schema · validate
+lib/practice/   draft · keyboard · hints · feedback · rewards · and the Phase 2 stand-ins path · profile · store · join
 lib/content/th.ts   Thai copy: prompts, feedback, hints, captions
 lib/sim/        simulated learners (tests + `npm run sim`)
 lib/db/         Supabase server client + queries

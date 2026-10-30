@@ -8,9 +8,291 @@ export const th = {
     // TODO(review)
     description: `ถ้าตอบผิด ${CONFIG.tutorName}จะพาดูว่าคลาดเคลื่อนตรงไหน แล้วเลือกขั้นต่อไปให้เหมาะกับคุณ`,
     // TODO(review)
-    numberSample: 'ตัวอย่างตัวเลขในเมทริกซ์',
+    start: 'เริ่มเรียน',
+  },
+
+  common: {
     // TODO(review)
-    status: 'กำลังสร้าง เปิดให้เรียนเร็วๆ นี้',
+    loading: 'กำลังโหลด…',
+    // TODO(review)
+    errorTitle: 'มีบางอย่างผิดพลาด',
+    // TODO(review)
+    errorBody: 'ข้อที่ส่งไปแล้วยังอยู่ครบ ลองอีกครั้งได้เลย',
+    // TODO(review)
+    retry: 'ลองอีกครั้ง',
+    // TODO(review)
+    xpLabel: '{{xp}} XP',
+    // TODO(review)
+    comboLabel: 'ตอบถูกติดกัน {{combo}} ข้อ',
+  },
+
+  join: {
+    // TODO(review)
+    title: 'เข้าห้องเรียน',
+    // TODO(review)
+    codeLabel: 'รหัสห้อง',
+    // TODO(review)
+    codeHelp: 'รหัส 6 ตัวที่ครูให้มา',
+    // TODO(review)
+    seatLabel: 'เลขที่',
+    // TODO(review)
+    nicknameLabel: 'ชื่อเล่น (ไม่ใส่ก็ได้)',
+    // TODO(review)
+    submit: 'เข้าเรียน',
+    // TODO(review)
+    localNote: 'ตอนนี้ข้อมูลเก็บอยู่ในเครื่องนี้เท่านั้น',
+    errors: {
+      // TODO(review)
+      code: 'รหัสห้องต้องมี 6 ตัว เป็นตัวอักษรอังกฤษหรือตัวเลข',
+      // TODO(review)
+      seat: 'ใส่เลขที่เป็นตัวเลข 1 ถึง 99',
+      // TODO(review)
+      nickname: 'ชื่อเล่นยาวเกินไป',
+    },
+  },
+
+  // Names from docs/SPEC.md §3.
+  units: {
+    1: 'พื้นฐาน',
+    2: 'บวก ลบ สเกลาร์',
+    3: 'คูณ',
+    4: 'ดีเทอร์มิแนนต์',
+    5: 'อินเวอร์ส',
+  },
+
+  learn: {
+    // TODO(review)
+    title: 'เส้นทางเรียน',
+    // TODO(review)
+    who: 'ห้อง {{code}} เลขที่ {{seat}}',
+    // TODO(review)
+    unit: 'หน่วยที่ {{n}}',
+    status: {
+      // TODO(review)
+      passed: 'ผ่านแล้ว',
+      // TODO(review)
+      current: 'เรื่องที่กำลังเรียน',
+      // TODO(review)
+      open: 'เปิดแล้ว',
+      // TODO(review)
+      locked: 'ยังไม่เปิด',
+    },
+    // TODO(review)
+    continue: 'เรียนต่อ',
+    // TODO(review)
+    allDone: 'ผ่านครบทุกเรื่องแล้ว',
+    // TODO(review)
+    seeSummary: 'ดูสรุป',
+    // TODO(review)
+    leave: 'เปลี่ยนคน',
+  },
+
+  session: {
+    // TODO(review)
+    stop: 'พอแค่นี้',
+    // TODO(review)
+    level: 'ระดับ {{level}} จาก {{max}}',
+    // TODO(review)
+    hint: 'ขอใบ้',
+    // TODO(review)
+    hintMore: 'ขอใบ้เพิ่ม',
+    // TODO(review)
+    hintsUsedUp: 'ใบ้ครบแล้ว',
+    // TODO(review)
+    hintTitle: 'ใบ้ขั้นที่ {{level}}',
+    // TODO(review)
+    undefined: 'หาค่าไม่ได้',
+    // TODO(review)
+    send: 'ส่ง',
+    // TODO(review)
+    next: 'ข้อถัดไป',
+    // TODO(review)
+    nextSkill: 'ไปเรื่องถัดไป',
+    // TODO(review)
+    finish: 'ดูสรุป',
+    // TODO(review)
+    showWorked: 'ดูวิธีทำ',
+    // TODO(review)
+    workedTitle: 'วิธีทำทีละขั้น',
+    // TODO(review)
+    close: 'ปิด',
+    // TODO(review)
+    yourAnswer: 'คำตอบของคุณ: {{answer}}',
+    // TODO(review)
+    skillPassed: 'ผ่านเรื่อง {{skill}} แล้ว',
+    // TODO(review)
+    unitPassed: 'ผ่านหน่วยที่ {{unit}} แล้ว',
+    // TODO(review)
+    allDone: 'ผ่านครบทุกเรื่องที่เปิดแล้ว',
+    issues: {
+      // TODO(review)
+      incomplete: 'กรอกให้ครบทุกช่องก่อนส่งนะ',
+      // TODO(review)
+      invalid: 'ตัวเลขในช่องนี้ยังไม่ครบ',
+      // TODO(review)
+      zero_denominator: 'ตัวส่วนเป็น 0 ไม่ได้',
+      // TODO(review)
+      noChoice: 'เลือกคำตอบก่อนส่งนะ',
+    },
+    box: {
+      // TODO(review)
+      cell: 'แถว {{i}} หลัก {{j}}',
+      // TODO(review)
+      dimFirst: 'ตัวเลขตัวแรก',
+      // TODO(review)
+      dimSecond: 'ตัวเลขตัวหลัง',
+      // TODO(review)
+      answer: 'คำตอบ',
+      // TODO(review)
+      filled: '{{label}}: {{value}}',
+      // TODO(review)
+      answerArea: 'ช่องตอบ',
+    },
+    keys: {
+      // TODO(review)
+      backspace: 'ลบตัวเลข',
+      // TODO(review)
+      next: 'ช่องถัดไป',
+      // TODO(review)
+      minus: 'เครื่องหมายลบ',
+      // TODO(review)
+      slash: 'เศษส่วน',
+      // TODO(review)
+      point: 'จุดทศนิยม',
+    },
+  },
+
+  // Immediate feedback (SPEC §9). Unmarked wording comes from the table there.
+  feedback: {
+    correct: 'ถูกต้อง!',
+    // TODO(review)
+    xpGained: '+{{xp}} XP',
+    // TODO(review)
+    wrong: 'ยังไม่ถูก',
+    // TODO(review)
+    almost: 'เกือบแล้ว',
+    slip: 'ผิดแค่ช่องแถว {{i}} หลัก {{j}}',
+    unknown: 'มาดูทีละขั้นกัน',
+    // One message per way of being wrong. No numbers from the item, so none can give the answer away.
+    misconceptions: {
+      // TODO(review)
+      M01_DIM_SWAP: 'คำตอบนี้สลับเป็น หลัก × แถว มิติต้องบอกจำนวนแถวก่อนนะ',
+      // TODO(review)
+      M02_INDEX_SWAP: 'คำตอบนี้อ่านเป็นแถว j หลัก i ใน aᵢⱼ ตัวเลขแรกคือแถวนะ',
+      M03_TRANSPOSE_WRONG: {
+        // TODO(review)
+        ROT_CW: 'คำตอบนี้คือการหมุนเมทริกซ์ ทรานสโพสคือการเปลี่ยนแถวเป็นหลัก',
+        // TODO(review)
+        ROT_CCW: 'คำตอบนี้คือการหมุนเมทริกซ์ ทรานสโพสคือการเปลี่ยนแถวเป็นหลัก',
+        // TODO(review)
+        ANTI: 'คำตอบนี้สะท้อนตามเส้นทแยงรอง ทรานสโพสต้องสะท้อนตามเส้นทแยงหลัก',
+        // TODO(review)
+        FLIP_H: 'คำตอบนี้คือการพลิกซ้ายขวา ทรานสโพสคือการเปลี่ยนแถวเป็นหลัก',
+        // TODO(review)
+        FLIP_V: 'คำตอบนี้คือการพลิกบนล่าง ทรานสโพสคือการเปลี่ยนแถวเป็นหลัก',
+        // TODO(review)
+        SAME: 'คำตอบนี้ยังเหมือน A เดิม ทรานสโพสต้องเปลี่ยนแถวเป็นหลักก่อน',
+      },
+      // TODO(review)
+      M04_ADD_DIM_MISMATCH: 'บวกลบได้เฉพาะเมทริกซ์มิติเดียวกัน ลองเทียบมิติของ A กับ B ก่อนลงมือนะ',
+      // TODO(review)
+      M05_SUB_REVERSED: 'คำตอบนี้คือ B − A ลำดับสลับกันอยู่ A − B ต้องเอาค่าใน A ตั้งนะ',
+      M07_SCALAR_PARTIAL: {
+        // TODO(review)
+        FIRST_ROW: 'คำตอบนี้คูณแค่แถวแรก สเกลาร์ต้องคูณเข้าไปทุกช่องนะ',
+        // TODO(review)
+        DIAGONAL: 'คำตอบนี้คูณแค่แนวทแยง สเกลาร์ต้องคูณเข้าไปทุกช่องนะ',
+        // TODO(review)
+        ADD: 'คำตอบนี้เอาค่ามาบวก สเกลาร์ต้องคูณเข้าไปทุกช่องนะ',
+      },
+      M08_MULT_DIM_RULE: {
+        // TODO(review)
+        SAME_DIMS: 'คูณได้หรือไม่ ไม่ได้ดูว่ามิติเท่ากันไหม แต่ดูว่าตัวเลขด้านในเท่ากันไหม',
+        // TODO(review)
+        RESULT_INNER:
+          'คำตอบนี้ใช้ตัวเลขด้านใน ตัวเลขด้านในบอกว่าคูณได้ไหม ส่วนมิติผลคูณมาจากตัวเลขด้านนอก',
+        // TODO(review)
+        RESULT_FIRST:
+          'คำตอบนี้เป็นมิติของตัวหน้า ลองเช็กตัวเลขด้านในก่อน แล้วมิติผลคูณมาจากตัวเลขด้านนอก',
+        // TODO(review)
+        RESULT_SWAPPED:
+          'คำตอบนี้สลับลำดับมิติ ลองเช็กตัวเลขด้านในก่อน แล้วมิติผลคูณคือ แถวของตัวหน้า × หลักของตัวหลัง',
+      },
+      // TODO(review)
+      M09_MULT_ELEMENTWISE:
+        'คำตอบนี้คูณทีละช่องตรงตำแหน่ง การคูณเมทริกซ์ต้องใช้แถวของตัวหน้าคู่กับหลักของตัวหลังนะ',
+      M10_MULT_ROW_ROW: {
+        // TODO(review)
+        ROW_ROW: 'คำตอบนี้ใช้แถวคู่กับแถว การคูณต้องใช้แถวของตัวหน้าคู่กับหลักของตัวหลังนะ',
+        // TODO(review)
+        COL_COL: 'คำตอบนี้ใช้หลักคู่กับหลัก การคูณต้องใช้แถวของตัวหน้าคู่กับหลักของตัวหลังนะ',
+      },
+      // TODO(review)
+      M11_MULT_COMMUTATIVE: 'ลำดับการคูณสำคัญนะ AB กับ BA ต้องคิดแยกกัน และมักได้ผลไม่เท่ากัน',
+      M12_DET2_FORMULA: {
+        // TODO(review)
+        ADD: 'คำตอบนี้เอาสองแนวทแยงมาบวกกัน det คือ ทแยงลง ลบ ทแยงขึ้น',
+        // TODO(review)
+        REVERSE: 'คำตอบนี้ลบสลับข้าง det คือ ทแยงลง ลบ ทแยงขึ้น',
+        // TODO(review)
+        PAIRS_ROW: 'คำตอบนี้คูณตามแถว det ต้องคูณตามแนวทแยง: ทแยงลง ลบ ทแยงขึ้น',
+        // TODO(review)
+        PAIRS_COL: 'คำตอบนี้คูณตามหลัก det ต้องคูณตามแนวทแยง: ทแยงลง ลบ ทแยงขึ้น',
+      },
+      M13_DET3_SIGN: {
+        // TODO(review)
+        ALL_PLUS: 'คำตอบนี้บวกครบทั้ง 6 เส้น แต่ 3 เส้นขึ้นต้องเป็นลบนะ',
+        // TODO(review)
+        NO_ALT_SIGN: 'คำตอบนี้กระจายตามแถวแรกโดยไม่สลับเครื่องหมาย พจน์ตรงกลางต้องเป็นลบนะ',
+        // TODO(review)
+        TWO_DIAG: 'คำตอบนี้ใช้แค่ 2 เส้น det 3×3 ต้องใช้ครบ 3 เส้นลงและ 3 เส้นขึ้น',
+      },
+      // TODO(review)
+      M14_DET_SCALAR_LINEAR:
+        'คำตอบนี้ดึง k ออกมาตัวเดียว แต่ k คูณเข้าไปทุกแถว จึงดึงออกมาได้แถวละตัวนะ',
+      // TODO(review)
+      M15_DET_ADDITIVE: 'คำตอบนี้แยก det ของผลบวก det แยกผลบวกไม่ได้ ต้องบวกเมทริกซ์ให้เสร็จก่อนนะ',
+      // TODO(review)
+      M18_INV_SINGULAR: 'ลองหา det ก่อนตัดสินนะ ถ้า det เป็น 0 จะย้อนกลับไม่ได้ จึงไม่มีอินเวอร์ส',
+      // TODO(review)
+      M19_INV_ZERO_ENTRY: 'การมีเลข 0 ในเมทริกซ์ไม่ได้ทำให้ไม่มีอินเวอร์ส ให้ดูที่ det นะ',
+      M20_INV2_RECIPE: {
+        // TODO(review)
+        NO_SWAP: 'คำตอบนี้ลืมสลับ a กับ d',
+        // TODO(review)
+        NO_NEGATE: 'คำตอบนี้ลืมเปลี่ยนเครื่องหมาย b กับ c',
+        // TODO(review)
+        NO_DIVIDE: 'คำตอบนี้ลืมหารด้วย det',
+        // TODO(review)
+        TIMES_DET: 'คำตอบนี้คูณด้วย det แทนที่จะหาร',
+        // TODO(review)
+        TRANSPOSED: 'b กับ c ไม่ต้องสลับที่ แค่เปลี่ยนเครื่องหมาย',
+      },
+      // TODO(review)
+      M21_INV_RECIPROCAL:
+        'อินเวอร์สไม่ใช่การกลับเศษทีละตัว ต้องใช้ขั้นตอน สลับ → กลับเครื่องหมาย → หาร',
+    },
+  },
+
+  summary: {
+    // TODO(review)
+    title: 'สรุปการเรียน',
+    // TODO(review)
+    xp: 'XP สะสม',
+    // TODO(review)
+    bestCombo: 'ถูกติดกันสูงสุด',
+    // TODO(review)
+    itemsDone: 'ข้อที่ทำแล้ว',
+    // TODO(review)
+    passed: 'เรื่องที่ผ่านแล้ว',
+    // TODO(review)
+    none: 'ยังไม่มีเรื่องที่ผ่าน ลองทำต่ออีกนิดนะ',
+    // TODO(review)
+    unitPassed: 'ผ่านหน่วยที่ {{n}}',
+    // TODO(review)
+    continue: 'เรียนต่อ',
+    // TODO(review)
+    toMap: 'ดูเส้นทางเรียน',
   },
 
   // Names from docs/SPEC.md §3.
@@ -50,6 +332,61 @@ export const th = {
     M19_INV_ZERO_ENTRY: 'คิดว่ามีสมาชิกเป็น 0 แล้วจะไม่มีอินเวอร์ส',
     M20_INV2_RECIPE: 'สูตรอินเวอร์ส 2×2 ขาดขั้น',
     M21_INV_RECIPROCAL: 'คิดว่าอินเวอร์สคือกลับเศษทีละช่อง',
+  },
+
+  // L1 hints (SPEC §9), one principle per item form. The unmarked one is the example in SPEC §9.
+  hintL1: {
+    // TODO(review)
+    dim: 'มิติของเมทริกซ์บอกจำนวนแถวและจำนวนหลัก โดยบอกแถวก่อน',
+    // TODO(review)
+    index: 'aᵢⱼ คือสมาชิกที่อยู่แถว i หลัก j',
+    // TODO(review)
+    transpose: 'ทรานสโพสคือการเปลี่ยนแถวให้เป็นหลัก',
+    // TODO(review)
+    addsub: 'บวกลบกันได้เมื่อมิติเท่ากัน แล้วทำทีละช่องตรงตำแหน่งกัน',
+    // TODO(review)
+    scalar: 'คูณเมทริกซ์ด้วยจำนวนจริง ได้เมทริกซ์มิติเดิม โดยทำทีละช่อง',
+    // TODO(review)
+    combo: 'คูณสเกลาร์ให้เสร็จก่อน แล้วค่อยลบกันทีละช่อง',
+    // TODO(review)
+    mult_defined: 'ผลคูณหาค่าได้เมื่อจำนวนหลักของตัวหน้าเท่ากับจำนวนแถวของตัวหลัง',
+    // TODO(review)
+    mult_defined_abc: 'คูณทีละคู่จากซ้ายไปขวา แล้วเช็กมิติทุกครั้ง',
+    mult: 'ช่องแถว i หลัก j ของ AB มาจากแถว i ของ A กับหลัก j ของ B',
+    // TODO(review)
+    noncomm_statement: 'ลองนึกถึงตัวอย่างที่คูณกันจริง แล้วสลับลำดับดู',
+    // TODO(review)
+    noncomm_find_ba: 'BA ใช้แถวของ B คู่กับหลักของ A จึงต้องคูณใหม่',
+    // TODO(review)
+    noncomm_pair: 'คูณ AB และ BA แล้วเทียบกันทีละช่อง',
+    // TODO(review)
+    det2: 'det ของเมทริกซ์ 2×2 ได้จากผลคูณตามแนวทแยง',
+    // TODO(review)
+    det3: 'det ของเมทริกซ์ 3×3 ใช้ผลคูณตามเส้นทแยง 6 เส้น',
+    // TODO(review)
+    det_scaled: 'k คูณเข้าไปทุกแถวของ A ลองนึกว่า det เปลี่ยนไปกี่เท่า',
+    // TODO(review)
+    det_product: 'det ของผลคูณหาได้จาก det ของแต่ละตัว',
+    // TODO(review)
+    det_sum: 'det(A + B) คือ det ของเมทริกซ์ที่ได้จากการบวก',
+    // TODO(review)
+    det_transpose: 'ทรานสโพสสลับแถวกับหลัก ลองนึกว่า det เปลี่ยนไหม',
+    // TODO(review)
+    det_inverse: 'A คูณ A⁻¹ ได้เมทริกซ์เอกลักษณ์ ซึ่งมี det เท่ากับ 1',
+    // TODO(review)
+    invertible: 'เมทริกซ์มีอินเวอร์สก็ต่อเมื่อ det ไม่เป็น 0',
+    // TODO(review)
+    inv2: 'อินเวอร์ส 2×2 มีสูตร 3 ขั้น: จัดตำแหน่ง a, b, c, d ใหม่ แล้วหารด้วย det',
+  },
+
+  // L2 wording for first steps whose worked caption would reveal a number or say too little alone.
+  hintFirstStep: {
+    // TODO(review)
+    dim_rows: 'เริ่มจากนับแถว (แนวนอน) แล้วค่อยนับหลัก (แนวตั้ง)',
+    // TODO(review)
+    addsub_cell: 'เริ่มจากช่องแถว {{i}} หลัก {{j}}: ใช้ค่าตำแหน่งเดียวกันของ A และ B',
+    // TODO(review)
+    noncomm_example: 'ลองยกตัวอย่างเมทริกซ์สองตัว แล้วคูณทั้งสองลำดับดู',
   },
 
   // L2 hints (SPEC §9). Unmarked ones come from docs/MISCONCEPTIONS.md §3.
@@ -158,6 +495,8 @@ export const th = {
     dim_result: 'มิติเขียนเป็น แถว × หลัก',
     // TODO(review)
     index_locate: 'ไปที่แถว {{i}} แล้วดูหลัก {{j}}',
+    // TODO(review)
+    index_row: 'นี่คือแถว {{i}} ลองไล่ไปที่หลัก {{j}}',
     // TODO(review)
     transpose_row: 'แถวที่ {{i}} ของ A กลายเป็นหลักที่ {{i}} ของ Aᵀ',
     // TODO(review)

@@ -188,7 +188,7 @@ P(L) คือโอกาสที่นักเรียนรู้ skill �
 
 **การนับ:**
 - ใช้เฉพาะ attempt แรกของแต่ละข้อ
-- ใช้ hint ตั้งแต่ L2 ขึ้นไป หรือกด "ดูวิธีทำ" ก่อนส่ง = นับเป็นตอบผิด
+- ใช้ hint ตั้งแต่ L2 ขึ้นไป = นับเป็นตอบผิด (ปุ่ม "ดูวิธีทำ" มีหลังตอบผิดเท่านั้นตาม §4 จึงไม่มีกรณีดูก่อนส่ง)
 
 **ตั้งค่าจาก pre-test:** P(L₀) ของ skill =
 - 0.60 ถ้าข้อของ skill นั้นถูก (ถ้ามีหลายข้อ เช่น `mult_defined` ต้องถูกทุกข้อ)
@@ -292,9 +292,10 @@ resolved ──เจออีก──▶ active (relapse)
 - **XP:**
   - ถูกครั้งแรกไม่ใช้ hint = 10
   - ใช้ hint L1 = 7
-  - หลังกดดูวิธีทำ = 0
+  - ใช้ hint L2–L3 = 3
+  - ตอบผิด = 0
   - แก้ misconception ได้ = +20
-- **combo:** นับข้อถูกติดกัน
+- **combo:** นับข้อถูกติดกัน ข้อที่ถูกหลังใช้ hint L2–L3 ไม่เพิ่มและไม่รีเซ็ต combo
 - **badge:** ผ่าน unit และ "แก้ความเข้าใจผิดสำเร็จ"
 - **ไม่มี leaderboard:** หลีกเลี่ยงการเทียบกันในห้อง และครูก็ไม่เห็นอันดับ XP
 
@@ -410,7 +411,7 @@ export const CONFIG = {
   pathStepsOnMap: 5,
   hintL2CountsAsWrong: true,
   llm: { timeoutMs: 4000, maxCandidates: 4, maxCallsPerMinutePerStudent: 20 },
-  xp: { firstTry: 10, withL1Hint: 7, misconceptionResolved: 20 },
+  xp: { firstTry: 10, withL1Hint: 7, withDeepHint: 3, misconceptionResolved: 20 },
   generatorVersion: 1,
 } as const;
 ```

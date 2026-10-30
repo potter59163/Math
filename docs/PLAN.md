@@ -42,11 +42,12 @@
 - **Acceptance:** `npm run check` ผ่าน · ทุก ★ misconception สร้าง probe ได้และจับได้ · รายงานสรุปว่าตัวไหนยังมีปัญหา (ถ้ามี)
 
 ## Phase 2: Practice UI (2–4 พ.ย.)
-- [ ] `MatrixView`, `MatrixInput`, `Keypad` (ไม่เด้ง keyboard ระบบ ปุ่ม ≥ 44px), choice buttons, dims input
-- [ ] join แบบ local (ยังไม่มี DB) → `/learn` แผนที่ → `/learn/session` ลูปโจทย์
+- [x] `MatrixView`, `MatrixInput`, `Keypad` (ไม่เด้ง keyboard ระบบ ปุ่ม ≥ 44px), choice buttons, dims input
+- [x] join แบบ local (ยังไม่มี DB) → `/learn` แผนที่ → `/learn/session` ลูปโจทย์
   - ใช้ rules แบบง่ายไปก่อน: เดินตามลำดับ skill และปรับระดับ
-- [ ] `FeedbackCard` (ทันที), ปุ่ม "ดูวิธีทำ", hint L1–L3 (ข้อความจาก th.ts), XP/combo, `/summary`
-- [ ] ข้อความไทยทั้งหมดอยู่ใน `th.ts` และของที่ร่างใหม่ติด `// TODO(review)`
+- [x] `FeedbackCard` (ทันที), ปุ่ม "ดูวิธีทำ", hint L1–L3 (ข้อความจาก th.ts), XP/combo, `/summary`
+- [x] ข้อความไทยทั้งหมดอยู่ใน `th.ts` และของที่ร่างใหม่ติด `// TODO(review)`
+- [ ] กด keypad และทำ Unit 3 บนมือถือจริง (Potter ลองเอง)
 - **Acceptance:** ทำ Unit 3 จบบนมือถือ 360px ได้ · ไม่มี layout shift ตอนขึ้น feedback · Lighthouse mobile performance ≥ 80
 
 ## Phase 3: Scenes (3–6 พ.ย.)
