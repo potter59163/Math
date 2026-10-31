@@ -412,7 +412,7 @@ export const CONFIG = {
   hintL2CountsAsWrong: true,
   llm: { timeoutMs: 4000, maxCandidates: 4, maxCallsPerMinutePerStudent: 20 },
   xp: { firstTry: 10, withL1Hint: 7, withDeepHint: 3, misconceptionResolved: 20 },
-  generatorVersion: 1,
+  generatorVersion: 2,
 } as const;
 ```
 

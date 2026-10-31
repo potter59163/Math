@@ -334,6 +334,18 @@ export const CATALOG: MisconceptionEntry[] = [
           return asDims({ rows: second.cols, cols: first.rows });
         },
       }),
+      on('mult_defined', {
+        variant: 'RESULT_OUTER',
+        // Reads the outer dims without checking the inner ones. With same dims that answer is SAME_DIMS.
+        applies: (data) => {
+          const { first, second } = factors(data);
+          return first.cols !== second.rows && !sameDims(first, second);
+        },
+        candidate: (data) => {
+          const { first, second } = factors(data);
+          return asDims({ rows: first.rows, cols: second.cols });
+        },
+      }),
     ],
   }),
   entry({

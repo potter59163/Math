@@ -433,7 +433,59 @@ describe('M08_MULT_DIM_RULE', () => {
       dimsB: dimsOf(3, 4),
     });
     expectCorrect(ba, UNDEFINED);
+    expectDetects(ba, 'M08_MULT_DIM_RULE', 'RESULT_OUTER', dims(3, 3));
     expectValid(ba);
+  });
+
+  it('A 3×2, B 4×3 → AB is undefined and 3×3 is RESULT_OUTER', () => {
+    const item = assemble('mult_defined', 1, {
+      form: 'mult_defined',
+      order: 'AB',
+      dimsA: dimsOf(3, 2),
+      dimsB: dimsOf(4, 3),
+    });
+    expectCorrect(item, UNDEFINED);
+    expectDetects(item, 'M08_MULT_DIM_RULE', 'RESULT_OUTER', dims(3, 3));
+    expectValid(item);
+  });
+
+  it('A 4×4, B 3×4 → AB is undefined and 4×4 is RESULT_OUTER, the only variant here', () => {
+    const item = assemble('mult_defined', 1, {
+      form: 'mult_defined',
+      order: 'AB',
+      dimsA: dimsOf(4, 4),
+      dimsB: dimsOf(3, 4),
+    });
+    expectCorrect(item, UNDEFINED);
+    expectDetects(item, 'M08_MULT_DIM_RULE', 'RESULT_OUTER', dims(4, 4));
+    expect(variantsOf(item, 'M08_MULT_DIM_RULE')).toEqual(['RESULT_OUTER']);
+    expectValid(item);
+  });
+
+  it('catches the outer dims on every undefined product, in either order', () => {
+    const sizes = [1, 2, 3, 4];
+    for (const m of sizes) {
+      for (const n of sizes) {
+        for (const r of sizes.filter((size) => size !== n)) {
+          for (const p of sizes) {
+            const [first, second] = [dimsOf(m, n), dimsOf(r, p)];
+            const variant = m === r && n === p ? 'SAME_DIMS' : 'RESULT_OUTER';
+            for (const data of [
+              { form: 'mult_defined', order: 'AB', dimsA: first, dimsB: second },
+              { form: 'mult_defined', order: 'BA', dimsA: second, dimsB: first },
+            ] as const) {
+              const item = assemble('mult_defined', 2, data);
+              expectValid(item);
+              expect(classify(item, dims(m, p))).toEqual({
+                type: 'misconception',
+                id: 'M08_MULT_DIM_RULE',
+                variant,
+              });
+            }
+          }
+        }
+      }
+    }
   });
 
   it('A 2×3, B 2×3 → AB is undefined and "yes, 2×3" is SAME_DIMS', () => {
@@ -476,6 +528,20 @@ describe('M08_MULT_DIM_RULE', () => {
       dimsB: dimsOf(3, 2),
     });
     expect(variantsOf(item, 'M08_MULT_DIM_RULE')).not.toContain('RESULT_SWAPPED');
+  });
+
+  it('RESULT_OUTER does not apply when the product is defined, since m×p is then correct', () => {
+    expect(variantsOf(ab, 'M08_MULT_DIM_RULE')).not.toContain('RESULT_OUTER');
+  });
+
+  it('RESULT_OUTER does not apply when the dims are the same, since that answer is SAME_DIMS', () => {
+    const item = assemble('mult_defined', 1, {
+      form: 'mult_defined',
+      order: 'AB',
+      dimsA: dimsOf(2, 3),
+      dimsB: dimsOf(2, 3),
+    });
+    expect(variantsOf(item, 'M08_MULT_DIM_RULE')).not.toContain('RESULT_OUTER');
   });
 });
 

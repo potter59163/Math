@@ -130,14 +130,18 @@ Generator ต้องสุ่มใหม่ (seed ถัดไป) จนผ�
   - `RESULT_INNER`: ตอบมิติผลคูณเป็น n×n (มิติด้านใน)
   - `RESULT_FIRST`: ตอบเป็น m×n (มิติของ A)
   - `RESULT_SWAPPED`: ตอบเป็น p×m
+  - `RESULT_OUTER`: n ≠ r แต่ตอบเป็น m×p (ใช้ตัวเลขด้านนอกโดยไม่เช็กตัวเลขด้านใน)
 - **ใช้ได้เมื่อ:**
   - RESULT_INNER: n×n ≠ m×p
   - RESULT_FIRST: n ≠ p
   - RESULT_SWAPPED: p ≠ m
+  - RESULT_OUTER: n ≠ r และ dims(A) ≠ dims(B) (ถ้ามิติเท่ากัน คำตอบเดียวกันนี้คือ SAME_DIMS)
 - **ตัวอย่าง:**
   - A 2×3, B 3×4 → AB เป็น 2×4 · RESULT_INNER 3×3 · RESULT_FIRST 2×3 · RESULT_SWAPPED 4×2
-  - BA หาค่าไม่ได้ (4 ≠ 2)
+  - BA หาค่าไม่ได้ (4 ≠ 2) · RESULT_OUTER 3×3 (แถวของ B × หลักของ A)
   - A 2×3, B 2×3 → AB หาค่าไม่ได้ · ถ้าตอบ "ได้ มิติ 2×3" คือ SAME_DIMS
+  - A 3×2, B 4×3 → AB หาค่าไม่ได้ · RESULT_OUTER 3×3
+  - A 4×4, B 3×4 → AB หาค่าไม่ได้ · RESULT_OUTER 4×4 (เป็น variant เดียวของข้อนี้)
 - **scene:** `dimension_match` (mult)
 - **hint:** "ตัวเลขด้านในต้องเท่ากัน ส่วนตัวเลขด้านนอกคือมิติของผลคูณ"
 

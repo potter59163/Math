@@ -33,10 +33,21 @@ function otherUndefined(rng: Rng, sizes: number[]): Pair {
   };
 }
 
+/** Undefined with different dims, and m ≠ n keeps every wrong result rule apart from the others. */
+function undefinedDistinct(rng: Rng, sizes: number[]): Pair {
+  const [m, n] = rng.sample(sizes, 2);
+  const notN = sizes.filter((size) => size !== n);
+  const r = rng.pick(notN);
+  // r = m with p = n would be the same dims.
+  const p = rng.pick(r === m ? notN : sizes);
+  return { first: { rows: m, cols: n }, second: { rows: r, cols: p } };
+}
+
 function samplePair(rng: Rng, sizes: number[], { target, targetVariant }: Probe): Pair {
   if (targetVariant === 'SAME_DIMS') {
     return rng.chance(1, 2) ? sameDims(rng, sizes) : definedDistinct(rng, sizes);
   }
+  if (targetVariant === 'RESULT_OUTER') return undefinedDistinct(rng, sizes);
   if (targetVariant !== undefined) return definedDistinct(rng, sizes);
   if (target !== undefined) {
     return rng.chance(1, 4) ? sameDims(rng, sizes) : definedDistinct(rng, sizes);

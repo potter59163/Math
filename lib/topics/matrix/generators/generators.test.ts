@@ -67,7 +67,7 @@ describe('every skill × level', () => {
 
   it.each(SKILL_LEVELS)('%s L%i keeps the requested seed in its ref', (skill, difficulty) => {
     const item = generate({ skill, difficulty, seed: 123 });
-    expect(item.ref).toEqual({ topic: 'matrix', skill, difficulty, seed: 123, gv: 1 });
+    expect(item.ref).toEqual({ topic: 'matrix', skill, difficulty, seed: 123, gv: 2 });
   });
 
   it.each(SKILL_LEVELS)('%s L%i works for seeds from deriveSeed', (skill, difficulty) => {

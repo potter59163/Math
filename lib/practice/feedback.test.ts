@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { th } from '@/lib/content/th';
+import { classify } from '@/lib/core/classify';
+import { assemble } from '@/lib/topics/matrix/generators';
 import { CATALOG, variantsOf } from '@/lib/topics/matrix/misconceptions';
 import { feedbackFor, misconceptionMessage } from './feedback';
 
@@ -49,6 +52,19 @@ describe('feedbackFor (SPEC §9)', () => {
     });
     expect(noSwap.detail).not.toBe(noDivide.detail);
   });
+
+  it('names an answer that skipped the inner check instead of the generic message', () => {
+    const item = assemble('mult_defined', 1, {
+      form: 'mult_defined',
+      order: 'AB',
+      dimsA: { rows: 3, cols: 2 },
+      dimsB: { rows: 4, cols: 3 },
+    });
+    const result = feedbackFor(classify(item, { kind: 'dims', rows: 3, cols: 3 }));
+    expect(result.headline).toBe('ยังไม่ถูก');
+    expect(result.detail).toBe(misconceptionMessage('M08_MULT_DIM_RULE', 'RESULT_OUTER'));
+    expect(result.detail).not.toBe(th.feedback.unknown);
+  });
 });
 
 describe('misconceptionMessage', () => {
@@ -56,6 +72,14 @@ describe('misconceptionMessage', () => {
     for (const { id } of CATALOG) {
       for (const variant of variantsOf(id)) {
         expect(misconceptionMessage(id, variant).length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('has its own text for every named variant, not the hint it would fall back to', () => {
+    for (const { id } of CATALOG) {
+      for (const variant of variantsOf(id)) {
+        if (variant !== undefined) expect(misconceptionMessage(id, variant)).not.toBe(th.hints[id]);
       }
     }
   });
