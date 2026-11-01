@@ -236,6 +236,17 @@
       radial-gradient(60% 35% at 78% 62%, rgb(242 236 224 / 0.03), transparent 70%);
   }
 
+  /* A sheet of the notebook lying on the board, written on in the notebook's own pens. */
+  .paper {
+    --surface: #fdfbf3;
+    --ink: #17212e;
+    --muted: #55616f;
+    --brand: #1f4bc4;
+    --brand-soft: #d6e4fb;
+    --warn: #c92a2a;
+    --marker: #ffe45c;
+  }
+
   /* The setting in the app, for anyone whose device does not say. */
   :root[data-motion='reduce'] *,
   :root[data-motion='reduce'] *::before,
