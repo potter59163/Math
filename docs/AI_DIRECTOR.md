@@ -247,17 +247,18 @@ export const LlmDecision = z.object({
 
 ---
 
-## 7. Provider adapter
+## 7. Provider
+ใช้ Claude เจ้าเดียว ผ่าน Anthropic SDK (`lib/director/llm/providers.ts`)
 ```ts
 interface LlmProvider {
-  name: 'gemini' | 'anthropic' | 'openai';
-  completeJson(args: { system: string; user: string; timeoutMs: number; signal: AbortSignal })
-    : Promise<{ text: string; latencyMs: number }>;
+  completeJson(args: { system: string; user: string; signal: AbortSignal }): Promise<string>;
 }
 ```
-- เลือกผ่าน env: `LLM_PROVIDER` (`none` | `gemini` | `anthropic` | `openai`), `LLM_MODEL`, `LLM_API_KEY`, `LLM_TIMEOUT_MS`
-- ใช้ JSON mode / structured output ของ provider ถ้ามี แต่ต้อง validate ด้วย Zod ทุกครั้ง
-- เลือกโมเดลรุ่นเร็วและถูก ประเมินค่าใช้จ่ายจาก pricing ปัจจุบันของ provider
+- เลือกผ่าน env: `LLM_PROVIDER` (`none` | `anthropic`), `LLM_MODEL`, `LLM_API_KEY`, `LLM_TIMEOUT_MS`
+- ใช้ structured output (`output_config.format`) แต่ต้อง validate ด้วย Zod ทุกครั้ง schema ที่ส่งไปต้องผ่าน `zodOutputFormat` ของ SDK เพราะ API ปฏิเสธ `minLength`, `maxLength` และ `maxItems` ถ้าส่งตรงๆ ทุกการเรียกจะได้ 400 แล้วนักเรียนจะได้แค่ rules โดยไม่มีใครรู้
+- โมเดลรุ่นเร็วและถูก: `claude-haiku-5-5` ที่ effort `low` ไม่ส่ง `temperature` เพราะรุ่นนี้ปฏิเสธ
+- คำขอแรกของ schema ใหม่ช้ากว่าปกติ เพราะ API ต้อง compile schema (แคชไว้ 24 ชั่วโมง) ครั้งนั้นอาจเกิน 4 วินาทีแล้ว fallback ซึ่งไม่เป็นไร
+- `provider_error` พิมพ์สาเหตุลง server log ทุกครั้ง
 - **rate limit:**
   - นักเรียน 40 คนตอบราวคนละ 1 ข้อต่อนาที ≈ 40 calls/นาที
   - เช็ค RPM/RPD ของ tier ที่ใช้ ถ้าไม่พอให้ fallback ทำงาน หรือปิด LLM ในวันนั้น

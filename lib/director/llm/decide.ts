@@ -78,9 +78,12 @@ export async function decideWithLlm(
       },
     };
   } catch (error) {
-    return {
-      tutor: { fallbackReason: fallbackFor(error, controller.signal), latencyMs: latency() },
-    };
+    const fallbackReason = fallbackFor(error, controller.signal);
+    // A rejected request looks to a student just like a slow one, so this line is the only sign of it.
+    if (fallbackReason === 'provider_error') {
+      console.error(`tutor: ${error instanceof Error ? error.message : String(error)}`);
+    }
+    return { tutor: { fallbackReason, latencyMs: latency() } };
   } finally {
     clearTimeout(timer);
   }

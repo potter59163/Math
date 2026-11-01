@@ -62,11 +62,9 @@ const scenarios: Scenario[] = [
 
 it('director eval', async () => {
   const config = llmConfig();
-  if (!config) throw new Error('Set LLM_PROVIDER and LLM_API_KEY to run the eval.');
+  if (!config) throw new Error('Set LLM_PROVIDER=anthropic and LLM_API_KEY to run the eval.');
   const provider = createProvider(config);
-  const lines: string[] = [
-    `# Director eval\n\nProvider ${config.provider}, model ${config.model}\n`,
-  ];
+  const lines: string[] = [`# Director eval\n\nModel ${config.model}\n`];
   const latencies: number[] = [];
   let valid = 0;
   let total = 0;

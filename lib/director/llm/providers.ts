@@ -1,10 +1,10 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { z } from 'zod';
+import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
 import type { LlmConfig } from './config';
 import { LlmDecision } from './schema';
 
-// One small interface over each provider (AI_DIRECTOR §7). Whatever comes back is only ever text: the
-// caller checks every field of it with validateDecision before anything is used.
+// The one call to Claude (AI_DIRECTOR §7). Whatever comes back is only ever text: the caller checks every
+// field of it with validateDecision before anything is used.
 
 export interface CompleteArgs {
   system: string;
@@ -16,16 +16,21 @@ export interface LlmProvider {
   completeJson(args: CompleteArgs): Promise<string>;
 }
 
-/** Plenty for two sentences and six captions in Thai, which takes many tokens per character. */
-const MAX_OUTPUT_TOKENS = 1024;
+/**
+ * Thai takes many tokens per character, and any thinking counts towards this too. What stops a long answer
+ * is the clock in decide.ts, so this only has to be sure of never cutting a good one short.
+ */
+const MAX_OUTPUT_TOKENS = 4096;
 
-/** A 429, whichever provider sent it. */
+/** The API answered 429. */
 export class RateLimitedError extends Error {}
 
-function anthropicProvider({ apiKey, model }: LlmConfig): LlmProvider {
+export function createProvider({ apiKey, model }: LlmConfig): LlmProvider {
   // No retries: a second try cannot fit in the seconds a student is waiting, and the rules are ready.
   const client = new Anthropic({ apiKey, maxRetries: 0 });
-  const schema = z.toJSONSchema(LlmDecision);
+  // Not z.toJSONSchema: the API refuses length limits, and this helper moves them out of the way. Those
+  // limits still hold, because validateDecision checks the answer against the same LlmDecision.
+  const format = zodOutputFormat(LlmDecision);
   return {
     async completeJson({ system, user, signal }) {
       try {
@@ -35,11 +40,8 @@ function anthropicProvider({ apiKey, model }: LlmConfig): LlmProvider {
             max_tokens: MAX_OUTPUT_TOKENS,
             system,
             messages: [{ role: 'user', content: user }],
-            output_config: {
-              // A short choice under a hard clock: thinking at length costs more than it brings.
-              effort: 'low',
-              format: { type: 'json_schema', schema: schema as Record<string, unknown> },
-            },
+            // A short choice under a hard clock: thinking at length costs more than it brings.
+            output_config: { effort: 'low', format },
           },
           { signal },
         );
@@ -53,80 +55,4 @@ function anthropicProvider({ apiKey, model }: LlmConfig): LlmProvider {
       }
     },
   };
-}
-
-async function postJson(
-  url: string,
-  headers: Record<string, string>,
-  body: unknown,
-  signal: AbortSignal,
-) {
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...headers },
-    body: JSON.stringify(body),
-    signal,
-  });
-  if (response.status === 429) throw new RateLimitedError();
-  if (!response.ok) throw new Error(`provider answered ${response.status}`);
-  return (await response.json()) as unknown;
-}
-
-function geminiProvider({ apiKey, model }: LlmConfig): LlmProvider {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
-  return {
-    async completeJson({ system, user, signal }) {
-      const data = (await postJson(
-        url,
-        { 'x-goog-api-key': apiKey },
-        {
-          systemInstruction: { parts: [{ text: system }] },
-          contents: [{ role: 'user', parts: [{ text: user }] }],
-          generationConfig: {
-            responseMimeType: 'application/json',
-            maxOutputTokens: MAX_OUTPUT_TOKENS,
-          },
-        },
-        signal,
-      )) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!text) throw new Error('no text in response');
-      return text;
-    },
-  };
-}
-
-function openaiProvider({ apiKey, model }: LlmConfig): LlmProvider {
-  return {
-    async completeJson({ system, user, signal }) {
-      const data = (await postJson(
-        'https://api.openai.com/v1/chat/completions',
-        { Authorization: `Bearer ${apiKey}` },
-        {
-          model,
-          max_completion_tokens: MAX_OUTPUT_TOKENS,
-          response_format: { type: 'json_object' },
-          messages: [
-            { role: 'system', content: system },
-            { role: 'user', content: user },
-          ],
-        },
-        signal,
-      )) as { choices?: { message?: { content?: string } }[] };
-      const text = data.choices?.[0]?.message?.content;
-      if (!text) throw new Error('no text in response');
-      return text;
-    },
-  };
-}
-
-export function createProvider(config: LlmConfig): LlmProvider {
-  switch (config.provider) {
-    case 'anthropic':
-      return anthropicProvider(config);
-    case 'gemini':
-      return geminiProvider(config);
-    case 'openai':
-      return openaiProvider(config);
-  }
 }

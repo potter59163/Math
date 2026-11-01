@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { commitAttempt, prepareAttempt } from '@/lib/director/rules';
 import { newProfile } from '@/lib/director/turn';
 import type { Candidate } from '@/lib/director/types';
@@ -168,7 +168,8 @@ describe('decideWithLlm', () => {
     expect(result?.tutor.fallbackReason).toBe('schema_invalid');
   });
 
-  it('falls back on a provider error', async () => {
+  it('falls back on a provider error, and says why in the server log', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
     const provider: LlmProvider = {
       completeJson: async () => {
         throw new Error('500');
@@ -176,6 +177,8 @@ describe('decideWithLlm', () => {
     };
     const result = await decideWithLlm(prepared(), options(provider));
     expect(result?.tutor.fallbackReason).toBe('provider_error');
+    expect(log).toHaveBeenCalledWith('tutor: 500');
+    log.mockRestore();
   });
 
   it('falls back on a 429', async () => {
@@ -211,7 +214,7 @@ describe('llmDecider', () => {
     const decide = llmDecider({
       userId: 'u',
       store: store(20),
-      config: { provider: 'anthropic', model: 'm', apiKey: 'k', timeoutMs: 100 },
+      config: { model: 'm', apiKey: 'k', timeoutMs: 100 },
       provider: answering(decision()),
     })!;
     const result = await decide(prepared(), { timeMs: 1, hintLevel: 0 });
@@ -222,7 +225,7 @@ describe('llmDecider', () => {
     const decide = llmDecider({
       userId: 'u',
       store: store(0),
-      config: { provider: 'anthropic', model: 'm', apiKey: 'k', timeoutMs: 100 },
+      config: { model: 'm', apiKey: 'k', timeoutMs: 100 },
       provider: answering(decision()),
     })!;
     expect((await decide(prepared(), { timeMs: 1, hintLevel: 0 }))?.mode).toBe('llm');
@@ -234,7 +237,7 @@ describe('llmConfig', () => {
     expect(llmConfig({})).toBeNull();
     expect(llmConfig({ LLM_PROVIDER: 'none', LLM_API_KEY: 'k' })).toBeNull();
     expect(llmConfig({ LLM_PROVIDER: 'anthropic' })).toBeNull();
-    expect(llmConfig({ LLM_PROVIDER: 'something-else', LLM_API_KEY: 'k' })).toBeNull();
+    expect(llmConfig({ LLM_PROVIDER: 'gemini', LLM_API_KEY: 'k' })).toBeNull();
   });
   it('reads what is set, with a fast model and the 4 s limit by default', () => {
     const config = llmConfig({ LLM_PROVIDER: 'anthropic', LLM_API_KEY: 'k' });
@@ -242,7 +245,7 @@ describe('llmConfig', () => {
     expect(config?.timeoutMs).toBe(4000);
     expect(
       llmConfig({
-        LLM_PROVIDER: 'gemini',
+        LLM_PROVIDER: 'anthropic',
         LLM_API_KEY: 'k',
         LLM_MODEL: 'x',
         LLM_TIMEOUT_MS: '900',
