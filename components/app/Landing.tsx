@@ -55,8 +55,11 @@ export function Landing() {
         <h1 className="text-6xl leading-tight font-semibold tracking-tight">
           <span className="marker">{CONFIG.appName}</span>
         </h1>
-        <p className="mt-2 font-display text-xl leading-snug">{taglineLead}</p>
-        <p className="text-muted">{taglineRest}</p>
+        <p className="mt-2 font-display text-2xl leading-snug font-medium">
+          <span className="block">{taglineLead}</span>
+          <span className="block">{taglineRest}</span>
+        </p>
+        <p className="mt-1 text-sm text-muted">{th.home.opening}</p>
       </header>
 
       <NotebookDemo className="my-10 md:col-start-2 md:row-span-3 md:row-start-1 md:my-0" />

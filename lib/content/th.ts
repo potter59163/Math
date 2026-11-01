@@ -4,10 +4,13 @@ import { CONFIG } from '@/lib/config';
 export const th = {
   // TODO(review): everything in this block.
   home: {
-    // Split at its first space for the end card of the trial clip.
-    tagline: 'คณิตที่คิดมาเพื่อคุณคนเดียว เริ่มจากเรื่องเมทริกซ์',
-    demoLabel: `ตัวอย่าง: นักเรียนคูณเมทริกซ์ทีละช่อง แล้ว${CONFIG.tutorName}ทักว่าต้องเอาแถวคูณหลัก`,
-    demoNote: ['คูณทีละช่องไม่ได้นะ', 'ต้องเอาแถวคูณหลัก'],
+    // Two lines, split at the one plain space: the first holds a no-break space. The trial clip's end
+    // card splits it the same way. It speaks for the whole app, so it names no single topic.
+    tagline: 'คณิต ม.ปลาย ที่คิดมาเพื่อคุณคนเดียว',
+    demoLabel: `ตัวอย่าง: สมุดที่${CONFIG.tutorName}ตรวจแล้ว ข้อที่ผิดคือแยก log ของผลบวก`,
+    demoNote: ['log แยกผลบวกไม่ได้นะ', 'แยกได้เฉพาะผลคูณ'],
+    // The first page speaks for all of it, and this keeps it honest about what is open today.
+    opening: 'เปิดเรื่องแรกแล้ว เรื่องอื่นกำลังตามมา',
     signIn: 'เข้าสู่ระบบด้วย Google',
     signingIn: 'กำลังพาไปหน้า Google…',
     tryFirst: 'ลองเรียนก่อน',
@@ -114,6 +117,7 @@ export const th = {
   learn: {
     title: 'บทเรียน',
     topic: 'เมทริกซ์',
+    topicNote: 'เรื่องแรกของคณิต ม.ปลาย',
     unit: 'หน่วยที่ {{n}}',
     status: {
       passed: 'ผ่านแล้ว',

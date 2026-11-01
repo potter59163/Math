@@ -369,9 +369,11 @@ function ItemScreen({
         {/* In landscape the strip takes this column only: the answer slot needs its full height. */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <PathStrip note={stripNote(profile)} />
+          {/* Focusable, so a keyboard can scroll it once the answer boxes are closed and take no focus. */}
           <main
             ref={scroller}
-            className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-2"
+            tabIndex={0}
+            className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-2 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand"
           >
             <div className="mx-auto flex max-w-lg flex-col gap-3">
               <ItemPrompt item={item} />

@@ -361,7 +361,10 @@ export function LessonsScreen() {
   return (
     <div className="mx-auto flex w-full max-w-lg flex-col">
       <header className="sticky top-0 z-10 flex items-center gap-2 border-b border-line bg-canvas px-4 py-2">
-        <h1 className="min-w-0 flex-1 truncate text-xl leading-tight">{th.learn.topic}</h1>
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate text-xl leading-tight">{th.learn.topic}</h1>
+          <p className="truncate text-xs text-muted">{th.learn.topicNote}</p>
+        </div>
         <Chips profile={profile} now={now} />
       </header>
 
