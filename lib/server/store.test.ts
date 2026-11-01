@@ -81,7 +81,8 @@ describe.skipIf(!uri)('on a real MongoDB', () => {
     db = client.db(`kidma_test_${randomUUID().slice(0, 8)}`);
     await ensureIndexes(db);
     store = createStore(db);
-  });
+    // On a free Atlas cluster the very first ensureIndexes takes about 8 s.
+  }, 60_000);
 
   afterAll(async () => {
     await db?.dropDatabase();
