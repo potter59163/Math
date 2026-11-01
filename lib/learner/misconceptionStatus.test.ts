@@ -86,6 +86,14 @@ describe('relapse (SPEC §7.2)', () => {
     expect(onCaught(resolved(), at(9))).toMatchObject({ status: 'active', count: 2, fixStreak: 0 });
   });
 
+  it('counts each time it comes back, and a first catch is not one', () => {
+    expect(onCaught(undefined, at(1)).relapses).toBeUndefined();
+    expect(onCaught(resolved(), at(9)).relapses).toBe(1);
+    const again = onCaught({ ...resolved(), relapses: 1 }, at(12));
+    expect(again.relapses).toBe(2);
+    expect(onCaught(again, at(13)).relapses).toBe(2);
+  });
+
   it('times the second fix from the relapse, not from the first catch', () => {
     const relapsed = onCaught(resolved(), at(9));
     const one = onTargetedAnswer(relapsed, true, at(10)).state;

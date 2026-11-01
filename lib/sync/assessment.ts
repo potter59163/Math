@@ -1,3 +1,4 @@
+import { CONFIG } from '@/lib/config';
 import type { StoredAnswer } from '@/lib/core/answerJson';
 import type { Profile } from '@/lib/director/types';
 import type { MatrixItemRef } from '@/lib/topics/matrix/types';
@@ -5,6 +6,17 @@ import type { MatrixItemRef } from '@/lib/topics/matrix/types';
 // The pre-test and the post-test across the wire.
 
 export type AssessmentPhase = 'pre' | 'post';
+
+export type TestBlock = 'already_learning' | 'too_early';
+
+/**
+ * A pre-test after practice or a post-test before any would not measure what it claims. Each can be taken
+ * only once, and there is no teacher screen to reset one that went wrong (RESEARCH §3).
+ */
+export function testBlock(phase: AssessmentPhase, itemsDone: number): TestBlock | null {
+  if (phase === 'pre') return itemsDone > 0 ? 'already_learning' : null;
+  return itemsDone < CONFIG.postTestAfterItems ? 'too_early' : null;
+}
 
 export interface AssessmentScore {
   score: number;

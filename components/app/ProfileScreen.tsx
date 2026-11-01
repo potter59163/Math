@@ -12,7 +12,7 @@ import { lastDays, streakOf } from '@/lib/learner/activity';
 import { skillStateOf } from '@/lib/learner/profile';
 import { mapOf } from '@/lib/learner/progress';
 import { badgesOf, type Badge } from '@/lib/practice/rewards';
-import type { AssessmentStatus } from '@/lib/sync/assessment';
+import { testBlock, type AssessmentStatus } from '@/lib/sync/assessment';
 import { CATALOG } from '@/lib/topics/matrix/misconceptions';
 import { skillById } from '@/lib/topics/matrix/skills';
 import { Avatar } from './Avatar';
@@ -111,7 +111,7 @@ function badgeLabel(badge: Badge): string {
     : fillTokens(th.summary.unitPassed, { n: String(badge.unit) });
 }
 
-function Tests() {
+function Tests({ itemsDone }: { itemsDone: number }) {
   const [status, setStatus] = useState<AssessmentStatus | null>(null);
   useEffect(() => {
     let live = true;
@@ -128,6 +128,7 @@ function Tests() {
 
   const line = (phase: 'pre' | 'post', label: string) => {
     const result = status?.[phase];
+    const blocked = testBlock(phase, itemsDone);
     return (
       <li className="flex min-h-11 items-center justify-between gap-2">
         <span className="font-medium">{label}</span>
@@ -137,6 +138,10 @@ function Tests() {
               score: String(result.score),
               total: String(result.total),
             })}
+          </span>
+        ) : blocked ? (
+          <span className="text-sm text-muted">
+            {fillTokens(th.profile.testBlocked[blocked], { n: String(CONFIG.postTestAfterItems) })}
           </span>
         ) : (
           <LinkButton
@@ -256,7 +261,7 @@ export function ProfileScreen() {
 
       <Section title={th.profile.tests}>
         {mode === 'account' ? (
-          <Tests />
+          <Tests itemsDone={profile.itemsDone} />
         ) : (
           <p className="text-sm text-muted">{th.profile.guestTests}</p>
         )}

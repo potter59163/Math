@@ -41,7 +41,11 @@ export function onCaught(
     fixStreak: 0,
     ...(variant !== undefined && { variant }),
     lastCaughtAtItem: itemNo,
-    ...(relapse && { openedAtItem: itemNo, openedAtMs: at }),
+    ...(relapse && {
+      openedAtItem: itemNo,
+      openedAtMs: at,
+      relapses: (state.relapses ?? 0) + 1,
+    }),
   };
 }
 

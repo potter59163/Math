@@ -15,6 +15,7 @@ export const CONFIG = {
   stuckAfterWrong: 3,
   pathStepsOnMap: 5,
   dailyGoalItems: 10,
+  postTestAfterItems: 10,
   hintL2CountsAsWrong: true,
   llm: { timeoutMs: 4000, maxCandidates: 4, maxCallsPerMinutePerStudent: 20 },
   xp: { firstTry: 10, withL1Hint: 7, withDeepHint: 3, misconceptionResolved: 20 },

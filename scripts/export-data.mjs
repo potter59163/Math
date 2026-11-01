@@ -184,7 +184,7 @@ const wide = profiles.map(({ id, condition, form_pre, form_post }) => {
   const fallbacks = myDecisions.filter(
     (row) => row.fallback_reason && row.fallback_reason !== 'generator',
   ).length;
-  const seconds =
+  const ms =
     mine(attempts).reduce((sum, row) => sum + row.time_ms, 0) +
     mine(views).reduce((sum, row) => sum + row.duration_ms, 0);
   const row = {
@@ -198,12 +198,14 @@ const wide = profiles.map(({ id, condition, form_pre, form_post }) => {
     post_score: post?.score,
     post_total: post?.total,
     post_pct: post ? (100 * post.score) / post.total : null,
-    minutes_in_app: Math.round(seconds / 6000) / 10,
+    units_enabled: profile.student?.units?.length,
+    minutes_in_app: Math.round(ms / 6000) / 10,
     items_done: mine(attempts).length,
     skills_reached: skills.filter((state) => state.attempts?.length > 0).length,
     skills_mastered: skills.filter((state) => state.passed).length,
     scenes_viewed: mine(views).length,
     hints_used: mine(hints).length,
+    reveals: mine(views).filter((row) => row.purpose === 'reveal').length,
     misconceptions_resolved: states.filter((state) => state.status === 'resolved').length,
     median_items_to_resolve: median(states.flatMap((state) => state.itemsToResolve ?? [])),
     llm_decisions: llm,

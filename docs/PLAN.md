@@ -150,8 +150,8 @@
 - [ ] export และ backup ทุกวันที่มีการใช้งาน
 
 ## Phase 9: Analysis (20–21 พ.ย.)
-- [ ] `analysis/analyze.py` + `requirements.txt` ตาม RESEARCH §6 → `analysis/out/report.md` + กราฟ
-- [ ] test ด้วยข้อมูลปลอมที่รู้คำตอบล่วงหน้าก่อนรันกับข้อมูลจริง รวมกรณีค่าว่างใน `pre_Mxx`
+- [x] `analysis/analyze.py` + `requirements.txt` ตาม RESEARCH §6 → `analysis/out/report.md` + กราฟ
+- [x] test ด้วยข้อมูลปลอมที่รู้คำตอบล่วงหน้าก่อนรันกับข้อมูลจริง รวมกรณีค่าว่างใน `pre_Mxx`
 - **Acceptance:** report ใหม่ทั้งหมดได้จากคำสั่งเดียว และตัวเลขตรวจมือได้
 
 ## ✍️ งานส่ง (20–26 พ.ย.): Potter ทำ, Claude Code ช่วยได้

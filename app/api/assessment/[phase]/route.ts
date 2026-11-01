@@ -5,13 +5,14 @@ import { fail, notConfigured, ok, readJson, unauthorized } from '@/lib/server/ht
 import { assessmentSubmit } from '@/lib/server/schemas';
 import { createStore } from '@/lib/server/store';
 import { adminClient, signedInUserId, supabaseConfigured } from '@/lib/server/supabase';
-import type {
-  AssessmentAnswer,
-  AssessmentForm,
-  AssessmentPhase,
-  AssessmentResult,
-  AssessmentScore,
-  AssessmentStatus,
+import {
+  testBlock,
+  type AssessmentAnswer,
+  type AssessmentForm,
+  type AssessmentPhase,
+  type AssessmentResult,
+  type AssessmentScore,
+  type AssessmentStatus,
 } from '@/lib/sync/assessment';
 import {
   assessmentForm,
@@ -20,7 +21,6 @@ import {
   pretestResults,
   scoreOf,
 } from '@/lib/topics/matrix/assessment';
-import type { SkillId } from '@/lib/topics/matrix/skills';
 
 const PHASES: readonly string[] = ['pre', 'post'];
 
@@ -82,10 +82,15 @@ export async function POST(request: Request, { params }: Params) {
   const answers = answersOf(parsed.data.answers as AssessmentAnswer[]);
   if (!answers) return fail(400, 'bad_request');
 
+  const client = adminClient();
+  const store = createStore(client);
+  const row = await store.loadLearner(userId);
+  const blocked = testBlock(taken, row?.profile.itemsDone ?? 0);
+  if (blocked) return fail(409, blocked);
+
   const form = formFor(userId, taken);
   const marked = markAssessment(form, answers);
   const { score, total } = scoreOf(marked);
-  const client = adminClient();
 
   const { data: created, error } = await client
     .from('assessments')
@@ -122,20 +127,10 @@ export async function POST(request: Request, { params }: Params) {
   if (noted.error) console.error(`assessment: ${noted.error.message}`);
 
   let profile: AssessmentResult['profile'] = null;
-  if (taken === 'pre') {
-    const store = createStore(client);
-    const row = await store.loadLearner(userId);
-    if (row) {
-      // A skill already being worked on has better evidence than one test item, so it is left alone.
-      const fresh = Object.fromEntries(
-        Object.entries(pretestResults(marked)).filter(
-          ([skill]) => (row.profile.skills[skill as SkillId]?.attempts.length ?? 0) === 0,
-        ),
-      );
-      const next = applyPretest(row.profile, fresh, { at: parsed.data.startedAt });
-      if (await store.saveLearner(userId, { profile: next, devices: row.devices }, row.rev)) {
-        profile = next;
-      }
+  if (taken === 'pre' && row) {
+    const next = applyPretest(row.profile, pretestResults(marked), { at: parsed.data.startedAt });
+    if (await store.saveLearner(userId, { profile: next, devices: row.devices }, row.rev)) {
+      profile = next;
     }
   }
   return ok<AssessmentResult>({ score, total, profile });

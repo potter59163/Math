@@ -7,6 +7,7 @@ import { CheckIcon } from '@/components/ui/Icons';
 import { th } from '@/lib/content/th';
 import { fillTokens } from '@/lib/core/tokens';
 import type { ThemeId } from '@/lib/learner/types';
+import { testBlock } from '@/lib/sync/assessment';
 import { MAX_DISPLAY_NAME, THEMES, type AvatarId } from '@/lib/sync/types';
 import { AvatarPicker } from './Avatar';
 import { savedCohort } from './Landing';
@@ -80,8 +81,9 @@ export function WelcomeFlow() {
       ...(cohort && { cohort }),
     });
     setSaving(false);
-    if (done) setStep('pretest');
-    else setFailed(true);
+    if (!done) setFailed(true);
+    // Whoever practised as a guest first has no start left for a pre-test to measure, and moves on.
+    else if (!testBlock('pre', learner.getState().profile?.itemsDone ?? 0)) setStep('pretest');
   };
 
   return (

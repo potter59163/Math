@@ -81,6 +81,8 @@ export interface MisconceptionState {
   /** The metrics of SPEC §7.2, from the latest fix. */
   itemsToResolve?: number;
   msToResolve?: number;
+  /** Times it came back after being resolved, which the research report counts (RESEARCH §6). */
+  relapses?: number;
   /** The +20 XP is paid once, and not again after a relapse. */
   rewarded: boolean;
   fromPretest?: boolean;

@@ -9,6 +9,7 @@ import { MatrixInput } from '@/components/input/MatrixInput';
 import { ItemPrompt } from '@/components/learn/ItemPrompt';
 import { LoadingScreen } from '@/components/learn/LoadingScreen';
 import { Button, LinkButton } from '@/components/ui/Button';
+import { CONFIG } from '@/lib/config';
 import { th } from '@/lib/content/th';
 import { storeAnswer } from '@/lib/core/answerJson';
 import { fillTokens } from '@/lib/core/tokens';
@@ -22,12 +23,13 @@ import {
   toggleUndefined,
   type Draft,
 } from '@/lib/practice/draft';
-import type {
-  AssessmentAnswer,
-  AssessmentForm,
-  AssessmentPhase,
-  AssessmentResult,
-  AssessmentScore,
+import {
+  testBlock,
+  type AssessmentAnswer,
+  type AssessmentForm,
+  type AssessmentPhase,
+  type AssessmentResult,
+  type AssessmentScore,
 } from '@/lib/sync/assessment';
 import type { MatrixItem } from '@/lib/topics/matrix/types';
 import { Mascot } from './Mascot';
@@ -218,6 +220,8 @@ export function TestScreen({ phase }: { phase: AssessmentPhase }) {
   const submit = async (all: AssessmentAnswer[], current: MatrixItem[], startedAt: number) => {
     setStage({ name: 'sending', items: current, startedAt });
     try {
+      // The server counts practice from what it has received, so anything still queued goes first.
+      await learner.flush();
       const response = await fetch(`/api/assessment/${phase}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -259,6 +263,23 @@ export function TestScreen({ phase }: { phase: AssessmentPhase }) {
   if (stage.name === 'done') return <Result phase={phase} result={stage.result} />;
 
   if (stage.name === 'intro') {
+    const blocked = testBlock(phase, profile.itemsDone);
+    if (blocked) {
+      return (
+        <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col items-center justify-center gap-4 px-4 text-center">
+          <Mascot />
+          <p>
+            {fillTokens(th.test.blocked[blocked], {
+              n: String(CONFIG.postTestAfterItems),
+              done: String(profile.itemsDone),
+            })}
+          </p>
+          <LinkButton href="/learn" className="w-full">
+            {th.test.goLearn}
+          </LinkButton>
+        </main>
+      );
+    }
     const { refs } = stage.form;
     return (
       <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col items-center gap-4 px-4 py-10 text-center">
