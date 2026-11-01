@@ -51,12 +51,15 @@
 - **Acceptance:** ทำ Unit 3 จบบนมือถือ 360px ได้ · ไม่มี layout shift ตอนขึ้น feedback · Lighthouse mobile performance ≥ 80
 
 ## Phase 3: Scenes (3–6 พ.ย.)
-- [ ] `ScenePlayer` (beats, แตะไปต่อ, เล่นซ้ำ, ข้าม, progress, reduced-motion, ส่ง scene_view event)
-- [ ] Tier A: `row_col_dot`, `dimension_match`, `grid_transform`, `inverse_recipe`, `worked_solution`
-- [ ] ผูก misconception → scene ตาม MISCONCEPTIONS.md (ถ้ายังไม่มี template ให้ fallback เป็น `worked_solution`)
-- [ ] intro ของ Unit 1–5 และ concept scene ทุก ★ skill (SCENES §5, §5.1) พร้อมกติกาคลิปนำ (SPEC §4)
-- [ ] `/dev/scenes` gallery
+- [x] `ScenePlayer` (beats, แตะไปต่อ, เล่นซ้ำ, ข้าม, progress, reduced-motion, ส่ง scene_view event)
+  - scene_view เก็บในเครื่องจนกว่า `/api/event` จะมีใน Phase 5
+- [x] Tier A: `row_col_dot`, `dimension_match`, `grid_transform`, `inverse_recipe`, `worked_solution`
+- [x] ผูก misconception → scene ตาม MISCONCEPTIONS.md (ถ้ายังไม่มี template ให้ fallback เป็น `worked_solution`)
+- [x] intro ของ Unit 1–5 และ concept scene ทุก ★ skill (SCENES §5, §5.1) พร้อมกติกาคลิปนำ (SPEC §4)
+  - การข้ามคลิปจาก pre-test รอ Phase 7
+- [x] `/dev/scenes` gallery
 - [ ] (ถ้ามีเวลา) Tier B: `cell_locator`, `transpose_flip`, `sarrus`
+- [ ] เล่นคลิปบน Android รุ่นล่างจริง 1 เครื่อง (Potter ลองเอง)
 - **Acceptance:**
   - ทุก ★ misconception มี scene ที่เล่นด้วยตัวเลขจาก generator ได้
   - scene แก้ความเข้าใจผิด ≤ 25 วิ

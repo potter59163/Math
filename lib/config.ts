@@ -19,5 +19,10 @@ export const CONFIG = {
   xp: { firstTry: 10, withL1Hint: 7, withDeepHint: 3, misconceptionResolved: 20 },
   // Phase 2 only: moves the level without BKT until the learner model arrives in Phase 4.
   standInRules: { upAfterCorrect: 2, downAfterWrong: 2 },
+  // SCENES §1. A scene's length is the sum of its beats' declared times, not the wait for a tap.
+  scenes: {
+    maxBeatMs: 4000,
+    limitMs: { intro: 40000, concept: 20000, request: 20000, remediate: 25000, reveal: 25000 },
+  },
   generatorVersion: 2,
 } as const;

@@ -9,17 +9,25 @@ import { skillById } from '@/lib/topics/matrix/skills';
 
 interface FeedbackCardProps {
   outcome: AttemptOutcome;
+  /** A clip plays before the next item, so the button says so. */
+  clipFirst?: boolean;
   onNext(): void;
   onShowWorked(): void;
 }
 
-function nextLabel({ allPassed, skillPassed }: AttemptOutcome): string {
+function nextLabel({ allPassed, skillPassed }: AttemptOutcome, clipFirst: boolean): string {
+  if (clipFirst) return th.session.watchScene;
   if (allPassed) return th.session.finish;
   return skillPassed ? th.session.nextSkill : th.session.next;
 }
 
 /** Fills the slot the keypad was in, so nothing above it moves when the answer is sent. */
-export function FeedbackCard({ outcome, onNext, onShowWorked }: FeedbackCardProps) {
+export function FeedbackCard({
+  outcome,
+  clipFirst = false,
+  onNext,
+  onShowWorked,
+}: FeedbackCardProps) {
   const feedback = feedbackFor(outcome.classification);
   const isCorrect = feedback.tone === 'correct';
   const { skillPassed, unitPassed, xp } = outcome;
@@ -72,7 +80,7 @@ export function FeedbackCard({ outcome, onNext, onShowWorked }: FeedbackCardProp
           </Button>
         )}
         <Button ref={next} onClick={onNext}>
-          {nextLabel(outcome)}
+          {nextLabel(outcome, clipFirst)}
         </Button>
       </div>
     </section>

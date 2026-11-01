@@ -4,7 +4,10 @@ import type { LocalStudent, Profile } from './types';
 // Keeps the local profile until Phase 5 moves it to the server. Storage can be missing, full or
 // blocked (private windows), so every access is guarded and the app carries on in memory.
 
-/** Bump when Profile changes shape. An older profile is then ignored rather than misread. */
+/**
+ * Bump when an older Profile could be misread: it is then ignored, and that student's progress on this
+ * device is gone. A new optional field read with a default, like `clipsSeen`, does not need it.
+ */
 export const PROFILE_VERSION = 1;
 
 const CURRENT_KEY = 'qedify:current';

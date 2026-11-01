@@ -101,6 +101,10 @@ export const th = {
     // TODO(review)
     hintTitle: 'ใบ้ขั้นที่ {{level}}',
     // TODO(review)
+    help: 'ไม่เข้าใจ',
+    // TODO(review)
+    watchScene: 'ดูคลิปอธิบาย',
+    // TODO(review)
     undefined: 'หาค่าไม่ได้',
     // TODO(review)
     send: 'ส่ง',
@@ -486,6 +490,198 @@ export const th = {
     swap_yes: 'สลับได้',
     // TODO(review)
     swap_no: 'สลับไม่ได้',
+  },
+
+  // Scene copy. Unmarked wording comes from docs/SCENES.md; a test checks that it still does.
+  scenes: {
+    player: {
+      // TODO(review)
+      next: 'ต่อไป',
+      // TODO(review)
+      replay: 'เล่นซ้ำ',
+      // TODO(review)
+      skip: 'ข้าม',
+      // TODO(review)
+      progress: 'ขั้นที่ {{beat}} จาก {{total}}',
+      done: {
+        // TODO(review)
+        intro: 'เริ่มทำโจทย์',
+        // TODO(review)
+        concept: 'เริ่มทำโจทย์',
+        // TODO(review)
+        remediate: 'ข้อถัดไป',
+        // TODO(review)
+        request: 'กลับไปทำข้อนี้',
+        // TODO(review)
+        reveal: 'ปิด',
+      },
+      // TODO(review)
+      unitTitle: 'หน่วยที่ {{n}}: {{name}}',
+      // TODO(review)
+      student: 'ที่ทำมา',
+      // TODO(review)
+      undefined: 'หาค่าไม่ได้',
+    },
+    rowCol: {
+      // TODO(review)
+      setup: 'หาช่องแถว {{i}} หลัก {{j}} ของ {{result}}',
+      // TODO(review)
+      pick_row: 'ใช้แถวที่ {{i}} ของ {{left}} ทั้งแถว',
+      // TODO(review)
+      pick_col: 'คู่กับหลักที่ {{j}} ของ {{right}} ทั้งหลัก',
+      pair: 'ตัวแรกคู่ตัวแรก ตัวที่สองคู่ตัวที่สอง…',
+      multiply: 'คูณแต่ละคู่',
+      sum: 'บวกผลคูณทั้งหมด',
+      place: 'ได้ค่าของช่องนี้แล้ว',
+      // TODO(review)
+      fill_rest: 'ช่องอื่นก็ทำแบบเดียวกัน',
+      compare: {
+        elementwise: 'ที่ทำมา: เอาตัวเลขตำแหน่งเดียวกันมาคูณกัน',
+        row_row: 'ที่ทำมา: ใช้แถวของ B แต่ต้องใช้หลัก',
+        col_col: 'ที่ทำมา: ใช้หลักของ A แต่ต้องใช้แถว',
+        reversed: 'ที่ทำมา: คูณสลับลำดับกับที่โจทย์ถาม',
+      },
+    },
+    dimension: {
+      // TODO(review)
+      single_blocks: 'เมทริกซ์นี้มีกี่แถว กี่หลัก',
+      // TODO(review)
+      count_rows: 'นับแถวก่อน (แนวนอน) ได้ {{rows}} แถว',
+      // TODO(review)
+      count_cols: 'แล้วนับหลัก (แนวตั้ง) ได้ {{cols}} หลัก',
+      single_result: 'แถวก่อน หลักทีหลัง',
+      // TODO(review)
+      pair_blocks: '{{first}} มีมิติ {{dimsFirst}} และ {{second}} มีมิติ {{dimsSecond}}',
+      add_check: 'มิติต้องเท่ากันทั้งคู่',
+      // TODO(review)
+      add_ok: 'มิติเท่ากัน จึงบวกลบกันได้',
+      // TODO(review)
+      add_no: 'มิติไม่เท่ากัน จึงหาค่าไม่ได้',
+      mult_check: 'ตัวในต้องเท่ากัน',
+      mult_ok: 'ตัวนอกคือมิติของผลคูณ',
+      // TODO(review)
+      mult_no: 'ตัวในไม่เท่ากัน จึงหาค่าไม่ได้',
+    },
+    grid: {
+      unit: 'สี่เหลี่ยมนี้พื้นที่ 1 หน่วย',
+      // TODO(review)
+      example: 'ลองดูเมทริกซ์ 2×2 ตัวอย่างนี้',
+      // TODO(review)
+      apply: 'แปลงด้วย {{name}} รูปจึงเปลี่ยนไป',
+      area: 'พื้นที่ใหม่ = |det| = {{absDet}} เท่า',
+      flip: 'พลิกด้านด้วย',
+      // TODO(review)
+      flatten: 'แปลงด้วย {{name}} แล้วรูปแบนเป็นเส้น',
+      cant_undo: 'พื้นที่เป็น 0 ย้อนกลับไม่ได้ จึงไม่มีอินเวอร์ส',
+      // TODO(review)
+      scale_start: 'det(A) = {{d}} พื้นที่จึงเป็น {{absD}} เท่า',
+      scale_up: 'ขยายทั้งสองแกน แกนละ {{absK}} เท่า',
+      // TODO(review)
+      scale_flip: 'ขยาย {{absK}} เท่า และกลับทิศทั้งสองแกน',
+      // TODO(review)
+      scale_minus_one: 'กลับทิศทั้งสองแกน ขนาดเท่าเดิม',
+      scale_area: 'พื้นที่จึงขยาย {{kPow2}} = {{factor}} เท่า',
+      scale_cube: '3×3 มีสามแกน จึงเป็น {{kPow3}} เท่า',
+      // TODO(review)
+      compose_setup: 'ลองทำสองการแปลงนี้คนละลำดับ',
+      // TODO(review)
+      compose_first: 'ซ้ายทำ {{N}} ก่อน ขวาทำ {{M}} ก่อน',
+      // TODO(review)
+      compose_second: 'แล้วทำอีกตัวต่อ ซ้าย {{M}} ขวา {{N}}',
+      differ: 'ลำดับต่างกัน ผลต่างกัน',
+      // TODO(review)
+      undo_apply: 'แปลงด้วย {{name}}',
+      // TODO(review)
+      undo: 'แล้วแปลงกลับด้วย {{name}}⁻¹',
+      // TODO(review)
+      back: 'กลับมาเป็นรูปเดิม จึงมีอินเวอร์ส',
+      // TODO(review)
+      zero_entry: 'มีเลข 0 ก็ยังมีอินเวอร์สได้ ถ้า det ไม่เป็น 0',
+    },
+    inverse: {
+      show: 'อินเวอร์ส: สลับ → กลับเครื่องหมาย → หาร',
+      // TODO(review)
+      swap: 'สลับ a กับ d',
+      // TODO(review)
+      negate: 'กลับเครื่องหมาย b กับ c แต่อยู่ที่เดิม',
+      // TODO(review)
+      det: 'หา det = ad − bc',
+      // TODO(review)
+      divide: 'หารทุกช่องด้วย det',
+      // TODO(review)
+      check: 'คูณกลับแล้วได้เมทริกซ์เอกลักษณ์',
+      compare: {
+        NO_SWAP: 'ลืมสลับ a กับ d',
+        NO_NEGATE: 'ลืมเปลี่ยนเครื่องหมาย b กับ c',
+        NO_DIVIDE: 'ลืมหารด้วย det',
+        TIMES_DET: 'คูณด้วย det แทนที่จะหาร',
+        TRANSPOSED: 'b กับ c ไม่ต้องสลับที่ แค่เปลี่ยนเครื่องหมาย',
+        RECIPROCAL: 'อินเวอร์สไม่ใช่การกลับเศษทีละตัว',
+      },
+    },
+    // Real-life unit intros (SCENES §5).
+    intro: {
+      shops: {
+        // TODO(review)
+        rows: ['ร้าน ก', 'ร้าน ข'],
+        // TODO(review)
+        cols: ['สมุด', 'ปากกา', 'ยางลบ'],
+      },
+      u1: {
+        // TODO(review)
+        blocks: 'ยอดขายของแต่ละร้าน เขียนเป็นตารางได้',
+        // TODO(review)
+        count_rows: 'แถวบอกว่าเป็นร้านไหน มี {{rows}} แถว',
+        // TODO(review)
+        count_cols: 'หลักบอกว่าเป็นสินค้าอะไร มี {{cols}} หลัก',
+        // TODO(review)
+        result: 'ตารางตัวเลขนี้คือเมทริกซ์มิติ {{dims}}',
+      },
+      u2: {
+        // TODO(review)
+        branch_a: 'สาขาแรกขายได้ตามตาราง A',
+        // TODO(review)
+        branch_b: 'สาขาที่สองขายได้ตามตาราง B',
+        // TODO(review)
+        total: 'ยอดรวมสองสาขา: บวกทีละช่อง',
+        // TODO(review)
+        reorder: 'สั่งของเพิ่มเป็น {{k}} เท่าของ A: คูณทุกช่อง',
+      },
+      u3: {
+        // TODO(review)
+        left: 'จำนวน',
+        // TODO(review)
+        right: 'ราคา',
+        // TODO(review)
+        result: 'รายได้',
+        // TODO(review)
+        setup: 'จำนวนสินค้า × ราคา = รายได้',
+        // TODO(review)
+        pick_row: 'ร้านแรกขายอะไรไปเท่าไร: ใช้แถวที่ {{i}}',
+        // TODO(review)
+        pick_col: 'ราคาต่อชิ้น: ใช้หลักที่ {{j}}',
+        // TODO(review)
+        pair: 'สินค้าแต่ละอย่างคู่กับราคาของมัน',
+        // TODO(review)
+        multiply: 'จำนวน × ราคา ของแต่ละอย่าง',
+        // TODO(review)
+        sum: 'รวมเป็นรายได้ของร้านแรก',
+        // TODO(review)
+        fill_rest: 'ร้านที่สองก็ทำแบบเดียวกัน',
+      },
+      u4: {
+        // TODO(review)
+        apply: 'เมทริกซ์แปลงระนาบ รูปจึงเปลี่ยนไป',
+      },
+      u5: {
+        // TODO(review)
+        unit: 'เมทริกซ์แปลงรูปนี้ได้',
+        // TODO(review)
+        undo: 'อินเวอร์สคือการแปลงย้อนกลับ',
+        // TODO(review)
+        back: 'ได้รูปเดิม A⁻¹ ย้อนสิ่งที่ A ทำ',
+      },
+    },
   },
 
   // Captions of worked-solution steps. Formulas come from the engine as LaTeX.

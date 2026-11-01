@@ -10,9 +10,18 @@ import { Keypad } from '@/components/input/Keypad';
 import { MatrixInput } from '@/components/input/MatrixInput';
 import { Button, LinkButton } from '@/components/ui/Button';
 import { BulbIcon, CheckIcon } from '@/components/ui/Icons';
+import { LazyScene, preloadScenes } from '@/components/scenes/LazyScene';
+import type { SceneView } from '@/components/scenes/playerState';
 import { th } from '@/lib/content/th';
 import { fillTokens } from '@/lib/core/tokens';
 import type { Answer } from '@/lib/core/types';
+import {
+  helpScene,
+  leadClip,
+  markClipSeen,
+  remediationFor,
+  workedSceneFor,
+} from '@/lib/practice/clips';
 import {
   emptyDraft,
   focusBox,
@@ -36,9 +45,11 @@ import {
   submitAttempt,
   type AttemptOutcome,
 } from '@/lib/practice/profile';
+import { sceneLog } from '@/lib/practice/sceneLog';
 import { profileStore } from '@/lib/practice/store';
 import type { HintLevel, Profile } from '@/lib/practice/types';
-import { skillById } from '@/lib/topics/matrix/skills';
+import type { SceneSpec } from '@/lib/topics/matrix/scenes';
+import { skillById, type SkillId } from '@/lib/topics/matrix/skills';
 import type { MatrixItem } from '@/lib/topics/matrix/types';
 import { FeedbackCard } from './FeedbackCard';
 import { HintBubble } from './HintBubble';
@@ -47,7 +58,6 @@ import { preloadFormula } from './LazyFormula';
 import { LoadingScreen } from './LoadingScreen';
 import { StatBadges } from './StatBadges';
 import { useRequiredProfile } from './useProfile';
-import { WorkedSolutionSheet } from './WorkedSolutionSheet';
 
 /**
  * The keypad, the choice buttons and the feedback card all live in this one fixed slot, which is how
@@ -59,10 +69,31 @@ const DIRECTIONS: readonly string[] = ['left', 'right', 'up', 'down'];
 
 interface ClosedItem {
   item: MatrixItem;
+  answer: Answer;
   outcome: AttemptOutcome;
   /** Kept as they were on sending, so the hint on screen does not change under the feedback. */
   hintLevel: HintLevel;
   caught: Profile['caught'];
+}
+
+function sceneTitle(spec: SceneSpec, skill: SkillId): string {
+  const { nameTh, unit } = skillById(skill);
+  if (spec.purpose === 'intro') {
+    return fillTokens(th.scenes.player.unitTitle, { n: String(unit), name: th.units[unit] });
+  }
+  return spec.purpose === 'reveal' ? th.session.workedTitle : nameTh;
+}
+
+/** Stays on this device until /api/event exists in Phase 5. The clock is read here, not in the engine. */
+function logView(profile: Profile, spec: SceneSpec, view: SceneView): void {
+  sceneLog.add({
+    studentId: profile.student.id,
+    decisionId: null,
+    template: spec.template,
+    purpose: spec.purpose,
+    ...view,
+    createdAt: new Date().toISOString(),
+  });
 }
 
 export function SessionScreen() {
@@ -77,10 +108,28 @@ function SessionLoop({ profile }: { profile: Profile }) {
   const ref = profile.current?.ref;
   const open = useMemo(() => (ref ? rebuildItem(ref) : null), [ref]);
   const finished = nextSkill(profile) === null;
+  const lead = useMemo(() => (closed || open ? null : leadClip(profile)), [closed, open, profile]);
 
   useEffect(() => {
-    if (!closed && !open && !finished) profileStore.save(issueItem(profile));
-  }, [closed, open, finished, profile]);
+    if (!closed && !open && !finished && !lead) profileStore.save(issueItem(profile));
+  }, [closed, open, finished, lead, profile]);
+
+  useEffect(preloadScenes, []);
+
+  if (lead) {
+    return (
+      <>
+        <LoadingScreen />
+        <LazyScene
+          modal
+          spec={lead.spec}
+          title={sceneTitle(lead.spec, lead.skill)}
+          onView={(view) => logView(profile, lead.spec, view)}
+          onDone={() => profileStore.save(markClipSeen(profile, lead.skill))}
+        />
+      </>
+    );
+  }
 
   const item = closed?.item ?? open;
   if (!item) return finished ? <AllDone /> : <LoadingScreen />;
@@ -90,6 +139,7 @@ function SessionLoop({ profile }: { profile: Profile }) {
     const result = submitAttempt(profile, open, answer);
     setClosed({
       item: open,
+      answer,
       outcome: result.outcome,
       hintLevel: profile.current?.hintLevel ?? 0,
       caught: profile.caught,
@@ -104,7 +154,8 @@ function SessionLoop({ profile }: { profile: Profile }) {
       return;
     }
     setClosed(null);
-    profileStore.save(issueItem(profile));
+    // A new skill opens with its clip, and the item comes after it.
+    if (!leadClip(profile)) profileStore.save(issueItem(profile));
   };
 
   const askHint = () => {
@@ -148,14 +199,23 @@ interface ItemScreenProps {
   onNext(): void;
 }
 
+interface OpenScene {
+  spec: SceneSpec;
+  /** What follows the clip, if anything besides going back to this screen. */
+  then?: () => void;
+}
+
 function ItemScreen({ item, profile, closed, onSubmit, onHint, onNext }: ItemScreenProps) {
   const [draft, setDraft] = useState(() => emptyDraft(item));
   const [issue, setIssue] = useState<NotReadyReason | null>(null);
-  const [showWorked, setShowWorked] = useState(false);
+  // Lives over this screen, which stays mounted underneath: what was typed so far is still there after.
+  const [scene, setScene] = useState<OpenScene | null>(null);
+  const helpPresses = useRef(0);
   const scroller = useRef<HTMLElement>(null);
   const hintSpot = useRef<HTMLDivElement>(null);
 
   const isClosed = closed !== null;
+  const sceneIsOpen = scene !== null;
   const isChoice = item.kind === 'choice';
   const hintLevel = closed?.hintLevel ?? profile.current?.hintLevel ?? 0;
   const hint =
@@ -172,6 +232,12 @@ function ItemScreen({ item, profile, closed, onSubmit, onHint, onNext }: ItemScr
   const askHint = () => {
     setIssue(null);
     onHint();
+  };
+  const askHelp = () => {
+    const spec = helpScene(item, helpPresses.current);
+    helpPresses.current += 1;
+    setIssue(null);
+    if (spec) setScene({ spec });
   };
 
   const send = () => {
@@ -200,11 +266,11 @@ function ItemScreen({ item, profile, closed, onSubmit, onHint, onNext }: ItemScr
   });
 
   useEffect(() => {
-    if (isClosed) return;
+    if (isClosed || sceneIsOpen) return;
     const listener = (event: KeyboardEvent) => onBoardKey(event);
     window.addEventListener('keydown', listener);
     return () => window.removeEventListener('keydown', listener);
-  }, [isClosed]);
+  }, [isClosed, sceneIsOpen]);
 
   // On a short screen the answer grid can scroll away, so keep the box being typed in visible.
   useEffect(() => {
@@ -217,6 +283,9 @@ function ItemScreen({ item, profile, closed, onSubmit, onHint, onNext }: ItemScr
 
   const skill = skillById(item.ref.skill);
   const answered = closed ? answeredLine(item, draft) : '';
+  const remediation = closed
+    ? remediationFor(item, closed.answer, closed.outcome.classification)
+    : null;
 
   return (
     <div className="flex h-dvh flex-col">
@@ -279,13 +348,23 @@ function ItemScreen({ item, profile, closed, onSubmit, onHint, onNext }: ItemScr
             {closed ? (
               <FeedbackCard
                 outcome={closed.outcome}
-                onNext={onNext}
-                onShowWorked={() => setShowWorked(true)}
+                clipFirst={remediation?.isClip}
+                onNext={() =>
+                  remediation?.isClip
+                    ? setScene({ spec: remediation.spec, then: onNext })
+                    : onNext()
+                }
+                onShowWorked={() =>
+                  setScene({
+                    spec: workedSceneFor(item, closed.answer, closed.outcome.classification),
+                  })
+                }
               />
             ) : isChoice ? (
               <div className="flex h-full flex-col gap-2">
-                <div className="flex">
+                <div className="grid grid-cols-[1fr_auto] gap-2">
                   <HintButton level={hintLevel} onHint={askHint} />
+                  <HelpButton onHelp={askHelp} />
                 </div>
                 <ChoiceButtons
                   options={item.options ?? []}
@@ -299,14 +378,18 @@ function ItemScreen({ item, profile, closed, onSubmit, onHint, onNext }: ItemScr
               </div>
             ) : (
               <div className="flex h-full flex-col gap-2">
-                <div className="flex gap-2">
+                {/* Fixed tracks: the hint label changes length as it steps, and nothing else moves. */}
+                <div
+                  className={`grid gap-2 ${canBeUndefined(item) ? 'grid-cols-[1fr_auto_auto]' : 'grid-cols-[1fr_auto]'}`}
+                >
                   <HintButton level={hintLevel} onHint={askHint} />
-                  {(item.kind === 'matrix_or_undefined' || item.kind === 'dims_or_undefined') && (
+                  <HelpButton onHelp={askHelp} />
+                  {canBeUndefined(item) && (
                     <Button
                       variant={draft.isUndefined ? 'selected' : 'secondary'}
-                      size="md"
+                      size="compact"
                       aria-pressed={draft.isUndefined}
-                      className="flex-1 text-sm"
+                      className="text-sm"
                       onClick={() => edit(toggleUndefined)}
                     >
                       {th.session.undefined}
@@ -325,9 +408,24 @@ function ItemScreen({ item, profile, closed, onSubmit, onHint, onNext }: ItemScr
         </div>
       </div>
 
-      {showWorked && <WorkedSolutionSheet item={item} onClose={() => setShowWorked(false)} />}
+      {scene && (
+        <LazyScene
+          modal
+          spec={scene.spec}
+          title={sceneTitle(scene.spec, item.ref.skill)}
+          onView={(view) => logView(profile, scene.spec, view)}
+          onDone={() => {
+            setScene(null);
+            scene.then?.();
+          }}
+        />
+      )}
     </div>
   );
+}
+
+function canBeUndefined({ kind }: MatrixItem): boolean {
+  return kind === 'matrix_or_undefined' || kind === 'dims_or_undefined';
 }
 
 function LevelDots({ level, max }: { level: number; max: number }) {
@@ -350,14 +448,23 @@ function HintButton({ level, onHint }: { level: HintLevel; onHint(): void }) {
   return (
     <Button
       variant="secondary"
-      size="md"
+      size="compact"
       disabled={level === 3}
-      className="flex-1 text-sm"
+      className="text-sm"
       onClick={onHint}
     >
-      <BulbIcon className="size-4 text-brand" />
+      <BulbIcon className="size-4 shrink-0 text-brand" />
       {label}
       {level > 0 && <span className="font-matrix text-muted tabular-nums">{level}/3</span>}
+    </Button>
+  );
+}
+
+/** Plays the skill's concept scene on another example, so it never gives this item away (SPEC §4). */
+function HelpButton({ onHelp }: { onHelp(): void }) {
+  return (
+    <Button variant="secondary" size="compact" className="text-sm" onClick={onHelp}>
+      {th.session.help}
     </Button>
   );
 }

@@ -50,4 +50,6 @@ export interface Profile {
   caught: Partial<Record<MisconceptionId, number>>;
   /** Survives a reload, so refreshing never gives new numbers or a second try. */
   current?: OpenItem;
+  /** Skills whose lead clip has played or been skipped (SPEC §4). Missing on older saved profiles. */
+  clipsSeen?: SkillId[];
 }

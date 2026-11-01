@@ -168,9 +168,10 @@ pilot เดิมเป็นฟิสิกส์ นักเรียน n=3
 
 **`regenerate(itemRef)`** ต้องได้ item เดิมทุกครั้ง server ใช้ฟังก์ชันนี้ตรวจซ้ำก่อนบันทึก
 
-**seed ของโจทย์:** `deriveSeed(studentId, counter)` เป็น hash แบบ pure โดย counter อยู่ใน profile และเพิ่มทุกครั้งที่ออกโจทย์หรือตัวอย่างใหม่
+**seed ของโจทย์:** `deriveSeed(studentId, counter)` เป็น hash แบบ pure โดย counter อยู่ใน profile และเพิ่มทุกครั้งที่ออกโจทย์ใหม่
 - นักเรียนแต่ละคนจึงได้ตัวเลขของตัวเอง ลอกกันยาก และยังสร้างซ้ำได้จาก `ItemRef`
 - ยกเว้นฟอร์ม A/B ของข้อสอบที่ใช้ seed คงที่ เพื่อให้ทุกคนสอบชุดเดียวกัน
+- ตัวอย่างในคลิปใช้ seed แยกต่างหากและไม่แตะ counter ตัวเลขของโจทย์จริงจึงไม่ขึ้นกับจำนวนคลิปที่เปิดดู
 
 ---
 
@@ -189,6 +190,7 @@ P(L) คือโอกาสที่นักเรียนรู้ skill �
 **การนับ:**
 - ใช้เฉพาะ attempt แรกของแต่ละข้อ
 - ใช้ hint ตั้งแต่ L2 ขึ้นไป = นับเป็นตอบผิด (ปุ่ม "ดูวิธีทำ" มีหลังตอบผิดเท่านั้นตาม §4 จึงไม่มีกรณีดูก่อนส่ง)
+- กด "ไม่เข้าใจ" ไม่มีผลกับการนับ เพราะคลิปใช้ตัวอย่างอื่น ไม่เฉลยข้อนี้ และยังบันทึกไว้ใน `scene_views` (purpose `request`) ให้แยกวิเคราะห์ได้
 
 **ตั้งค่าจาก pre-test:** P(L₀) ของ skill =
 - 0.60 ถ้าข้อของ skill นั้นถูก (ถ้ามีหลายข้อ เช่น `mult_defined` ต้องถูกทุกข้อ)
@@ -296,6 +298,7 @@ resolved ──เจออีก──▶ active (relapse)
   - ตอบผิด = 0
   - แก้ misconception ได้ = +20
 - **combo:** นับข้อถูกติดกัน ข้อที่ถูกหลังใช้ hint L2–L3 ไม่เพิ่มและไม่รีเซ็ต combo
+- **ปุ่ม "ไม่เข้าใจ":** ไม่มีผลกับ XP และ combo
 - **badge:** ผ่าน unit และ "แก้ความเข้าใจผิดสำเร็จ"
 - **ไม่มี leaderboard:** หลีกเลี่ยงการเทียบกันในห้อง และครูก็ไม่เห็นอันดับ XP
 
@@ -412,6 +415,10 @@ export const CONFIG = {
   hintL2CountsAsWrong: true,
   llm: { timeoutMs: 4000, maxCandidates: 4, maxCallsPerMinutePerStudent: 20 },
   xp: { firstTry: 10, withL1Hint: 7, withDeepHint: 3, misconceptionResolved: 20 },
+  scenes: {
+    maxBeatMs: 4000,
+    limitMs: { intro: 40000, concept: 20000, request: 20000, remediate: 25000, reveal: 25000 },
+  },
   generatorVersion: 2,
 } as const;
 ```

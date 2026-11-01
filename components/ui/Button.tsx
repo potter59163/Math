@@ -2,10 +2,10 @@ import Link from 'next/link';
 import type { ComponentProps } from 'react';
 
 type Variant = 'primary' | 'secondary' | 'selected' | 'quiet';
-type Size = 'md' | 'lg';
+type Size = 'compact' | 'md' | 'lg';
 
 const BASE =
-  'inline-flex touch-manipulation items-center justify-center gap-2 rounded-xl px-4 text-center font-semibold select-none transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-50';
+  'inline-flex touch-manipulation items-center justify-center gap-2 rounded-xl text-center font-semibold select-none transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-50';
 
 const VARIANTS: Record<Variant, string> = {
   primary: 'bg-brand text-on-brand hover:bg-brand-strong active:bg-brand-strong',
@@ -14,8 +14,12 @@ const VARIANTS: Record<Variant, string> = {
   quiet: 'text-muted hover:text-ink',
 };
 
-/** Both sizes clear the 44px touch target. */
-const SIZES: Record<Size, string> = { md: 'min-h-11', lg: 'min-h-12' };
+/** All sizes clear the 44px touch target. `compact` fits three buttons across a 360px screen. */
+const SIZES: Record<Size, string> = {
+  compact: 'min-h-11 px-3',
+  md: 'min-h-11 px-4',
+  lg: 'min-h-12 px-4',
+};
 
 interface Look {
   variant?: Variant;

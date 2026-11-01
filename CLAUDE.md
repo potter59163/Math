@@ -44,10 +44,10 @@ app/dev/        engine · scenes · director  (dev-only playgrounds)
 app/api/        join · attempt · hint · event · help · assessment · teacher · export
 lib/config.ts   all tunable numbers (BKT, thresholds, timeouts, XP, names)
 lib/core/       rational · prng · types · parse · validate · classify · tokens (topic-agnostic)
-lib/topics/matrix/  ops · skills · generators/ · misconceptions · worked · assessment
+lib/topics/matrix/  ops · skills · generators/ · misconceptions · worked · assessment · scenes/
 lib/learner/    bkt · profile · misconceptionStatus
 lib/director/   candidates · rules · fixedPath · llm/ · prompt · schema · validate
-lib/practice/   draft · keyboard · hints · feedback · rewards · and the Phase 2 stand-ins path · profile · store · join
+lib/practice/   draft · keyboard · hints · feedback · rewards · and the stand-ins path · profile · store · join · clips · sceneLog
 lib/content/th.ts   Thai copy: prompts, feedback, hints, captions
 lib/sim/        simulated learners (tests + `npm run sim`)
 lib/db/         Supabase server client + queries

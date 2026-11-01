@@ -82,6 +82,15 @@ export function ArrowRightIcon(props: IconProps) {
   );
 }
 
+export function ReplayIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4 12a8 8 0 1 0 2.5-5.8L4 8.5" />
+      <path d="M4 4v4.5h4.5" />
+    </Icon>
+  );
+}
+
 export function NoticeIcon(props: IconProps) {
   return (
     <Icon {...props}>

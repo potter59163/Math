@@ -15,6 +15,7 @@ animation ที่ใช้ตัวเลขของนักเรียน�
   - intro ของ unit ≤ 40 วินาที
   - concept scene ≤ 20 วินาที
   - จบ scene แล้วเจอโจทย์ทันที
+  - นับจากผลรวมเวลาต่อ beat ที่ template ประกาศไว้ (แอนิเมชันกับเวลาค้างให้อ่าน) ไม่นับเวลารอแตะ ส่วน `duration_ms` ใน `scene_views` เก็บเวลาจริงรวมเวลารอแตะ
 
 ## 2. Types
 ```ts
@@ -27,13 +28,15 @@ interface SceneSpec<T extends TemplateId = TemplateId> {
   params: TemplateParams[T];                      // มาจาก engine: matrices, cell, mode, variant
   beats: BeatId<T>[];                             // ลำดับที่จะเล่น (ค่าเริ่มต้นมาจาก template)
   captions: Partial<Record<BeatId<T>, string>>;   // ข้อความไทยที่แทนค่า token แล้ว
+  beatMs: Partial<Record<BeatId<T>, number>>;     // เวลาที่ประกาศของแต่ละ beat (≤ 4 วินาที)
   compare?: { studentAnswer: Answer; variant?: string };
+  flagged?: BeatId<T>;                            // beat ที่ compare ชี้ เห็นบน progress dots
   purpose: 'intro' | 'concept' | 'remediate' | 'request' | 'reveal';
 }
 ```
 - template component ต้องเป็น pure ต่อ `SceneSpec` (render เหมือนเดิมทุกครั้ง)
 - เปลี่ยน beat ด้วยแตะหรือปุ่ม "ต่อไป"
-- `ScenePlayer` มีปุ่ม เล่นซ้ำ / ข้าม และ progress dots แล้วส่ง `scene_view` event (beats_seen, replays, skipped, duration)
+- `ScenePlayer` มีปุ่ม เล่นซ้ำ (เริ่มใหม่จาก beat แรก) / ข้าม และ progress dots แล้วส่ง `scene_view` event (beats_seen, replays, skipped, duration)
 - `prefers-reduced-motion`: แสดงภาพนิ่งของแต่ละ beat แทนการเคลื่อนไหว
 
 ## 3. Tier A (ต้องมีก่อนทดลอง)
@@ -82,6 +85,7 @@ interface SceneSpec<T extends TemplateId = TemplateId> {
     - ถ้าคำนวณไม่ได้ แสดง "หาค่าไม่ได้"
   - โหมด single: ลูกศรนับแถวก่อน (แนวนอน) แล้วนับหลัก (แนวตั้ง) → "{{dimsA}}"
 - **caption:** "ตัวในต้องเท่ากัน" · "ตัวนอกคือมิติของผลคูณ" · "แถวก่อน หลักทีหลัง"
+- **`studentDims`:** ขีดฆ่าคำตอบของนักเรียนไว้ใน beat `result` รวมถึงกรณีตอบ "หาค่าไม่ได้" (SAME_DIMS) และตอบตัวเลขด้านนอกโดยไม่เช็กตัวใน (RESULT_OUTER)
 
 ### 3.3 `grid_transform`: เมทริกซ์ 2×2 คือการแปลงระนาบ
 - **ใช้กับ:** M11 (choice) · M14 · M18 · M19 · M22 · intro ของ Unit 4–5
@@ -96,7 +100,10 @@ interface SceneSpec<T extends TemplateId = TemplateId> {
     - `area` "พื้นที่ใหม่ = |det| = {{absDet}} เท่า"
     - (det < 0) `flip` "พลิกด้านด้วย"
   - **det_zero:** `apply` แล้วแบนเป็นเส้น → `cant_undo` "พื้นที่เป็น 0 ย้อนกลับไม่ได้ จึงไม่มีอินเวอร์ส"
-  - **scale_k:** `apply` M แล้วต่อด้วย kM → "ขยายทั้งสองแกน {{k}} เท่า พื้นที่ขยาย {{k}}² เท่า (3×3 จะเป็นยกกำลังสาม)"
+  - **scale_k:** `apply` M แล้วต่อด้วย kM แบ่ง caption เป็น beat ละบรรทัด
+    - `scale` "ขยายทั้งสองแกน แกนละ {{absK}} เท่า"
+    - `area` "พื้นที่จึงขยาย {{kPow2}} = {{factor}} เท่า" เมื่อ k ติดลบให้เขียน (−3)² ไม่ใช่ −3²
+    - (n = 3) `cube` "3×3 มีสามแกน จึงเป็น {{kPow3}} เท่า"
   - **compose:** สองกรอบคู่กัน
     - ซ้าย: ทำ N ก่อนแล้ว M (= MN)
     - ขวา: ทำ M ก่อนแล้ว N (= NM)
@@ -107,13 +114,17 @@ interface SceneSpec<T extends TemplateId = TemplateId> {
   - det_area: M=[[2,1],[0,1]] det 2 (ระหว่าง interpolate det > 0 ตลอด)
   - det_zero: [[2,4],[1,2]]
   - compose: R=[[0,−1],[1,0]], S=[[2,0],[0,1]] → RS=[[0,−1],[2,0]] ≠ SR=[[0,−2],[1,0]]
+- **ข้อที่ไม่มีเมทริกซ์ 2×2 ให้วาด ใช้ตัวอย่าง 2×2 จาก engine แล้วบอกใน caption แรกว่าเป็นตัวอย่าง:**
+  - M14 (`det_scaled`): 2×2 ที่ det เท่ากับ d ของข้อ ใช้ k ของข้อ และถ้า n = 3 มี beat `cube` ปิดท้าย
+  - M18 และ M19 ที่ L3 (3×3): ตัวอย่างพี่น้องจาก generator `invertible` (M18 ใช้ L1, M19 ใช้ L2)
+  - M11 ข้อ choice: คู่เล็กจากชุดการแปลงพื้นฐาน เช่น หมุน ยืด เฉือน ที่ engine ตรวจว่า AB ≠ BA เพราะคู่ของ generator ผลคูณถึงราว 72 จนอ่านบนตารางไม่ออก
 - **ข้อควรรู้:** การมองเมทริกซ์เป็นการแปลงเกินหลักสูตรที่สอนกันทั่วไป ใช้เป็นภาพช่วยให้เข้าใจเท่านั้น ส่วนโจทย์ยังอิงหลักสูตร
 
 ### 3.4 `inverse_recipe`: สลับ → กลับเครื่องหมาย → หาร
 - **ใช้กับ:** M20 · M21
 - **params:** `{ A (2×2), variant? }`
 - **beats:**
-  1. `show` "อินเวอร์สของ 2×2 มี 3 ขั้น: สลับ → กลับเครื่องหมาย → หาร"
+  1. `show` "อินเวอร์ส: สลับ → กลับเครื่องหมาย → หาร"
   2. `swap`: a กับ d สลับที่ (animate)
   3. `negate`: b กับ c เปลี่ยนเครื่องหมาย อยู่ที่เดิม
   4. `det`: det = ad − bc = {{det}}
@@ -166,7 +177,7 @@ interface SceneSpec<T extends TemplateId = TemplateId> {
 - **U5:** อินเวอร์ส = ย้อนการแปลง ด้วย `grid_transform` undo (ธีม "ถอดรหัส" ใช้เป็นโจทย์ประยุกต์ข้อสุดท้ายได้ 1 ข้อ)
 
 ### 5.1 คลิปนำของแต่ละ skill (concept scene)
-เล่นก่อนข้อแรกของ skill ใหม่ (SPEC §4) และเมื่อกดปุ่ม "ไม่เข้าใจ" ตัวอย่างมาจาก generator ด้วย seed ใหม่ จึงไม่ใช่ข้อที่กำลังทำ ถ้า template ยังไม่มี ให้ใช้ `worked_solution`
+เล่นก่อนข้อแรกของ skill ใหม่ (SPEC §4) และเมื่อกดปุ่ม "ไม่เข้าใจ" ตัวอย่างมาจาก generator ด้วย seed ใหม่ที่ไม่แตะ counter (SPEC §6) และต้องไม่ใช่ข้อที่กำลังทำหรือมีคำตอบเดียวกับข้อนั้น ถ้า template ยังไม่มี ให้ใช้ `worked_solution`
 
 | skill | template | โหมด |
 |---|---|---|
@@ -187,8 +198,8 @@ interface SceneSpec<T extends TemplateId = TemplateId> {
 **ความยาว:** ถ้ารวมแล้วเกิน 20 วินาที ให้ลดเวลาต่อ beat หรือตัด beat ที่ไม่จำเป็น เช่น `fill_rest`
 
 ## 6. Implementation notes
-- **การวาด:** SVG + `motion` และใช้ layout animation ตอนตัวเลขย้ายช่อง ต้องลื่นบน Android รุ่นล่าง: animate แค่ transform/opacity
-- **`MatrixView`:** ใช้ตัวเดียวกันทั้งใน scene และในโจทย์ ให้หน้าตาเหมือนกัน
+- **การวาด:** SVG + `motion` ตัวเลขย้ายช่องด้วย transform ที่รู้ตำแหน่งปลายทางอยู่แล้ว ต้องลื่นบน Android รุ่นล่าง: animate แค่ transform/opacity
+- **`MatrixView`:** เป็น HTML จึงใช้ในโจทย์และ `worked_solution` ส่วน template ที่วาดบน SVG ใช้ตัววาดใน `components/scenes/svg.tsx` ที่หน้าตาเหมือนกัน (ฟอนต์ วงเล็บ เศษส่วนซ้อน)
 - **`/dev/scenes`:** gallery ที่เลือก template, mode, variant และตัวเลขได้ ใช้ตรวจงานและอัดวิดีโอ
 - **ทดสอบ:**
   - ทุก ★ misconception ต้องมี scene ที่เล่นได้ด้วยตัวเลขจาก generator (snapshot ของ SceneSpec)

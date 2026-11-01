@@ -44,9 +44,11 @@ export function NumberText({ value }: { value: Rational }) {
 interface MatrixViewProps {
   value: Matrix;
   label?: string;
+  /** Extra classes on every cell, for a scene that points at all of them. */
+  cellClassName?: string;
 }
 
-export function MatrixView({ value, label }: MatrixViewProps) {
+export function MatrixView({ value, label, cellClassName = '' }: MatrixViewProps) {
   return (
     <figure className="inline-flex items-center gap-1.5 font-matrix leading-snug tabular-nums">
       {label && <figcaption className="font-semibold">{label} =</figcaption>}
@@ -56,7 +58,7 @@ export function MatrixView({ value, label }: MatrixViewProps) {
             {value.map((row, i) => (
               <tr key={i}>
                 {row.map((cell, j) => (
-                  <td key={j} className="py-0.5 text-center">
+                  <td key={j} className={`py-0.5 text-center ${cellClassName}`}>
                     <NumberText value={cell} />
                   </td>
                 ))}
