@@ -108,7 +108,9 @@ export function commitAttempt(
   // The control group sees no tutor (AI_DIRECTOR §3.1).
   const message =
     tutor?.message ??
-    (mode === 'fixed' ? undefined : ruleMessage(after, attempt.item, attempt.answer, outcome, chosen));
+    (mode === 'fixed'
+      ? undefined
+      : ruleMessage(after, attempt.item, attempt.answer, outcome, chosen));
   const committed = commitTurn(after, {
     trigger: 'after_attempt',
     mode,

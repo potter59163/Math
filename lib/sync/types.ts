@@ -11,6 +11,16 @@ export const THEMES: readonly ThemeId[] = ['shop', 'game', 'sport', 'music', 'fo
 
 export const MAX_DISPLAY_NAME = 20;
 
+export const MAX_COHORT = 32;
+/** A trial's label is compared and never shown, so it refuses only what could not be stored. */
+export const COHORT_PATTERN = /^\P{Cc}*$/u;
+
+/** What a link's ?cohort= gives. A label that cannot be kept is dropped: the student is just not grouped. */
+export function cohortFromLink(raw: string | null): string | null {
+  const cohort = raw?.trim();
+  return cohort && cohort.length <= MAX_COHORT && COHORT_PATTERN.test(cohort) ? cohort : null;
+}
+
 /** Everything about a student that is theirs to change. Their email is never sent to the browser. */
 export interface Account {
   displayName: string;

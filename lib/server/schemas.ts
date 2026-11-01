@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { SKILLS } from '@/lib/topics/matrix/skills';
-import { AVATARS, MAX_DISPLAY_NAME, THEMES } from '@/lib/sync/types';
+import { AVATARS, COHORT_PATTERN, MAX_COHORT, MAX_DISPLAY_NAME, THEMES } from '@/lib/sync/types';
 
 // Every request body is checked here before anything reads it (SPEC §15). Sizes are capped so that a
 // forged request cannot make the server do a lot of work.
@@ -116,12 +116,7 @@ export const welcomeRequest = z.strictObject({
   avatar,
   theme,
   consent: z.literal(true),
-  cohort: z
-    .string()
-    .trim()
-    .max(32)
-    .regex(/^[A-Za-z0-9_-]*$/)
-    .optional(),
+  cohort: z.string().trim().max(MAX_COHORT).regex(COHORT_PATTERN).optional(),
   // Only its progress is read, and only once, by `importGuestProfile`.
   guestProfile: z.looseObject({}).optional(),
 });

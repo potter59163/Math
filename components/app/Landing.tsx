@@ -7,6 +7,7 @@ import { LinkButton } from '@/components/ui/Button';
 import { MatrixView } from '@/components/ui/MatrixView';
 import { CONFIG } from '@/lib/config';
 import { th } from '@/lib/content/th';
+import { cohortFromLink } from '@/lib/sync/types';
 import { matrix } from '@/lib/topics/matrix/ops';
 import { Mascot } from './Mascot';
 import { GoogleButton } from './SignInButtons';
@@ -22,7 +23,7 @@ const COHORT_KEY = 'math:cohort';
 
 /** A trial's link is /?cohort=ABC. Kept until the first sign-in comes back from Google. */
 function rememberCohort() {
-  const cohort = new URLSearchParams(window.location.search).get('cohort');
+  const cohort = cohortFromLink(new URLSearchParams(window.location.search).get('cohort'));
   if (!cohort) return;
   try {
     window.localStorage.setItem(COHORT_KEY, cohort);
