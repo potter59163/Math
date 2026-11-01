@@ -11,8 +11,8 @@ import type { LocalStudent } from '@/lib/learner/types';
  */
 export const PROFILE_VERSION = 2;
 
-const CURRENT_KEY = 'qedify:current';
-const profileKey = (id: string) => `qedify:profile:${id}`;
+const CURRENT_KEY = 'math:current';
+const profileKey = (id: string) => `math:profile:${id}`;
 
 export type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 

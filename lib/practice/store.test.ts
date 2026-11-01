@@ -91,15 +91,15 @@ describe('createProfileStore', () => {
   });
 
   it('ignores corrupted data', () => {
-    storage.data.set('qedify:current', 'ABC123-1');
-    storage.data.set('qedify:profile:ABC123-1', '{not json');
+    storage.data.set('math:current', 'ABC123-1');
+    storage.data.set('math:profile:ABC123-1', '{not json');
     expect(createProfileStore(() => storage).get()).toBeNull();
   });
 
   it('ignores a profile written by another version', () => {
     const store = createProfileStore(() => storage);
     store.open(ADA);
-    const key = 'qedify:profile:ABC123-1';
+    const key = 'math:profile:ABC123-1';
     const stored = JSON.parse(storage.data.get(key)!);
     expect(stored.v).toBe(PROFILE_VERSION);
     storage.data.set(key, JSON.stringify({ ...stored, v: PROFILE_VERSION + 1 }));

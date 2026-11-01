@@ -1,9 +1,9 @@
-# QEDify: Matrix
+# Upper-secondary maths app (name not decided)
 
-Adaptive matrix-learning web app for Thai upper-secondary students (ม.5–6).
+Adaptive web app that teaches maths to Thai upper-secondary students. Matrices (ม.5–6) are the first topic and the only one in this MVP.
 Duolingo-style path: short animation → exercise → diagnosis of *why* an answer is wrong (misconception) → AI tutor "คิว" picks each student's next step.
 Successor of QEDify (physics). Built for the Chula Innovative Award 2027 (submission 27 Nov 2026) and a real classroom trial (13–19 Nov 2026).
-**Stability beats features.** App name and tutor name are placeholders in `lib/config.ts`.
+**Stability beats features.** App name and tutor name are placeholders in `lib/config.ts`. The app's real name is Potter's to choose. Do not make one up, and do not use "QEDify", which clashes with other work.
 
 ## Docs — read only what the current task needs
 - `docs/PLAN.md`: phases, acceptance criteria, cut order. Tick checkboxes when done.

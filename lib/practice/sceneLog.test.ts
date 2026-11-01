@@ -30,7 +30,7 @@ describe('createSceneLog', () => {
     const storage = memoryStorage();
     createSceneLog(() => storage).add(VIEW);
     expect(createSceneLog(() => storage).all('ABC123-1')).toEqual([VIEW]);
-    expect([...storage.data.keys()]).toEqual(['qedify:scene-views:ABC123-1']);
+    expect([...storage.data.keys()]).toEqual(['math:scene-views:ABC123-1']);
   });
 
   it('keeps each student apart, and leaves the profile alone', () => {
@@ -41,7 +41,7 @@ describe('createSceneLog', () => {
     expect(log.all('ABC123-1')).toHaveLength(1);
     expect(log.all('ABC123-2')).toHaveLength(1);
     expect(log.all('ABC123-3')).toEqual([]);
-    expect([...storage.data.keys()].some((key) => key.startsWith('qedify:profile'))).toBe(false);
+    expect([...storage.data.keys()].some((key) => key.startsWith('math:profile'))).toBe(false);
   });
 
   it('keeps only the newest views, so storage cannot fill up', () => {
@@ -56,7 +56,7 @@ describe('createSceneLog', () => {
 
   it('ignores corrupted data', () => {
     const storage = memoryStorage();
-    storage.data.set('qedify:scene-views:ABC123-1', '{not json');
+    storage.data.set('math:scene-views:ABC123-1', '{not json');
     const log = createSceneLog(() => storage);
     expect(log.all('ABC123-1')).toEqual([]);
     log.add(VIEW);

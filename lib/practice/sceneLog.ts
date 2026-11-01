@@ -21,7 +21,7 @@ export interface SceneViewRecord {
 /** A class period plays far fewer than this. The newest views stay. */
 export const MAX_SCENE_VIEWS = 200;
 
-const logKey = (studentId: string) => `qedify:scene-views:${studentId}`;
+const logKey = (studentId: string) => `math:scene-views:${studentId}`;
 
 export function createSceneLog(getStorage: () => StorageLike) {
   const read = (storage: StorageLike, studentId: string): SceneViewRecord[] => {
