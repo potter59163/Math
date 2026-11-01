@@ -59,7 +59,7 @@
   - การข้ามคลิปจาก pre-test รอ Phase 7
 - [x] `/dev/scenes` gallery
 - [x] (ถ้ามีเวลา) Tier B: `cell_locator`, `transpose_flip`, `sarrus`
-- [ ] เล่นคลิปบน Android รุ่นล่างจริง 1 เครื่อง (Potter ลองเอง)
+- [x] เล่นคลิปบน Android รุ่นล่างจริง 1 เครื่อง (Potter ลองเอง)
 - **Acceptance:**
   - ทุก ★ misconception มี scene ที่เล่นด้วยตัวเลขจาก generator ได้
   - scene แก้ความเข้าใจผิด ≤ 25 วิ
