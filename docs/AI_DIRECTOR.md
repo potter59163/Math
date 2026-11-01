@@ -155,6 +155,12 @@ export const LlmDecision = z.object({
 | `{{k}}` | สเกลาร์ในโจทย์ | ไม่ |
 | `{{correctCell}}`, `{{correctAnswer}}`, `{{det}}` | ค่าที่ถูก | **ใช่** (ใช้ได้เฉพาะเมื่อ revealAllowed) |
 
+**หมายเหตุ:** บาง form มี token ที่เป็นคำถามของข้อนั้นเอง จึงนับเป็นเฉลยเฉพาะใน form นั้น และใช้ได้เมื่อ revealAllowed เท่านั้น
+- `{{dimsA}}` บน `dim` เพราะข้อถามมิติของ A
+- `{{aCell}}` บน `index` เพราะข้อถามค่าของ aᵢⱼ
+
+ส่วน `{{i}}`, `{{j}}` บน `index`, `{{dimsA}}`, `{{dimsB}}` บน `mult_defined` และ `{{k}}` บน `det_scaled` อาจตรงกับคำตอบบางข้อโดยบังเอิญ แต่โจทย์บอกค่าเหล่านี้อยู่แล้ว จึงไม่นับเป็นเฉลย
+
 ### 4.5 Latency และ fallback
 1. client จัดประเภทคำตอบเองแล้วแสดง `FeedbackCard` ทันที (< 100 ms)
 2. client ส่ง `POST /api/attempt`

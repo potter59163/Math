@@ -1,11 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { Rational } from '@/lib/core/rational';
-import type { Answer } from '@/lib/core/types';
-import { misconceptionAnswer } from '@/lib/sim/answers';
+import type { Answer, Level } from '@/lib/core/types';
+import { misconceptionAnswer, slipAnswer } from '@/lib/sim/answers';
 import { assemble, generate } from '@/lib/topics/matrix/generators';
 import { matrix } from '@/lib/topics/matrix/ops';
 import { remediationScene } from '@/lib/topics/matrix/scenes';
-import { allowedTokens, fillStudentText, REVEALING_TOKENS, resolveTokens } from './tokens';
+import { SKILLS, levelsOf, type SkillId } from '@/lib/topics/matrix/skills';
+import type { FormId } from '@/lib/topics/matrix/types';
+import {
+  allowedTokens,
+  fillStudentText,
+  REVEALING_TOKENS,
+  resolveTokens,
+  type TokenName,
+} from './tokens';
 
 const A = matrix([
   [2, 1],
@@ -69,8 +77,9 @@ describe('resolveTokens (AI_DIRECTOR §4.4)', () => {
       j: 3,
     });
     const values = resolveTokens(item, undefined, { revealAllowed: false });
-    expect(values).toMatchObject({ i: '2', j: '3', aCell: '4', dimsA: '3×3' });
+    expect(values).toMatchObject({ i: '2', j: '3', dimsA: '3×3' });
     expect(values.bCell).toBeUndefined();
+    expect(resolveTokens(item, undefined, { revealAllowed: true }).aCell).toBe('4');
   });
 
   it('gives k with a typographic minus', () => {
@@ -112,6 +121,83 @@ describe('resolveTokens (AI_DIRECTOR §4.4)', () => {
     const values = resolveTokens(item, undefined, { revealAllowed: false });
     // AB − A∘B = [[2,5],[5,15]], widest at row 2 column 2.
     expect(values).toMatchObject({ i: '2', j: '2', aCell: '4', bCell: '0' });
+  });
+});
+
+describe('a token that is the question on its form (AI_DIRECTOR §4.4)', () => {
+  const OPEN = { revealAllowed: false };
+  const CLOSED = { revealAllowed: true };
+  const SEEDS = 100;
+  const COMBOS = SKILLS.flatMap(({ id }) =>
+    levelsOf(id).map((level): [SkillId, Level] => [id, level]),
+  );
+
+  /** Written out here and not read from the code, so a change to either one fails this test. */
+  const ANSWER_ON_FORM: Partial<Record<FormId, TokenName>> = { dim: 'dimsA', index: 'aCell' };
+
+  it.each(COMBOS)('%s L%i: waits for the item to close', (skill, difficulty) => {
+    for (let seed = 0; seed < SEEDS; seed += 1) {
+      const item = generate({ skill, difficulty, seed });
+      const token = ANSWER_ON_FORM[item.data.form];
+      if (!token) continue;
+      const answer = slipAnswer(item);
+      const open = resolveTokens(item, undefined, OPEN);
+      expect(open[token]).toBeUndefined();
+      expect(resolveTokens(item, answer, OPEN)[token]).toBeUndefined();
+      expect(allowedTokens(item, undefined, OPEN)).not.toContain(token);
+      expect(() => fillStudentText(`{{${token}}}`, item, undefined, OPEN)).toThrow(token);
+
+      const closed = resolveTokens(item, answer, CLOSED);
+      expect(closed[token]).toBe(closed.correctAnswer);
+      expect(allowedTokens(item, answer, CLOSED)).toContain(token);
+      expect(fillStudentText(`{{${token}}}`, item, answer, CLOSED)).toBe(closed.correctAnswer);
+    }
+  });
+
+  it.each(COMBOS)('%s L%i: holds back nothing else', (skill, difficulty) => {
+    for (let seed = 0; seed < SEEDS; seed += 1) {
+      const item = generate({ skill, difficulty, seed });
+      const open = allowedTokens(item, undefined, OPEN);
+      const closed = allowedTokens(item, undefined, CLOSED);
+      const heldBack = closed.filter((token) => !open.includes(token));
+      const expected = [...REVEALING_TOKENS, ANSWER_ON_FORM[item.data.form]];
+      expect(heldBack.filter((token) => !expected.includes(token))).toEqual([]);
+    }
+  });
+
+  it('leaves no token that is the answer on every item while the item is open', () => {
+    for (const [skill, difficulty] of COMBOS) {
+      const matches = new Map<string, number>();
+      for (let seed = 0; seed < SEEDS; seed += 1) {
+        const item = generate({ skill, difficulty, seed });
+        const { correctAnswer } = resolveTokens(item, undefined, CLOSED);
+        const open = resolveTokens(item, undefined, OPEN);
+        for (const [token, value] of Object.entries(open)) {
+          const key = `${item.data.form}:${token}`;
+          if (value === correctAnswer) matches.set(key, (matches.get(key) ?? 0) + 1);
+        }
+      }
+      for (const [key, count] of matches) {
+        expect(count, `${skill} L${difficulty} ${key}`).toBeLessThan(SEEDS);
+      }
+    }
+  });
+
+  it('keeps what the prompt states, even where it can match the answer by chance', () => {
+    const index = generate({ skill: 'index', difficulty: 1, seed: 1 });
+    expect(allowedTokens(index, undefined, OPEN)).toEqual(
+      expect.arrayContaining(['i', 'j', 'dimsA']),
+    );
+    const dims = generate({ skill: 'mult_defined', difficulty: 1, seed: 1 });
+    expect(allowedTokens(dims, undefined, OPEN)).toEqual(
+      expect.arrayContaining(['dimsA', 'dimsB']),
+    );
+    const scaled = generate({ skill: 'det_props', difficulty: 1, seed: 1 });
+    expect(allowedTokens(scaled, undefined, OPEN)).toContain('k');
+  });
+
+  it('leaves other forms as they were', () => {
+    expect(resolveTokens(MULT, undefined, OPEN)).toMatchObject({ aCell: '4', dimsA: '2×2' });
   });
 });
 

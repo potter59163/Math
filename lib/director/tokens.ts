@@ -4,7 +4,7 @@ import type { Answer, Matrix } from '@/lib/core/types';
 import { dimsLabel, rationalText, signed } from '@/lib/topics/matrix/format';
 import { det, shape } from '@/lib/topics/matrix/ops';
 import { firstWrongCell } from '@/lib/topics/matrix/scenes';
-import type { MatrixItem } from '@/lib/topics/matrix/types';
+import type { FormId, MatrixItem } from '@/lib/topics/matrix/types';
 
 // Numbers reach a student's text only through these tokens (AI_DIRECTOR §4.4). The LLM writes the
 // token, and this fills it with the engine's value.
@@ -24,6 +24,12 @@ export type TokenName =
   | 'det';
 
 export const REVEALING_TOKENS: readonly TokenName[] = ['correctCell', 'correctAnswer', 'det'];
+
+/**
+ * A given anywhere else, but on these forms it is the question: `dim` asks for the dims of A, and
+ * `index` for one cell of A. So it waits for the item to close too (AI_DIRECTOR §4.4).
+ */
+const THE_ANSWER_ON_FORM: Partial<Record<FormId, TokenName>> = { dim: 'dimsA', index: 'aCell' };
 
 export type TokenValues = Partial<Record<TokenName, string>>;
 
@@ -143,8 +149,9 @@ export function resolveTokens(
     values.det = detOf(item);
   }
 
+  const heldBack = revealAllowed ? undefined : THE_ANSWER_ON_FORM[data.form];
   return Object.fromEntries(
-    Object.entries(values).filter(([, value]) => value !== undefined),
+    Object.entries(values).filter(([name, value]) => value !== undefined && name !== heldBack),
   ) as TokenValues;
 }
 
