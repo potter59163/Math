@@ -23,6 +23,9 @@ next-env.d.ts
 # what npm run eval:director writes
 eval-report.md
 
+# raw takes from npm run voice:receipt, kept so that cutting them again costs nothing
+.voice-raw/
+
 # analysis outputs and research data (contain student records)
 analysis/out/
 exports/

@@ -13,7 +13,9 @@ import {
   type ReceiptBeat,
   type ReceiptClip,
 } from '@/lib/topics/matrix/scenes/receiptClip';
+import { RECEIPT_VOICE } from '@/lib/topics/matrix/scenes/receiptVoice';
 import { ClipPlayer } from './ClipPlayer';
+import { clipVoice } from './voice';
 
 // One board for the whole clip: A × B = the student's own answer, marked in red as it goes. Below it the
 // receipt slides in on a sheet of the notebook, and the numbers fly down from the row and the column, so a
@@ -147,14 +149,24 @@ function HandText({
   );
 }
 
-function Band({ box, tone, show }: { box: Rect; tone: 'row' | 'col'; show: boolean }) {
+function Band({
+  box,
+  tone,
+  show,
+  start,
+}: {
+  box: Rect;
+  tone: 'row' | 'col';
+  show: boolean;
+  start?: number;
+}) {
   const reveal = useReveal();
   return (
     <m.rect
       {...box}
       initial={false}
       animate={{ opacity: show ? 1 : 0 }}
-      transition={reveal(show)}
+      transition={reveal(show, start)}
       rx={8}
       strokeWidth={2}
       className={tone === 'row' ? 'fill-cta/20 stroke-cta' : 'fill-brand/20 stroke-brand'}
@@ -392,7 +404,7 @@ interface StageProps {
   clip: ReceiptClip;
   beat: ReceiptBeat;
   onRight(): void;
-  onWrong(hint: string): void;
+  onWrong(kind: 'row' | 'col'): void;
 }
 
 export function ReceiptStage({ clip, beat, onRight, onWrong }: StageProps) {
@@ -464,19 +476,21 @@ export function ReceiptStage({ clip, beat, onRight, onWrong }: StageProps) {
       box: kind === 'row' ? rowEdge(index) : colEdge(index),
       n: (last?.n ?? 0) + 1,
     }));
-    onWrong(kind === 'row' ? clip.hints.row : clip.hints.col);
+    onWrong(kind);
   };
 
   const chip = (template: string, known: boolean, value: number) =>
     fillTokens(template, { n: known ? String(value + 1) : '?' });
 
   const ruleShown = beat === 'rule' || beat === 'end';
+  // The voice comes to the rule late in its own beat, and says it straight away at the end.
+  const ruleAt = beat === 'rule' ? 0.55 : 0.05;
   const worked = beat === 'try_done';
 
   return (
     <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="h-full w-full">
       {/* ---- A × B = what the student answered */}
-      <Band box={rowEdge(row)} tone="row" show={during('quantities', 'try_row')} />
+      <Band box={rowEdge(row)} tone="row" show={during('quantities', 'try_row')} start={0.3} />
       <Band box={colEdge(col)} tone="col" show={during('prices', 'try_row')} />
       <Band box={rowEdge(tryRow)} tone="row" show={during('try_col', 'end')} />
       <Band box={colEdge(tryCol)} tone="col" show={during('try_done', 'end')} />
@@ -505,7 +519,13 @@ export function ReceiptStage({ clip, beat, onRight, onWrong }: StageProps) {
 
       {left.map((cells, i) =>
         cells.map((value, j) => (
-          <Fade key={`a${i}:${j}`} show to={leftOpacity(i, j)} length={0.1}>
+          <Fade
+            key={`a${i}:${j}`}
+            show
+            to={leftOpacity(i, j)}
+            start={beat === 'quantities' ? 0.3 : 0}
+            length={0.1}
+          >
             <SvgText
               x={a.cx(j)}
               y={a.cy(i)}
@@ -560,6 +580,7 @@ export function ReceiptStage({ clip, beat, onRight, onWrong }: StageProps) {
         r={cell * 0.46}
         tone="row"
         show={during('try_row', 'try_done')}
+        start={0.2}
       />
 
       {/* ---- what they answered against what is right */}
@@ -634,7 +655,7 @@ export function ReceiptStage({ clip, beat, onRight, onWrong }: StageProps) {
               <HandText x={ITEM_X} y={lineY(k)} size={20} anchor="start">
                 {item}
               </HandText>
-              <Reveal show={reached('quantities')} start={0.46 + 0.08 * k}>
+              <Reveal show={reached('quantities')} start={0.55 + 0.06 * k}>
                 <rect
                   x={QTY_X - 17}
                   y={lineY(k) - 17}
@@ -675,7 +696,7 @@ export function ReceiptStage({ clip, beat, onRight, onWrong }: StageProps) {
                 </HandText>
               </Reveal>
               {k !== theirLine && (
-                <Reveal show={beat === 'only_first'} start={0.42} pop>
+                <Reveal show={beat === 'only_first'} start={0.58} pop>
                   <HandText x={AMOUNT_X} y={lineY(k)} size={32} className="fill-warn font-semibold">
                     ?
                   </HandText>
@@ -740,8 +761,8 @@ export function ReceiptStage({ clip, beat, onRight, onWrong }: StageProps) {
             from={{ x: a.cx(k), y: a.cy(row) }}
             to={{ x: QTY_X, y: lineY(k) }}
             show={beat === 'quantities'}
-            start={0.18 + 0.08 * k}
-            length={0.3}
+            start={0.33 + 0.06 * k}
+            length={0.24}
           >
             <Chip width={34} height={34} size={25} tone="fill-marker">
               {rationalText(qty)}
@@ -774,24 +795,24 @@ export function ReceiptStage({ clip, beat, onRight, onWrong }: StageProps) {
       </Fly>
 
       {/* ---- the rule, big enough to remember */}
-      <Reveal show={ruleShown} start={0.1} pop>
+      <Reveal show={ruleShown} start={ruleAt} pop>
         <HandText x={82} y={240} size={58} className="fill-cta font-semibold">
           {copy.rowWord}
         </HandText>
       </Reveal>
-      <Reveal show={ruleShown} start={0.22}>
+      <Reveal show={ruleShown} start={ruleAt + 0.08}>
         <HandText x={170} y={246} size={22} className="fill-muted">
           {copy.pairWith}
         </HandText>
       </Reveal>
-      <Reveal show={ruleShown} start={0.3} pop>
+      <Reveal show={ruleShown} start={ruleAt + 0.17} pop>
         <HandText x={258} y={240} size={58} className="fill-brand font-semibold">
           {copy.colWord}
         </HandText>
       </Reveal>
 
       {/* ---- their turn */}
-      <Reveal show={during('try_row', 'try_done')} start={0.04}>
+      <Reveal show={during('try_row', 'try_done')} start={0.2}>
         <HandText x={WIDTH / 2} y={178} size={18} className="fill-muted">
           {copy.ringed}
         </HandText>
@@ -876,11 +897,13 @@ export function ReceiptStage({ clip, beat, onRight, onWrong }: StageProps) {
 export function ReceiptClipPlayer({
   clip,
   doneLabel,
+  waitForTap,
   onDone,
   onSkip,
 }: {
   clip: ReceiptClip;
   doneLabel: string;
+  waitForTap?: boolean;
   onDone(): void;
   onSkip(): void;
 }) {
@@ -892,12 +915,18 @@ export function ReceiptClipPlayer({
       beatMs={clip.beatMs}
       waits={WAITING_BEATS}
       aspect={WIDTH / HEIGHT}
+      voice={RECEIPT_VOICE}
+      waitForTap={waitForTap}
       caption={(beat) => (hint?.beat === beat ? hint.text : clip.captions[beat])}
       stage={(beat, advance) => (
         <ReceiptStage
           clip={clip}
           beat={beat}
-          onWrong={(text) => setHint({ beat, text })}
+          onWrong={(kind) => {
+            setHint({ beat, text: clip.hints[kind] });
+            const { src } = RECEIPT_VOICE[kind === 'row' ? 'hintRow' : 'hintCol'];
+            void clipVoice.play(src).catch(() => {});
+          }}
           onRight={() => {
             setHint(null);
             advance();

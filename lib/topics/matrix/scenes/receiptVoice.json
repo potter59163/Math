@@ -1,0 +1,61 @@
+{
+  "take": "74f2eac80ab2",
+  "lines": {
+    "caught": {
+      "src": "/voice/receipt/caught-74f2eac80ab2.mp3",
+      "ms": 2873
+    },
+    "did": {
+      "src": "/voice/receipt/did-74f2eac80ab2.mp3",
+      "ms": 2429
+    },
+    "quantities": {
+      "src": "/voice/receipt/quantities-74f2eac80ab2.mp3",
+      "ms": 4650
+    },
+    "prices": {
+      "src": "/voice/receipt/prices-74f2eac80ab2.mp3",
+      "ms": 3030
+    },
+    "only_first": {
+      "src": "/voice/receipt/only_first-74f2eac80ab2.mp3",
+      "ms": 3762
+    },
+    "all_lines": {
+      "src": "/voice/receipt/all_lines-74f2eac80ab2.mp3",
+      "ms": 2691
+    },
+    "answer": {
+      "src": "/voice/receipt/answer-74f2eac80ab2.mp3",
+      "ms": 2534
+    },
+    "rule": {
+      "src": "/voice/receipt/rule-74f2eac80ab2.mp3",
+      "ms": 3239
+    },
+    "try_row": {
+      "src": "/voice/receipt/try_row-74f2eac80ab2.mp3",
+      "ms": 3814
+    },
+    "try_col": {
+      "src": "/voice/receipt/try_col-74f2eac80ab2.mp3",
+      "ms": 1698
+    },
+    "try_done": {
+      "src": "/voice/receipt/try_done-74f2eac80ab2.mp3",
+      "ms": 2612
+    },
+    "end": {
+      "src": "/voice/receipt/end-74f2eac80ab2.mp3",
+      "ms": 2664
+    },
+    "hintRow": {
+      "src": "/voice/receipt/hintRow-74f2eac80ab2.mp3",
+      "ms": 3187
+    },
+    "hintCol": {
+      "src": "/voice/receipt/hintCol-74f2eac80ab2.mp3",
+      "ms": 3318
+    }
+  }
+}

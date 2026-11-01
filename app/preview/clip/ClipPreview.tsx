@@ -40,6 +40,7 @@ export function ClipPreview() {
       <ReceiptClipPlayer
         key={turn}
         clip={clip}
+        waitForTap={turn === 0}
         doneLabel={th.clip.preview.next}
         onDone={again}
         onSkip={again}

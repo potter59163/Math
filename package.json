@@ -13,6 +13,7 @@
     "check": "npm run typecheck && npm run lint && npm run test",
     "sim": "vitest run --config vitest.sim.config.mts",
     "eval:director": "vitest run --config vitest.eval.config.mts",
+    "voice:receipt": "vitest run --config vitest.voice.config.mts",
     "export": "node --env-file=.env.local scripts/export-data.mjs"
   },
   "dependencies": {

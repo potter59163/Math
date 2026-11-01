@@ -565,8 +565,30 @@ export const th = {
     skip: 'ข้าม',
     again: 'ดูอีกครั้ง',
     progress: 'จังหวะที่ {{beat}} จาก {{total}}',
+    start: 'เริ่มเล่น',
+    soundOn: 'เปิดเสียง',
+    soundOff: 'ปิดเสียง',
     preview: { title: 'คลิปตัวอย่าง', next: 'ลองเลขชุดใหม่' },
     receipt: {
+      // Said aloud, and the same for every student, so it names no number and no item: the screen shows
+      // those. Spelled as spoken, with no digits or Latin letters. Changing a line means recording again:
+      // npm run voice:receipt
+      voice: {
+        caught: 'ช่องที่วงไว้ ที่คุณตอบยังไม่ถูก',
+        did: 'เพราะเอาตำแหน่งเดียวกันมาคูณกัน',
+        quantities: 'คิดแบบของจริงดู แถวนี้ของเอ คือจำนวนของแต่ละอย่าง',
+        prices: 'ส่วนหลักนี้ของบี คือค่าของแต่ละอย่าง',
+        only_first: 'ที่คูณไป คิดแค่บรรทัดเดียว แล้วบรรทัดอื่นล่ะ',
+        all_lines: 'ต้องคิดให้ครบทุกบรรทัด แล้วค่อยบวกกัน',
+        answer: 'ยอดรวมนี้แหละ คือคำตอบของช่องนี้',
+        rule: 'เมทริกซ์คูณกันแบบนี้เสมอ แถวคู่กับหลัก',
+        try_row: 'ตาคุณแล้ว ช่องที่วงไว้ ใช้แถวไหนของเอ',
+        try_col: 'แล้วคู่กับหลักไหนของบี',
+        try_done: 'ใช่เลย ทุกช่องคิดแบบเดียวกันหมด',
+        end: 'แถวคู่กับหลัก ไม่ใช่ช่องคู่กับช่อง',
+        hintRow: 'ดูอีกทีว่าช่องที่วงไว้อยู่แถวไหน',
+        hintCol: 'ดูอีกทีว่าช่องที่วงไว้อยู่หลักไหน',
+      },
       title: 'ทำไมคูณทีละช่องไม่ได้',
       mine: 'ที่คุณตอบ',
       right: 'ที่ถูก',
