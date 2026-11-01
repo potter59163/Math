@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useId, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { LoadingScreen } from '@/components/learn/LoadingScreen';
 import { Button } from '@/components/ui/Button';
-import { signOutOfGoogle } from '@/lib/client/auth';
+import { signOut } from '@/lib/client/auth';
 import { deviceSettings, type ColorScheme } from '@/lib/client/settings';
 import { th } from '@/lib/content/th';
 import { fillTokens } from '@/lib/core/tokens';
@@ -152,7 +152,7 @@ function DeleteAccount() {
           const deleted = await learner.deleteAccount();
           setFailed(!deleted);
           if (!deleted) return;
-          await signOutOfGoogle().catch(() => {});
+          await signOut().catch(() => {});
           learner.forgetDevice();
           router.replace('/');
         }}
@@ -252,7 +252,7 @@ export function SettingsScreen() {
             variant="secondary"
             className="w-full"
             onClick={async () => {
-              await signOutOfGoogle().catch(() => {});
+              await signOut().catch(() => {});
               learner.forgetDevice();
               router.replace('/');
             }}

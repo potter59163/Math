@@ -29,7 +29,7 @@ export interface Account {
   condition: Condition;
 }
 
-/** GET /api/me. `configured` is false until Supabase keys are set, when only guest mode can work. */
+/** GET /api/me. `configured` is false until the server's keys are set, when only guest mode can work. */
 export interface MeResponse {
   configured: boolean;
   /** The tutor is switched on, so a decision may be worth a moment's wait. */

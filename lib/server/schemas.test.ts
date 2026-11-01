@@ -1,7 +1,7 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { cohortFromLink } from '@/lib/sync/types';
-import { welcomeRequest } from './schemas';
+import { syncRequest, welcomeRequest } from './schemas';
 
 const welcome = (cohort: string | null) => ({
   displayName: 'ทดสอบ',
@@ -32,4 +32,23 @@ describe('a trial link', () => {
       }),
     );
   });
+});
+
+describe('a device id', () => {
+  const accepted = (deviceId: string) =>
+    syncRequest.safeParse({ deviceId, actions: [{ seq: 1, action: { type: 'start' } }] }).success;
+
+  it.each(['c0a8012e-7f4b-4c1d-9a55-0e9d6f3a1b2c', '0123456789abcdef0123456789abcdef'])(
+    'takes %s, as a browser makes them',
+    (deviceId) => {
+      expect(accepted(deviceId)).toBe(true);
+    },
+  );
+
+  it.each(['a.b.c.d.e.f', '$where-device', '__proto__.x', 'has a space', 'short'])(
+    'refuses %s, which would mean something as a field name in the database',
+    (deviceId) => {
+      expect(accepted(deviceId)).toBe(false);
+    },
+  );
 });

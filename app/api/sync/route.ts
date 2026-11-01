@@ -1,8 +1,9 @@
 import { llmDecider } from '@/lib/director/llm/decide';
+import { signedInUserId, signInConfigured } from '@/lib/server/auth';
+import { database } from '@/lib/server/db';
 import { fail, notConfigured, ok, readJson, unauthorized } from '@/lib/server/http';
 import { syncRequest } from '@/lib/server/schemas';
 import { createStore } from '@/lib/server/store';
-import { adminClient, signedInUserId, supabaseConfigured } from '@/lib/server/supabase';
 import { NoLearnerError, processActions } from '@/lib/server/sync';
 import type { QueuedAction } from '@/lib/sync/types';
 
@@ -11,7 +12,7 @@ const MAX_ATTEMPTS_PER_MINUTE = 120;
 const MINUTE_MS = 60_000;
 
 export async function POST(request: Request) {
-  if (!supabaseConfigured()) return notConfigured();
+  if (!signInConfigured()) return notConfigured();
   const userId = await signedInUserId();
   if (!userId) return unauthorized();
 
@@ -19,7 +20,7 @@ export async function POST(request: Request) {
   if (!parsed.success) return fail(400, 'bad_request');
   const { deviceId, actions } = parsed.data;
 
-  const store = createStore(adminClient());
+  const store = createStore(await database());
   const since = new Date(Date.now() - MINUTE_MS).toISOString();
   if ((await store.attemptsSince(userId, since)) > MAX_ATTEMPTS_PER_MINUTE) {
     return fail(429, 'rate_limited');

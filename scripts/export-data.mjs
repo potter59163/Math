@@ -1,54 +1,39 @@
-// Research export (RESEARCH §5). Run by whoever holds the service role key: npm run export -- <cohort>
-// Writes exports/<table>.csv and exports/research_wide.csv. No name or email leaves the database: each
-// student becomes S-1, S-2 and so on, in the order they joined.
+// Research export (RESEARCH §5). Run by whoever holds the database address: npm run export -- <cohort>
+// Writes exports/<table>.csv and exports/research_wide.csv. No name or Google account leaves the
+// database: each student becomes S-1, S-2 and so on, in the order they joined.
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { createClient } from '@supabase/supabase-js';
+import { MongoClient } from 'mongodb';
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!url || !key)
-  throw new Error('Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local');
+const uri = process.env.MONGODB_URI;
+if (!uri) throw new Error('Set MONGODB_URI in .env.local');
 
 const cohort = process.argv[2];
-const client = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+const client = new MongoClient(uri);
+const db = client.db(process.env.MONGODB_DB || 'kidma');
 
-const PAGE = 1000;
-
-async function all(table, columns = '*', scope = (query) => query) {
-  const rows = [];
-  for (let from = 0; ; from += PAGE) {
-    const { data, error } = await scope(client.from(table).select(columns)).range(
-      from,
-      from + PAGE - 1,
-    );
-    if (error) throw new Error(`${table}: ${error.message}`);
-    rows.push(...data);
-    if (data.length < PAGE) return rows;
-  }
-}
+const all = (collection) => db.collection(collection).find().toArray();
 
 function csv(rows, columns) {
   const cell = (value) => {
     if (value === null || value === undefined) return '';
+    if (value instanceof Date) return value.toISOString();
     const text = typeof value === 'object' ? JSON.stringify(value) : String(value);
     return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
   };
   return `${[columns.join(','), ...rows.map((row) => columns.map((name) => cell(row[name])).join(','))].join('\n')}\n`;
 }
 
-const profiles = (
-  await all('profiles', 'id, cohort, condition, form_pre, form_post, consent_at, created_at')
-)
+const profiles = (await all('profiles'))
   .filter((row) => row.consent_at && (!cohort || row.cohort === cohort))
-  .sort((a, b) => a.created_at.localeCompare(b.created_at));
-const aliasOf = new Map(profiles.map(({ id }, index) => [id, `S-${index + 1}`]));
+  .sort((a, b) => a.created_at - b.created_at);
+const aliasOf = new Map(profiles.map(({ _id }, index) => [_id, `S-${index + 1}`]));
 
 mkdirSync('exports', { recursive: true });
 
 async function exportTable(table, columns) {
   const rows = (await all(table))
     .filter((row) => aliasOf.has(row.user_id))
-    .map((row) => ({ ...row, alias: aliasOf.get(row.user_id) }));
+    .map((row) => ({ ...row, id: String(row._id), alias: aliasOf.get(row.user_id) }));
   writeFileSync(`exports/${table}.csv`, csv(rows, ['alias', ...columns]));
   return rows;
 }
@@ -119,14 +104,12 @@ writeFileSync(
     'time_ms',
   ]),
 );
-const learners = (await all('learner_profiles', 'user_id, profile')).filter((row) =>
-  aliasOf.has(row.user_id),
-);
+const learners = (await all('learner_profiles')).filter((row) => aliasOf.has(row._id));
 writeFileSync(
   'exports/learner_profiles.csv',
   csv(
-    learners.map(({ user_id, profile }) => ({
-      alias: aliasOf.get(user_id),
+    learners.map(({ _id, profile }) => ({
+      alias: aliasOf.get(_id),
       // The profile holds the account id as its seed source, so that one field stays behind.
       profile: {
         ...profile,
@@ -171,12 +154,12 @@ const median = (values) => {
   return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
 };
 
-const wide = profiles.map(({ id, condition, form_pre, form_post }) => {
+const wide = profiles.map(({ _id: id, condition, form_pre, form_post }) => {
   const mine = (rows) => rows.filter((row) => row.user_id === id);
   const test = (phase) => mine(assessments).find((row) => row.phase === phase);
   const pre = test('pre');
   const post = test('post');
-  const profile = learners.find((row) => row.user_id === id)?.profile ?? {};
+  const profile = learners.find((row) => row._id === id)?.profile ?? {};
   const skills = Object.values(profile.skills ?? {});
   const states = Object.values(profile.misconceptions ?? {});
   const myDecisions = mine(decisions);
@@ -227,4 +210,5 @@ const wide = profiles.map(({ id, condition, form_pre, form_post }) => {
   return row;
 });
 if (wide.length > 0) writeFileSync('exports/research_wide.csv', csv(wide, Object.keys(wide[0])));
+await client.close();
 console.log(`Exported ${wide.length} students${cohort ? ` from ${cohort}` : ''} to exports/`);

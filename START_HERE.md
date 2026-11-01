@@ -25,8 +25,8 @@
 
 ## เตรียมก่อนเริ่ม
 - **ติดตั้ง:** Node.js (LTS), git, Python 3 (ใช้ตอน Phase 9)
-- **บัญชีฟรี:** Supabase (เลือก region Singapore) และ Vercel
-- **API key LLM 1 เจ้า:** Gemini, Claude หรือ OpenAI ใช้ตอน Phase 6 ส่วน phase ก่อนหน้าไม่ต้องใช้
+- **บัญชีฟรี:** MongoDB Atlas (เลือก region Singapore) และ Vercel
+- **API key ของ Claude:** ใช้ตอน Phase 6 ส่วน phase ก่อนหน้าไม่ต้องใช้
 
 ## วิธีเริ่ม
 1. แตก zip จะได้โฟลเดอร์ `qedify-matrix`
@@ -82,14 +82,14 @@ test BKT ด้วยตัวเลขตัวอย่างใน SPEC §7.1
 **Phase 5: Backend + ครู + deploy**
 ```
 ทำ Phase 5 ใน docs/PLAN.md (อ่าน SPEC §12–15 และ .claude/rules/director.md)
-ถ้าผมยังไม่ได้สร้าง Supabase หรือใส่ .env.local ให้บอกขั้นตอนที่ผมต้องทำเองทีละขั้นก่อน
+ถ้าผมยังไม่ได้สร้าง MongoDB Atlas หรือใส่ .env.local ให้บอกขั้นตอนที่ผมต้องทำเองทีละขั้นก่อน
 ต้องมี test ยืนยันว่านักเรียนอ่านข้อมูลคนอื่นไม่ได้ และช่วยผม deploy ขึ้น Vercel (บอกให้ชัดว่าขั้นไหนผมต้องกดเอง)
 จบแล้วรัน npm run check tick PLAN.md และ commit
 ```
 
 **Phase 6: LLM director**
 ```
-ทำ Phase 6 ใน docs/PLAN.md โดยอ่าน docs/AI_DIRECTOR.md ทั้งไฟล์ ใช้ LLM_PROVIDER=[gemini/anthropic/openai] ที่ผมใส่ key ไว้แล้ว
+ทำ Phase 6 ใน docs/PLAN.md โดยอ่าน docs/AI_DIRECTOR.md ทั้งไฟล์ ใช้ LLM_PROVIDER=anthropic ที่ผมใส่ key ไว้แล้ว
 validator ต้องเข้มตาม §4.3 และต้องมี test ของทุก fallback_reason ทำ scenarios 20 ชุดกับ npm run eval:director
 จบแล้วสรุป eval (valid %, latency p50/p95, ตัวอย่างข้อความ 5 อัน) tick PLAN.md และ commit
 ```
@@ -130,7 +130,7 @@ validator ต้องเข้มตาม §4.3 และต้องมี te
   - ขอห้องทดลอง 2 คาบในช่วง 13–19 พ.ย.
   - ถ้ายังหาห้องไม่ได้ อย่ารอถึง 12 พ.ย. ค่อยตัดสินใจ
   - ถามครูว่านักเรียนเรียนเมทริกซ์ถึงไหนแล้ว และตกลงว่าจะเปิด unit ไหนในการทดลอง (ดู `docs/RESEARCH.md` §3.1)
-- [ ] **สมัครบริการ:** Supabase, Vercel และ API key LLM
+- [ ] **สมัครบริการ:** MongoDB Atlas, Google OAuth, Vercel และ API key ของ Claude
 - [ ] **ตรวจเนื้อหา:** ตรวจข้อความไทยและความถูกต้องทางคณิตในส่วนที่ติด `TODO(review)` และให้ครูดูด้วย
 - [ ] **ข้อสอบ:** ส่งฟอร์ม A/B ให้ครูตรวจ (ถ้าได้ IOC จากครู 3 คนจะดีมาก)
 - [ ] **ขออนุญาต:** ขออนุญาตโรงเรียน + ใบยินยอม (ดูข้อความร่างใน SPEC §15)

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { rankEntries, SHOWN_ON_BOARD, weekStartOf } from './leaderboard';
 
-const row = (user_id: string, xp: number | string) => ({
+const row = (user_id: string, xp: number) => ({
   user_id,
   display_name: 'ชื่อเล่น',
   avatar: 'pi',
@@ -37,9 +37,6 @@ describe('rankEntries', () => {
     const board = rankEntries(rows, `u${SHOWN_ON_BOARD + 2}`, 'w', false);
     expect(board.entries).toHaveLength(SHOWN_ON_BOARD);
     expect(board.me?.rank).toBe(SHOWN_ON_BOARD + 3);
-  });
-  it('reads XP that Postgres sends as a string', () => {
-    expect(rankEntries([row('a', '120')], 'a', 'w', false).entries[0].xp).toBe(120);
   });
   it('has no place for a student with none this week', () => {
     expect(rankEntries([row('a', 5)], 'b', 'w', false).me).toBeNull();

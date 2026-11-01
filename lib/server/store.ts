@@ -1,14 +1,56 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import { randomUUID } from 'node:crypto';
+import { MongoServerError, type Db, type ObjectId } from 'mongodb';
 import type { Profile } from '@/lib/director/types';
+import type { AssessmentPhase, AssessmentStatus } from '@/lib/sync/assessment';
+import type { BoardRow } from '@/lib/sync/leaderboard';
 import type { Account, AccountUpdate, AvatarId } from '@/lib/sync/types';
-import type { LearnerRow, LogEntry, SyncStore } from './sync';
+import type { FormId } from '@/lib/topics/matrix/assessment';
+import type { LogEntry, SyncStore } from './sync';
 
-// Every query here takes a user id that the route has already checked (lib/server/supabase.ts).
+// Every query here takes a user id that the route has already checked (lib/server/auth.ts). The field
+// names are what scripts/export-data.mjs writes out and analysis/analyze.py reads, so keep them.
 
-const report = (what: string, error: { message: string } | null) => {
-  // Logging must never cost a student their answer, so a failed insert is reported and left there.
-  if (error) console.error(`store: ${what}: ${error.message}`);
-};
+const DUPLICATE_KEY = 11000;
+
+function isDuplicateKey(error: unknown): boolean {
+  return error instanceof MongoServerError && error.code === DUPLICATE_KEY;
+}
+
+/** Logging must never cost a student their answer, so a failed write is reported and left there. */
+async function logged(what: string, write: () => Promise<unknown>): Promise<void> {
+  try {
+    await write();
+  } catch (error) {
+    console.error(`store: ${what}: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/** Run once per process. Creating an index that already exists does nothing. */
+export async function ensureIndexes(db: Db): Promise<void> {
+  await Promise.all([
+    db.collection('users').createIndexes([{ key: { google_sub: 1 }, unique: true }]),
+    db.collection('auth_sessions').createIndexes([
+      // MongoDB removes a session by itself once its date has passed.
+      { key: { expires_at: 1 }, expireAfterSeconds: 0 },
+      { key: { user_id: 1 } },
+    ]),
+    db.collection('sessions').createIndexes([{ key: { user_id: 1, started_at: 1 } }]),
+    db.collection('attempts').createIndexes([
+      // A retried batch must not count an answer twice.
+      { key: { user_id: 1, device_id: 1, seq: 1 }, unique: true },
+      { key: { user_id: 1, created_at: 1 } },
+      { key: { created_at: 1 } },
+    ]),
+    db.collection('decisions').createIndexes([{ key: { user_id: 1, created_at: 1 } }]),
+    db.collection('scene_views').createIndexes([{ key: { user_id: 1, created_at: 1 } }]),
+    db.collection('hint_events').createIndexes([{ key: { user_id: 1, created_at: 1 } }]),
+    // The one row each student may have for a phase: a second submit is not a second chance.
+    db.collection('assessments').createIndexes([{ key: { user_id: 1, phase: 1 }, unique: true }]),
+    db
+      .collection('assessment_responses')
+      .createIndexes([{ key: { assessment_id: 1, item_no: 1 }, unique: true }]),
+  ]);
+}
 
 export interface AttemptRowInput {
   userId: string;
@@ -36,12 +78,13 @@ function attemptRow({ userId, deviceId, entry }: AttemptRowInput) {
     time_ms: action.timeMs,
     hint_level: action.hintLevel,
     xp: outcome.xp + outcome.bonusXp,
+    created_at: new Date(),
   };
 }
 
 function decisionRow(
   userId: string,
-  attemptId: number | null,
+  attemptId: ObjectId | null,
   turn: Extract<LogEntry, { kind: 'decision' }>['turn'],
 ) {
   return {
@@ -57,7 +100,27 @@ function decisionRow(
     reason: turn.reason,
     latency_ms: turn.latencyMs ?? null,
     fallback_reason: turn.fallbackReason ?? turn.fallback ?? null,
+    created_at: new Date(),
   };
+}
+
+export interface AssessmentResponseRow {
+  item_no: number;
+  item_ref: unknown;
+  answer: unknown;
+  correct: boolean;
+  misconception: string | null;
+  variant: string | null;
+  time_ms: number | null;
+}
+
+export interface NewAssessment {
+  phase: AssessmentPhase;
+  form: FormId;
+  score: number;
+  total: number;
+  startedAt: number;
+  responses: AssessmentResponseRow[];
 }
 
 export interface AppStore extends SyncStore {
@@ -70,98 +133,126 @@ export interface AppStore extends SyncStore {
   deleteAccount(userId: string): Promise<void>;
   attemptsSince(userId: string, since: string): Promise<number>;
   llmCallsSince(userId: string, since: string): Promise<number>;
+  assessmentScores(userId: string): Promise<AssessmentStatus>;
+  /** False when this student has already taken this test. */
+  saveAssessment(userId: string, assessment: NewAssessment): Promise<boolean>;
+  /** Whoever chose to be on the board and earned XP since `weekStart`, highest first. */
+  weeklyLeaderboard(weekStart: string, maxRows: number): Promise<BoardRow[]>;
 }
 
-interface AccountRow {
+interface ProfileDoc {
+  _id: string;
   display_name: string;
   avatar: string;
   show_on_leaderboard: boolean;
   condition: Account['condition'];
+  consent_at: Date;
+  cohort?: string;
+  form_pre?: FormId;
+  form_post?: FormId;
+  created_at: Date;
+  updated_at: Date;
 }
 
-export function createStore(client: SupabaseClient): AppStore {
+interface LearnerDoc {
+  _id: string;
+  profile: unknown;
+  rev: number;
+  devices: Record<string, number>;
+  updated_at: Date;
+}
+
+interface AssessmentDoc {
+  _id: string;
+  user_id: string;
+  phase: AssessmentPhase;
+  form: FormId;
+  score: number;
+  total: number;
+  started_at: Date;
+  submitted_at: Date;
+}
+
+export function createStore(db: Db): AppStore {
+  const profiles = db.collection<ProfileDoc>('profiles');
+  const learners = db.collection<LearnerDoc>('learner_profiles');
+  const assessments = db.collection<AssessmentDoc>('assessments');
+  const attempts = db.collection('attempts');
+  const decisions = db.collection('decisions');
+
   return {
     async loadLearner(userId) {
-      const { data, error } = await client
-        .from('learner_profiles')
-        .select('profile, rev, devices, profiles(condition)')
-        .eq('user_id', userId)
-        .maybeSingle();
-      if (error) throw new Error(`loadLearner: ${error.message}`);
-      if (!data) return null;
-      const owner = data.profiles as unknown as { condition: Account['condition'] } | null;
+      const [learner, owner] = await Promise.all([
+        learners.findOne({ _id: userId }),
+        profiles.findOne({ _id: userId }, { projection: { condition: 1 } }),
+      ]);
+      if (!learner) return null;
       return {
-        profile: data.profile as Profile,
-        rev: data.rev as number,
-        devices: data.devices as LearnerRow['devices'],
+        profile: learner.profile as Profile,
+        rev: learner.rev,
+        devices: learner.devices,
         condition: owner?.condition ?? 'adaptive',
       };
     },
 
     async saveLearner(userId, { profile, devices }, expectedRev) {
-      const { data, error } = await client
-        .from('learner_profiles')
-        .update({ profile, devices, rev: expectedRev + 1, updated_at: new Date().toISOString() })
-        .eq('user_id', userId)
-        .eq('rev', expectedRev)
-        .select('user_id');
-      if (error) throw new Error(`saveLearner: ${error.message}`);
-      return data.length === 1;
+      const { matchedCount } = await learners.updateOne(
+        { _id: userId, rev: expectedRev },
+        { $set: { profile, devices, rev: expectedRev + 1, updated_at: new Date() } },
+      );
+      return matchedCount === 1;
     },
 
     async writeLogs(userId, deviceId, logs) {
       for (const entry of logs) {
         switch (entry.kind) {
-          case 'attempt': {
-            const { data, error } = await client
-              .from('attempts')
-              .upsert(attemptRow({ userId, deviceId, entry }), {
-                onConflict: 'user_id,device_id,seq',
-                ignoreDuplicates: true,
-              })
-              .select('id');
-            report('attempt', error);
-            const attemptId = (data?.[0]?.id as number | undefined) ?? null;
-            if (attemptId !== null) {
-              const logged = await client
-                .from('decisions')
-                .insert(decisionRow(userId, attemptId, entry.turn));
-              report('decision', logged.error);
-            }
+          case 'attempt':
+            await logged('attempt', async () => {
+              const { upsertedId } = await attempts.updateOne(
+                { user_id: userId, device_id: deviceId, seq: entry.seq },
+                { $setOnInsert: attemptRow({ userId, deviceId, entry }) },
+                { upsert: true },
+              );
+              // Null when this answer was logged already, and then so was its decision.
+              if (upsertedId)
+                await decisions.insertOne(decisionRow(userId, upsertedId, entry.turn));
+            });
             break;
-          }
-          case 'decision': {
-            const { error } = await client
-              .from('decisions')
-              .insert(decisionRow(userId, null, entry.turn));
-            report('decision', error);
+          case 'decision':
+            await logged('decision', () =>
+              decisions.insertOne(decisionRow(userId, null, entry.turn)),
+            );
             break;
-          }
-          case 'session': {
-            const { error } = await client.from('sessions').insert({ user_id: userId });
-            report('session', error);
+          case 'session':
+            await logged('session', () =>
+              db.collection('sessions').insertOne({ user_id: userId, started_at: new Date() }),
+            );
             break;
-          }
-          case 'hint': {
-            const { error } = await client
-              .from('hint_events')
-              .insert({ user_id: userId, item_ref: entry.itemRef, level: entry.level });
-            report('hint', error);
+          case 'hint':
+            await logged('hint', () =>
+              db.collection('hint_events').insertOne({
+                user_id: userId,
+                item_ref: entry.itemRef,
+                level: entry.level,
+                created_at: new Date(),
+              }),
+            );
             break;
-          }
           case 'scene_view': {
             const { view } = entry;
-            const { error } = await client.from('scene_views').insert({
-              user_id: userId,
-              template: view.template,
-              purpose: view.purpose,
-              beats_total: view.beatsTotal,
-              beats_seen: view.beatsSeen,
-              replays: view.replays,
-              skipped: view.skipped,
-              duration_ms: view.durationMs,
-            });
-            report('scene_view', error);
+            await logged('scene_view', () =>
+              db.collection('scene_views').insertOne({
+                user_id: userId,
+                template: view.template,
+                purpose: view.purpose,
+                beats_total: view.beatsTotal,
+                beats_seen: view.beatsSeen,
+                replays: view.replays,
+                skipped: view.skipped,
+                duration_ms: view.durationMs,
+                created_at: new Date(),
+              }),
+            );
             break;
           }
         }
@@ -169,14 +260,8 @@ export function createStore(client: SupabaseClient): AppStore {
     },
 
     async loadAccount(userId) {
-      const { data, error } = await client
-        .from('profiles')
-        .select('display_name, avatar, show_on_leaderboard, condition, consent_at')
-        .eq('id', userId)
-        .maybeSingle();
-      if (error) throw new Error(`loadAccount: ${error.message}`);
-      if (!data?.consent_at) return null;
-      const row = data as AccountRow;
+      const row = await profiles.findOne({ _id: userId });
+      if (!row?.consent_at) return null;
       return {
         displayName: row.display_name,
         avatar: row.avatar as AvatarId,
@@ -186,61 +271,138 @@ export function createStore(client: SupabaseClient): AppStore {
     },
 
     async createAccount(userId, { account, cohort, profile, consentAt }) {
-      const created = await client.from('profiles').upsert({
-        id: userId,
-        display_name: account.displayName,
-        avatar: account.avatar,
-        show_on_leaderboard: account.showOnLeaderboard,
-        condition: account.condition,
-        consent_at: consentAt,
-        ...(cohort && { cohort }),
-      });
-      if (created.error) throw new Error(`createAccount: ${created.error.message}`);
+      const now = new Date();
+      await profiles.updateOne(
+        { _id: userId },
+        {
+          $set: {
+            display_name: account.displayName,
+            avatar: account.avatar,
+            show_on_leaderboard: account.showOnLeaderboard,
+            condition: account.condition,
+            consent_at: new Date(consentAt),
+            updated_at: now,
+            ...(cohort && { cohort }),
+          },
+          $setOnInsert: { created_at: now },
+        },
+        { upsert: true },
+      );
       // Finishing the welcome screen twice, in two tabs say, must not wipe what the first one started.
-      const learner = await client
-        .from('learner_profiles')
-        .upsert({ user_id: userId, profile }, { onConflict: 'user_id', ignoreDuplicates: true });
-      if (learner.error) throw new Error(`createAccount: ${learner.error.message}`);
+      await learners.updateOne(
+        { _id: userId },
+        { $setOnInsert: { profile, rev: 0, devices: {}, updated_at: now } },
+        { upsert: true },
+      );
     },
 
     async updateAccount(userId, { displayName, avatar, showOnLeaderboard }) {
-      const { error } = await client
-        .from('profiles')
-        .update({
-          ...(displayName !== undefined && { display_name: displayName }),
-          ...(avatar !== undefined && { avatar }),
-          ...(showOnLeaderboard !== undefined && { show_on_leaderboard: showOnLeaderboard }),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', userId);
-      if (error) throw new Error(`updateAccount: ${error.message}`);
+      await profiles.updateOne(
+        { _id: userId },
+        {
+          $set: {
+            ...(displayName !== undefined && { display_name: displayName }),
+            ...(avatar !== undefined && { avatar }),
+            ...(showOnLeaderboard !== undefined && { show_on_leaderboard: showOnLeaderboard }),
+            updated_at: new Date(),
+          },
+        },
+      );
     },
 
     async deleteAccount(userId) {
-      // Every table hangs off auth.users with on delete cascade, so this removes all of it.
-      const { error } = await client.auth.admin.deleteUser(userId);
-      if (error) throw new Error(`deleteAccount: ${error.message}`);
+      // Nothing cascades here, so this is the list of everything about a student. The sign-in goes last:
+      // if a step fails the student is still signed in, and deleting again finishes the job.
+      const taken = await assessments
+        .find({ user_id: userId }, { projection: { _id: 1 } })
+        .toArray();
+      await db
+        .collection('assessment_responses')
+        .deleteMany({ assessment_id: { $in: taken.map(({ _id }) => _id) } });
+      await Promise.all(
+        ['assessments', 'attempts', 'decisions', 'scene_views', 'hint_events', 'sessions'].map(
+          (name) => db.collection(name).deleteMany({ user_id: userId }),
+        ),
+      );
+      await Promise.all([learners.deleteOne({ _id: userId }), profiles.deleteOne({ _id: userId })]);
+      await db.collection('auth_sessions').deleteMany({ user_id: userId });
+      await db.collection<{ _id: string }>('users').deleteOne({ _id: userId });
     },
 
-    async attemptsSince(userId, since) {
-      const { count, error } = await client
-        .from('attempts')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .gte('created_at', since);
-      if (error) throw new Error(`attemptsSince: ${error.message}`);
-      return count ?? 0;
+    attemptsSince(userId, since) {
+      return attempts.countDocuments({ user_id: userId, created_at: { $gte: new Date(since) } });
     },
 
-    async llmCallsSince(userId, since) {
-      const { count, error } = await client
-        .from('decisions')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .eq('mode', 'llm')
-        .gte('created_at', since);
-      if (error) throw new Error(`llmCallsSince: ${error.message}`);
-      return count ?? 0;
+    llmCallsSince(userId, since) {
+      return decisions.countDocuments({
+        user_id: userId,
+        mode: 'llm',
+        created_at: { $gte: new Date(since) },
+      });
+    },
+
+    async assessmentScores(userId) {
+      const taken = await assessments.find({ user_id: userId }).toArray();
+      const of = (phase: AssessmentPhase) => {
+        const row = taken.find((entry) => entry.phase === phase);
+        return row ? { score: row.score, total: row.total } : null;
+      };
+      return { pre: of('pre'), post: of('post') };
+    },
+
+    async saveAssessment(userId, { phase, form, score, total, startedAt, responses }) {
+      const id = randomUUID();
+      try {
+        await assessments.insertOne({
+          _id: id,
+          user_id: userId,
+          phase,
+          form,
+          score,
+          total,
+          started_at: new Date(startedAt),
+          submitted_at: new Date(),
+        });
+      } catch (error) {
+        if (isDuplicateKey(error)) return false;
+        throw error;
+      }
+      await logged('assessment responses', () =>
+        db
+          .collection('assessment_responses')
+          .insertMany(responses.map((row) => ({ ...row, assessment_id: id }))),
+      );
+      await logged('assessment form', () =>
+        profiles.updateOne(
+          { _id: userId },
+          { $set: phase === 'pre' ? { form_pre: form } : { form_post: form } },
+        ),
+      );
+      return true;
+    },
+
+    weeklyLeaderboard(weekStart, maxRows) {
+      return attempts
+        .aggregate<BoardRow>([
+          { $match: { created_at: { $gte: new Date(weekStart) } } },
+          { $group: { _id: '$user_id', xp: { $sum: '$xp' } } },
+          { $match: { xp: { $gt: 0 } } },
+          { $lookup: { from: 'profiles', localField: '_id', foreignField: '_id', as: 'owner' } },
+          { $unwind: '$owner' },
+          { $match: { 'owner.show_on_leaderboard': true } },
+          { $sort: { xp: -1, _id: 1 } },
+          { $limit: maxRows },
+          {
+            $project: {
+              _id: 0,
+              user_id: '$_id',
+              display_name: '$owner.display_name',
+              avatar: '$owner.avatar',
+              xp: 1,
+            },
+          },
+        ])
+        .toArray();
     },
   };
 }

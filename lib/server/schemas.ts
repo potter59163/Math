@@ -96,7 +96,12 @@ const action = z.discriminatedUnion('type', [
 export const MAX_BATCH = 50;
 
 export const syncRequest = z.strictObject({
-  deviceId: z.string().min(8).max(64),
+  // It becomes a field name in the database, where a dot or a $ would mean something.
+  deviceId: z
+    .string()
+    .min(8)
+    .max(64)
+    .regex(/^[\w-]+$/),
   actions: z
     .array(z.strictObject({ seq: z.number().int().min(1), action }))
     .min(1)

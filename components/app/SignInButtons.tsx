@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useSyncExternalStore } from 'react';
-import { Button } from '@/components/ui/Button';
+import { useEffect, useState, useSyncExternalStore } from 'react';
+import { Button, buttonClass } from '@/components/ui/Button';
 import { GoogleIcon } from '@/components/ui/Icons';
-import { signInWithGoogle } from '@/lib/client/auth';
 import { inAppBrowserOf, lineExternalUrl, type InAppBrowser } from '@/lib/client/inAppBrowser';
 import { th } from '@/lib/content/th';
 
@@ -26,34 +25,35 @@ function OpenInBrowser({ browser }: { browser: InAppBrowser }) {
   );
 }
 
+/**
+ * A plain link and not next/link: it leads to a route that leaves for Google, and it works before this
+ * page's script has loaded on a slow school network. If that goes wrong the student comes back to
+ * /?login=failed, which the first page explains.
+ */
 export function GoogleButton({ label = th.home.signIn }: { label?: string }) {
-  const [state, setState] = useState<'idle' | 'going' | 'failed'>('idle');
+  const [going, setGoing] = useState(false);
   const browser = useSyncExternalStore(noSubscribe, inAppNow, onServer);
+
+  // The back button from Google's page brings this page back exactly as it was left: still going.
+  useEffect(() => {
+    const cameBack = (event: PageTransitionEvent) => {
+      if (event.persisted) setGoing(false);
+    };
+    window.addEventListener('pageshow', cameBack);
+    return () => window.removeEventListener('pageshow', cameBack);
+  }, []);
 
   if (browser) return <OpenInBrowser browser={browser} />;
 
   return (
-    <div className="flex flex-col gap-1">
-      <Button
-        variant="outline"
-        className="w-full"
-        aria-busy={state === 'going'}
-        disabled={state === 'going'}
-        onClick={async () => {
-          setState('going');
-          const { failed } = await signInWithGoogle();
-          // On success the page has already left for Google.
-          if (failed) setState('failed');
-        }}
-      >
-        <GoogleIcon className="size-5 shrink-0" />
-        {state === 'going' ? th.home.signingIn : label}
-      </Button>
-      {state === 'failed' && (
-        <p role="alert" className="text-center text-sm text-warn">
-          {th.home.loginFailed}
-        </p>
-      )}
-    </div>
+    <a
+      href="/auth/google"
+      className={buttonClass({ variant: 'outline' }, 'w-full')}
+      aria-busy={going}
+      onClick={() => setGoing(true)}
+    >
+      <GoogleIcon className="size-5 shrink-0" />
+      {going ? th.home.signingIn : label}
+    </a>
   );
 }

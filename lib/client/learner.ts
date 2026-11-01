@@ -32,7 +32,7 @@ export type LearnerMode = 'guest' | 'account';
 export interface LearnerState {
   phase: LearnerPhase;
   mode: LearnerMode | null;
-  /** Supabase keys are set on the server, so signing in can work. */
+  /** The database and Google keys are set on the server, so signing in can work. */
   configured: boolean;
   /** The tutor is on, so a decision may be worth a moment's wait. */
   llm: boolean;
@@ -93,7 +93,7 @@ export interface Learner {
   /** The first sign-in: consent, name and theme. Carries over any guest progress on this device. */
   finishWelcome(input: Omit<WelcomeRequest, 'guestProfile' | 'consent'>): Promise<boolean>;
   updateAccount(update: AccountUpdate): Promise<boolean>;
-  /** Forgets this device's copy. The caller signs out of Supabase. */
+  /** Forgets this device's copy. The caller signs out first. */
   forgetDevice(): void;
   deleteAccount(): Promise<boolean>;
   /** Resolves once the server has answered the last answer sent, or after `maxMs`. */

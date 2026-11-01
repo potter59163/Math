@@ -20,7 +20,7 @@ export interface BoardRow {
   user_id: string;
   display_name: string;
   avatar: string;
-  xp: number | string;
+  xp: number;
 }
 
 /** Ties share a rank. No user id leaves this function: `isMe` is all the browser learns. */
@@ -33,16 +33,15 @@ export function rankEntries(
   let rank = 0;
   let lastXp = Number.POSITIVE_INFINITY;
   const entries: LeaderboardEntry[] = rows.map((row, index) => {
-    const xp = Number(row.xp);
-    if (xp < lastXp) {
+    if (row.xp < lastXp) {
       rank = index + 1;
-      lastXp = xp;
+      lastXp = row.xp;
     }
     return {
       rank,
       displayName: row.display_name,
       avatar: row.avatar as AvatarId,
-      xp,
+      xp: row.xp,
       isMe: row.user_id === userId,
     };
   });

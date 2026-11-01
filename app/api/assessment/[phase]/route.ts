@@ -1,18 +1,17 @@
 import { restoreAnswer } from '@/lib/core/answerJson';
 import type { Answer } from '@/lib/core/types';
 import { applyPretest } from '@/lib/learner/profile';
+import { signedInUserId, signInConfigured } from '@/lib/server/auth';
+import { database } from '@/lib/server/db';
 import { fail, notConfigured, ok, readJson, unauthorized } from '@/lib/server/http';
 import { assessmentSubmit } from '@/lib/server/schemas';
 import { createStore } from '@/lib/server/store';
-import { adminClient, signedInUserId, supabaseConfigured } from '@/lib/server/supabase';
 import {
   testBlock,
   type AssessmentAnswer,
   type AssessmentForm,
   type AssessmentPhase,
   type AssessmentResult,
-  type AssessmentScore,
-  type AssessmentStatus,
 } from '@/lib/sync/assessment';
 import {
   assessmentForm,
@@ -26,30 +25,18 @@ const PHASES: readonly string[] = ['pre', 'post'];
 
 type Params = { params: Promise<{ phase: string }> };
 
-async function scores(userId: string): Promise<AssessmentStatus> {
-  const { data, error } = await adminClient()
-    .from('assessments')
-    .select('phase, score, total')
-    .eq('user_id', userId);
-  if (error) throw new Error(`scores: ${error.message}`);
-  const of = (phase: AssessmentPhase): AssessmentScore | null => {
-    const row = data.find((entry) => entry.phase === phase);
-    return row ? { score: row.score as number, total: row.total as number } : null;
-  };
-  return { pre: of('pre'), post: of('post') };
-}
-
 export async function GET(_request: Request, { params }: Params) {
-  if (!supabaseConfigured()) return notConfigured();
+  if (!signInConfigured()) return notConfigured();
   const userId = await signedInUserId();
   if (!userId) return unauthorized();
 
   const { phase } = await params;
-  if (phase === 'status') return ok(await scores(userId));
+  const store = createStore(await database());
+  if (phase === 'status') return ok(await store.assessmentScores(userId));
   if (!PHASES.includes(phase)) return fail(404, 'no_such_test');
 
   const taken = phase as AssessmentPhase;
-  const status = await scores(userId);
+  const status = await store.assessmentScores(userId);
   return ok<AssessmentForm>({
     phase: taken,
     refs: assessmentForm(formFor(userId, taken)).map(({ ref }) => ref),
@@ -69,7 +56,7 @@ function answersOf(answers: readonly AssessmentAnswer[]): Map<number, Answer | n
 
 /** Marked here, from the same fixed form, whatever the browser thought of its own answers. */
 export async function POST(request: Request, { params }: Params) {
-  if (!supabaseConfigured()) return notConfigured();
+  if (!signInConfigured()) return notConfigured();
   const userId = await signedInUserId();
   if (!userId) return unauthorized();
 
@@ -82,8 +69,7 @@ export async function POST(request: Request, { params }: Params) {
   const answers = answersOf(parsed.data.answers as AssessmentAnswer[]);
   if (!answers) return fail(400, 'bad_request');
 
-  const client = adminClient();
-  const store = createStore(client);
+  const store = createStore(await database());
   const row = await store.loadLearner(userId);
   const blocked = testBlock(taken, row?.profile.itemsDone ?? 0);
   if (blocked) return fail(409, blocked);
@@ -92,39 +78,24 @@ export async function POST(request: Request, { params }: Params) {
   const marked = markAssessment(form, answers);
   const { score, total } = scoreOf(marked);
 
-  const { data: created, error } = await client
-    .from('assessments')
-    .insert({
-      user_id: userId,
-      phase: taken,
-      form,
-      score,
-      total,
-      started_at: new Date(parsed.data.startedAt).toISOString(),
-    })
-    .select('id')
-    .single();
-  // The one row each student may have for a phase: a second submit is not a second chance.
-  if (error) return fail(409, 'already_taken');
-
-  const times = new Map(parsed.data.answers.map(({ itemNo, timeMs }) => [itemNo, timeMs]));
-  const responses = await client.from('assessment_responses').insert(
-    marked.map(({ itemNo, item, classification, correct }) => ({
-      assessment_id: created.id,
+  const given = new Map(parsed.data.answers.map((entry) => [entry.itemNo, entry]));
+  const saved = await store.saveAssessment(userId, {
+    phase: taken,
+    form,
+    score,
+    total,
+    startedAt: parsed.data.startedAt,
+    responses: marked.map(({ itemNo, item, classification, correct }) => ({
       item_no: itemNo,
       item_ref: item.ref,
-      answer: parsed.data.answers.find((entry) => entry.itemNo === itemNo)?.answer ?? null,
+      answer: given.get(itemNo)?.answer ?? null,
       correct,
       misconception: classification?.type === 'misconception' ? classification.id : null,
       variant: classification?.type === 'misconception' ? (classification.variant ?? null) : null,
-      time_ms: times.get(itemNo) ?? null,
+      time_ms: given.get(itemNo)?.timeMs ?? null,
     })),
-  );
-  if (responses.error) console.error(`assessment: ${responses.error.message}`);
-
-  const profileColumn = { [`form_${taken}`]: form };
-  const noted = await client.from('profiles').update(profileColumn).eq('id', userId);
-  if (noted.error) console.error(`assessment: ${noted.error.message}`);
+  });
+  if (!saved) return fail(409, 'already_taken');
 
   let profile: AssessmentResult['profile'] = null;
   if (taken === 'pre' && row) {

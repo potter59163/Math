@@ -15,4 +15,4 @@ paths:
 - Log every decision to `decisions`: trigger, mode (llm|rules), candidates, choice, message, narration, reason, latency_ms, fallback_reason.
 - Rate-limit per student. Treat 429 and timeouts as fallbacks, not errors.
 - LLM keys only in server env. Nothing LLM-related may be imported by client components.
-- Students' DB access goes only through route handlers using the service-role client, with explicit authorization checks (student cookie or teacher session). RLS stays enabled with no anon policies.
+- Students' DB access goes only through route handlers, scoped to the user id `signedInUserId()` returns. The browser never talks to the database, and `MONGODB_URI` never leaves the server.

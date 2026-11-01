@@ -1,14 +1,15 @@
 import { accountUpdate } from '@/lib/server/schemas';
+import { signedInUserId, signInConfigured } from '@/lib/server/auth';
+import { database } from '@/lib/server/db';
 import { fail, notConfigured, ok, readJson, unauthorized } from '@/lib/server/http';
 import { createStore } from '@/lib/server/store';
-import { adminClient, signedInUserId, supabaseConfigured } from '@/lib/server/supabase';
 import { llmEnabled } from '@/lib/director/llm/config';
 import type { MeResponse } from '@/lib/sync/types';
 
 /** Who is signed in and everything the app needs to start. Works, and says so, with no keys set. */
 export async function GET(request: Request) {
   const empty: MeResponse = {
-    configured: supabaseConfigured(),
+    configured: signInConfigured(),
     llm: llmEnabled(),
     userId: null,
     account: null,
@@ -20,7 +21,7 @@ export async function GET(request: Request) {
   const userId = await signedInUserId();
   if (!userId) return ok(empty);
 
-  const store = createStore(adminClient());
+  const store = createStore(await database());
   const [account, learner] = await Promise.all([
     store.loadAccount(userId),
     store.loadLearner(userId),
@@ -36,24 +37,24 @@ export async function GET(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  if (!supabaseConfigured()) return notConfigured();
+  if (!signInConfigured()) return notConfigured();
   const userId = await signedInUserId();
   if (!userId) return unauthorized();
 
   const parsed = accountUpdate.safeParse(await readJson(request));
   if (!parsed.success) return fail(400, 'bad_request');
 
-  const store = createStore(adminClient());
+  const store = createStore(await database());
   await store.updateAccount(userId, parsed.data);
   return ok({ account: await store.loadAccount(userId) });
 }
 
-/** Removes the account and every row about this student, at their own request (SPEC §15). */
+/** Removes the account and everything about this student, at their own request (SPEC §15). */
 export async function DELETE() {
-  if (!supabaseConfigured()) return notConfigured();
+  if (!signInConfigured()) return notConfigured();
   const userId = await signedInUserId();
   if (!userId) return unauthorized();
 
-  await createStore(adminClient()).deleteAccount(userId);
+  await createStore(await database()).deleteAccount(userId);
   return ok({ deleted: true });
 }

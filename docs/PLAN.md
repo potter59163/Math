@@ -94,12 +94,12 @@
 > **ทิศทางใหม่ 1 พ.ย. 2569 (Potter):** ตัดหน้าครู เข้าด้วย Google มีแท็บบทเรียน อันดับ โปรไฟล์ ตั้งค่า ทำรวมกันใน Phase 5–7 ด้านล่าง
 
 ## Phase 5: Google login + backend + แอปเต็มรูป
-- [x] Supabase: migrations ตาม SPEC §13, RLS ทุกตารางไม่มี policy (ตรวจบน Supabase ในเครื่อง)
+- [x] MongoDB ตาม SPEC §13 (ย้ายจาก Supabase 1 พ.ย. ตรวจบน MongoDB ในเครื่อง) `lib/server/store.test.ts` รันบนฐานข้อมูลจริง
 - [x] Google login, `/welcome` (ชื่อ รูป เรื่องที่สนใจ ยินยอม), โหมดลองเรียน, คำเตือนใน LINE/Facebook
 - [x] `/api/sync`: action เดียวกันทั้งสองฝั่ง คิวในเครื่อง ส่งซ้ำได้ ทำงานต่อเมื่อเน็ตหลุด
 - [x] แท็บบทเรียน อันดับ โปรไฟล์ ตั้งค่า, ลบบัญชี, ธีมสว่างและมืด
 - [x] Export CSV (`npm run export`)
-- [ ] Potter สมัคร Supabase, Google OAuth, Vercel ตาม `docs/SETUP.md` แล้ว deploy (`sin1`)
+- [ ] Potter สมัคร MongoDB Atlas, Google OAuth, Vercel ตาม `docs/SETUP.md` แล้ว deploy (`sin1`)
 - [ ] ลองบน URL จริงด้วยบัญชี Google จริงและมือถือจริง 2 เครื่องพร้อมกัน
 - **Acceptance:**
   - นักเรียน 2 เครื่องใช้งานบน URL จริงพร้อมกันได้
@@ -109,7 +109,7 @@
 ## Phase 6: LLM director
 **เป้าหมายหลักของการทดลอง:** AI ที่คิดสดเป็นจุดขายหลัก จึงตั้งใจเปิดใช้ตอนทดลองจริง ถ้าไม่ทันหรือไม่ผ่าน acceptance ให้ทดลองด้วยโหมด rules และเขียนตามจริงในแบบเสนอ
 
-- [x] provider adapter (`LLM_PROVIDER=none|gemini|anthropic|openai`), prompt ตาม AI_DIRECTOR §4.6–4.7, Zod schema, `validateDecision`, timeout, fallback, rate limit ต่อคน
+- [x] เรียก Claude ผ่าน Anthropic SDK (`LLM_PROVIDER=none|anthropic`), prompt ตาม AI_DIRECTOR §4.6–4.7, Zod schema, `validateDecision`, timeout, fallback, rate limit ต่อคน
 - [x] TutorBubble cross-fade, narration ทับ caption, ข้อความของระบบกฎเมื่อไม่มี LLM
 - [x] scenarios 20 ชุด + `npm run eval:director` → `eval-report.md`
 - [ ] Potter ใส่ API key แล้วรัน eval กับ LLM จริง
@@ -139,8 +139,8 @@
 **เปิด LLM ตอนทดลองไหม (ไม่ใช่เงื่อนไข GO):** เปิดเมื่อ Phase 6 ผ่าน acceptance, load test ผ่านทั้งที่เปิด LLM และเน็ตโรงเรียนเข้าถึง API ของ LLM ได้ ถ้าไม่ครบให้ใช้โหมด rules
 
 ## Phase 8: Hardening (12 พ.ย.)
-- [ ] load test จำลองนักเรียน 40 คนพร้อมกัน (script ยิง API และเปิด LLM ถ้าจะใช้ตอนทดลอง)
-- [ ] เช็คว่าเน็ตโรงเรียนไม่บล็อก `*.vercel.app`, `*.supabase.co` และ API ของ LLM
+- [ ] load test จำลองนักเรียน 40 คนพร้อมกัน (script ยิง API และเปิด LLM ถ้าจะใช้ตอนทดลอง) ทำบนเครื่องเดียวแล้ว 1 พ.ย.: 600 คำตอบไม่หาย ยังต้องลองบน Atlas และ Vercel จริง
+- [ ] เช็คว่าเน็ตโรงเรียนไม่บล็อก `*.vercel.app` และหน้าล็อกอินของ Google (ฐานข้อมูลและ Claude ถูกเรียกจาก server จึงไม่เกี่ยวกับเน็ตโรงเรียน)
 - [ ] freeze `generatorVersion` · (ถ้าทำทัน) `/demo/split`
 - [ ] พิมพ์ฟอร์ม A/B สำรอง · ทดสอบ export และ backup
 - [ ] ลิงก์ `?cohort=` และ QR ของห้องพร้อมใช้

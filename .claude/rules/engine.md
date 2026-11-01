@@ -8,7 +8,7 @@ paths:
 
 # Engine rules
 
-- Pure TypeScript. No React, DOM, fetch, Supabase or `process.env` in these folders.
+- Pure TypeScript. No React, DOM, fetch, database or `process.env` in these folders.
 - `Rational`: integer numerator/denominator (safe integers), denominator > 0, always reduced by gcd. Throw if a part exceeds 1e9 in magnitude. No floats anywhere in math paths.
 - PRNG: `createRng(seed)` (e.g. mulberry32) passed explicitly. Never `Math.random`. Item seeds come from `deriveSeed(studentId, counter)`, a pure hash (SPEC §6); assessment forms use fixed seeds.
 - Generator signature: `generate({ skill, difficulty, seed, target? }) → Item`. Internally resample with derived seeds (`seed`, `seed+1`, … up to 50 tries) until `validateItem` passes; if it never passes, throw — that is a bug, add a failing test first.

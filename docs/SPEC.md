@@ -330,35 +330,38 @@ resolved ──เจออีก──▶ active (relapse)
 
 ---
 
-## 13. Data model (Postgres / Supabase)
-Claude Code ปรับรายละเอียดได้ แต่ต้องคงความหมายเดิม เปิด RLS ทุกตาราง ไม่มี policy สำหรับ anon และเข้าถึงผ่าน server เท่านั้น
+## 13. Data model (MongoDB)
+Claude Code ปรับรายละเอียดได้ แต่ต้องคงความหมายเดิม เข้าถึงผ่าน server เท่านั้น ชื่อฟิลด์ตรงกับที่ `scripts/export-data.mjs` เขียนออกและ `analysis/analyze.py` อ่าน วันที่เก็บเป็น Date
 ```
-profiles(id uuid pk → auth.users on delete cascade, display_name, avatar, show_on_leaderboard,
-         consent_at, cohort null, condition default 'adaptive', form_pre, form_post, created_at, updated_at)
-learner_profiles(user_id pk, profile jsonb, rev int, devices jsonb, updated_at)
-sessions(id, user_id, started_at, user_agent)
-attempts(id, user_id, device_id, seq, item_ref jsonb, skill, difficulty, kind, target null,
-         answer jsonb, classification, misconception null, variant null, wrong_cells jsonb null,
+users(_id uuid, google_sub unique, created_at)
+auth_sessions(_id = SHA-256 ของ token, user_id, created_at, expires_at มี TTL index)
+profiles(_id = user id, display_name, avatar, show_on_leaderboard,
+         consent_at, cohort?, condition, form_pre?, form_post?, created_at, updated_at)
+learner_profiles(_id = user id, profile, rev, devices, updated_at)
+sessions(user_id, started_at)
+attempts(user_id, device_id, seq, item_ref, skill, difficulty, kind, target null,
+         answer, classification, misconception null, variant null, wrong_cells null,
          time_ms, hint_level, xp, created_at, unique(user_id, device_id, seq))
-decisions(id, user_id, attempt_id null, trigger, mode, candidates jsonb, choice, message, path_note,
-          narration jsonb null, reason, latency_ms, fallback_reason null, created_at)
-scene_views(id, user_id, template, purpose, beats_total, beats_seen, replays, skipped bool,
+decisions(user_id, attempt_id null, trigger, mode, candidates, choice, message, path_note,
+          narration null, reason, latency_ms, fallback_reason null, created_at)
+scene_views(user_id, template, purpose, beats_total, beats_seen, replays, skipped,
             duration_ms, created_at)
-hint_events(id, user_id, item_ref jsonb, level, created_at)
-assessments(id, user_id, phase 'pre'|'post', form 'A'|'B', score, total, started_at, submitted_at,
+hint_events(user_id, item_ref, level, created_at)
+assessments(_id uuid, user_id, phase 'pre'|'post', form 'A'|'B', score, total, started_at, submitted_at,
             unique(user_id, phase))
-assessment_responses(id, assessment_id, item_no, item_ref jsonb, answer jsonb null, correct bool,
-                     misconception null, variant null, time_ms)
-weekly_leaderboard(week_start, max_rows): ฟังก์ชันที่ server เรียกได้เท่านั้น
+assessment_responses(assessment_id, item_no, item_ref, answer null, correct,
+                     misconception null, variant null, time_ms, unique(assessment_id, item_no))
 ```
-สร้าง index ที่ `(student_id, created_at)` ของทุกตาราง log
+index ทั้งหมดสร้างใน `ensureIndexes` (`lib/server/store.ts`) ตารางอันดับคือ aggregation ใน `weeklyLeaderboard`
 
 ---
 
 ## 14. API (route handlers)
 | route | ทำอะไร |
 |---|---|
-| `GET /auth/callback` | รับ code จาก Google ผ่าน Supabase แล้วตั้ง session cookie |
+| `GET /auth/google` | จำ state, nonce, verifier ไว้ใน cookie สั้นๆ แล้วส่งเบราว์เซอร์ไปหน้า Google ขอ scope `openid` อย่างเดียว |
+| `GET /auth/callback` | ตรวจ state แลก code กับ Google ตรวจ ID token (ลายเซ็น, iss, aud, nonce) แล้วตั้ง session cookie |
+| `POST /auth/signout` | จบ session ของเครื่องนี้ |
 | `GET /api/me` | ใครล็อกอินอยู่ พร้อมบัญชีและ profile ทำงานได้แม้ยังไม่ตั้งคีย์ (`configured: false`) |
 | `PATCH /api/me` · `DELETE /api/me` | แก้ชื่อ รูป การแสดงในอันดับ · ลบบัญชีและข้อมูลทั้งหมด |
 | `POST /api/welcome` | {displayName, avatar, theme, consent: true, cohort?, guestProfile?} สร้างบัญชี |
@@ -373,12 +376,12 @@ action ทั้งหมดอยู่ใน `lib/sync/actions.ts`: start, pra
 ## 15. Privacy, consent, security
 
 **เก็บ:**
-- อีเมลจาก Google (อยู่ใน Supabase Auth ใช้เข้าสู่ระบบเท่านั้น)
+- เลขประจำบัญชีที่ Google ออกให้ (`google_sub` อยู่ในคอลเลกชัน `users` ใช้เข้าสู่ระบบเท่านั้น ไม่ถูกส่งออก)
 - ชื่อที่ตั้งเอง และรูปสัญลักษณ์ที่เลือก
 - คำตอบ เวลาที่ใช้
 - การกด hint และการดู scene
 
-**ไม่เก็บ:** รูปจาก Google รูปถ่าย เสียง ตำแหน่ง
+**ไม่เก็บ:** อีเมลและชื่อจริงจาก Google (แอปไม่ได้รับด้วยซ้ำ) รูปจาก Google รูปถ่าย เสียง ตำแหน่ง
 
 **ข้อความยินยอม (ร่าง ให้ครูที่ปรึกษาตรวจก่อนใช้):**
 ข้อความจริงอยู่ที่ `th.welcome.consentItems` ใน `lib/content/th.ts` และหน้า `/privacy`
@@ -386,12 +389,12 @@ action ทั้งหมดอยู่ใน `lib/sync/actions.ts`: start, pra
 ถ้าโรงเรียนกำหนดให้ผู้ปกครองยินยอมด้วย ให้ทำตามโรงเรียน
 
 **Security:**
-- **Keys:** service-role key และ LLM key อยู่ฝั่ง server เท่านั้น
-- **ตัวตน:** ทุก route ถาม Supabase ว่าใครล็อกอิน แล้วใช้ user id นั้นในทุก query
-- **ฐานข้อมูล:** RLS เปิดทุกตารางและไม่มี policy จึงมีแต่ server ที่เข้าถึงได้
+- **Keys:** `MONGODB_URI`, `GOOGLE_CLIENT_SECRET` และ LLM key อยู่ฝั่ง server เท่านั้น
+- **ตัวตน:** ทุก route ค้น session จาก cookie (HttpOnly, Secure, SameSite=Lax) ในฐานข้อมูล แล้วใช้ user id นั้นในทุก query ฐานข้อมูลเก็บแค่ hash ของ token
+- **ฐานข้อมูล:** เบราว์เซอร์ไม่เคยคุยกับฐานข้อมูลโดยตรง และ `MONGODB_URI` คือด่านเดียว ต้องเก็บเป็นความลับ
 - **Rate limit:** `/api/sync` จำกัด 120 ข้อต่อนาที และ LLM 20 ครั้งต่อนาทีต่อคน
-- **Input:** validate ทุก request ด้วย Zod และจำกัดขนาด input
-- **ลบข้อมูล:** นักเรียนลบบัญชีเองได้ในตั้งค่า แถวทั้งหมดถูกลบตาม
+- **Input:** validate ทุก request ด้วย Zod และจำกัดขนาด input ค่าที่ไปถึง query จึงเป็นค่าที่ตรวจแล้วเสมอ ไม่ใช่ object จากเบราว์เซอร์
+- **ลบข้อมูล:** นักเรียนลบบัญชีเองได้ในตั้งค่า `deleteAccount` ลบจากทุกคอลเลกชันเอง เพราะ MongoDB ไม่มี cascade เมื่อเพิ่มคอลเลกชันใหม่ต้องเพิ่มที่นี่ด้วย (มีเทสต์กันลืม)
 
 ---
 
