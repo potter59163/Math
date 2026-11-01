@@ -1,12 +1,13 @@
 import { markClipSeen, newLearnerProfile, noteSceneSeen } from '@/lib/learner/profile';
-import type { HintLevel, LocalStudent } from '@/lib/learner/types';
-import { drawItem } from './items';
+import type { HintLevel, Student } from '@/lib/learner/types';
+import { drawItem, fingerprintOf, RECENT_ITEMS } from './items';
 import { pathStepFor } from './pathStep';
 import type {
   Candidate,
   CandidateId,
   ChosenScene,
   ClosedAttempt,
+  FallbackReason,
   NextTurn,
   Profile,
   Trigger,
@@ -16,7 +17,7 @@ import type {
 /** The strip shows far fewer than this. The newest stay. */
 const MAX_PATH_STEPS = 200;
 
-export function newProfile(student: LocalStudent): Profile {
+export function newProfile(student: Student): Profile {
   return { ...newLearnerProfile(student), path: [] };
 }
 
@@ -24,10 +25,22 @@ export interface TurnInput {
   trigger: Trigger;
   mode?: TurnMode;
   candidates: Candidate[];
-  /** Rules take the top one. The LLM of Phase 6 passes its own pick here. */
+  /** Rules take the top one. The LLM passes its own pick here. */
   choice: CandidateId;
   closed?: ClosedAttempt;
   stuck?: boolean;
+  tutor?: TutorWords;
+}
+
+/** What the tutor adds to a decision: words only, never another step or another number. */
+export interface TutorWords {
+  message?: string;
+  /** Replaces the captions of the chosen clip, beat by beat. */
+  narration?: Partial<Record<string, string>>;
+  /** Replaces the rule's reason, for the log. */
+  reason?: string;
+  latencyMs?: number;
+  fallbackReason?: FallbackReason;
 }
 
 /**
@@ -36,7 +49,7 @@ export interface TurnInput {
  */
 export function commitTurn(
   profile: Profile,
-  { trigger, mode = 'rules', candidates, choice, closed, stuck = false }: TurnInput,
+  { trigger, mode = 'rules', candidates, choice, closed, stuck = false, tutor }: TurnInput,
 ): { profile: Profile; turn: NextTurn } {
   const chosen = candidates.find(({ id }) => id === choice) ?? candidates[0];
   const resumes = chosen.next.purpose === 'resume';
@@ -45,7 +58,11 @@ export function commitTurn(
     draw?.fellBack ? { ...chosen, stepKind: 'same_level', misconception: undefined } : chosen,
     draw?.item.ref.difficulty ?? chosen.next.level,
   );
-  const scenes = [chosen.scene, chosen.thenScene].filter(
+  const firstScene = chosen.scene && {
+    ...chosen.scene,
+    ...(tutor?.narration && { narration: tutor.narration }),
+  };
+  const scenes = [firstScene, chosen.thenScene].filter(
     (scene): scene is ChosenScene => scene !== undefined,
   );
   const turn: NextTurn = {
@@ -54,16 +71,20 @@ export function commitTurn(
     revealAllowed: trigger === 'after_attempt',
     candidates,
     choice: chosen.id,
-    reason: chosen.ruleReason,
+    reason: tutor?.reason ?? chosen.ruleReason,
     scenes,
     next: draw?.item.ref ?? null,
     pathStep,
     stuck,
     ...(draw?.fellBack && { fallback: 'generator' as const }),
+    ...(tutor?.message && { message: tutor.message }),
+    ...(tutor?.latencyMs !== undefined && { latencyMs: tutor.latencyMs }),
+    ...(tutor?.fallbackReason && { fallbackReason: tutor.fallbackReason }),
   };
 
   const issued = draw && {
     counter: draw.counter,
+    recentItems: [...(profile.recentItems ?? []), fingerprintOf(draw.item)].slice(-RECENT_ITEMS),
     current: { ref: draw.item.ref, hintLevel: (chosen.next.hintLevel ?? 0) as HintLevel },
     lastReviewAt: chosen.next.purpose === 'review' ? profile.itemsDone : profile.lastReviewAt,
     pending: closed || scenes.length > 0 ? { turn, ...(closed && { closed }) } : undefined,

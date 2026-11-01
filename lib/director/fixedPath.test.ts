@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { deriveSeed } from '@/lib/core/prng';
-import type { LocalStudent, UnitId } from '@/lib/learner/types';
+import type { Student, UnitId } from '@/lib/learner/types';
 import { misconceptionAnswer, unknownAnswer } from '@/lib/sim/answers';
 import { answerItem, openItem, settle } from '@/lib/sim/drive';
 import { SKILLS } from '@/lib/topics/matrix/skills';
@@ -9,10 +9,8 @@ import { startSession } from './rules';
 import { newProfile } from './turn';
 import type { ChosenScene, Profile } from './types';
 
-const student = (units: UnitId[]): LocalStudent => ({
+const student = (units: UnitId[]): Student => ({
   id: 'ABC123-7',
-  classCode: 'ABC123',
-  seatNo: 7,
   units,
 });
 

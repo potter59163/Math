@@ -7,11 +7,13 @@ import {
   useLayoutEffect,
   useReducer,
   useRef,
+  useSyncExternalStore,
   type KeyboardEvent,
   type ReactNode,
 } from 'react';
 import { Button } from '@/components/ui/Button';
 import { ArrowRightIcon, ReplayIcon } from '@/components/ui/Icons';
+import { deviceSettings, speakThai, stopSpeaking } from '@/lib/client/settings';
 import { th } from '@/lib/content/th';
 import { fillTokens } from '@/lib/core/tokens';
 import type { SceneSpec } from '@/lib/topics/matrix/scenes';
@@ -46,7 +48,12 @@ export function ScenePlayer({
   const scene = spec as AnyScene;
   const [state, dispatch] = useReducer(playerReducer, scene.beats.length, initialPlayer);
   const prefersStill = useReducedMotion() ?? false;
-  const still = forceStill ?? prefersStill;
+  const settings = useSyncExternalStore(
+    deviceSettings.subscribe,
+    deviceSettings.get,
+    deviceSettings.getServer,
+  );
+  const still = forceStill ?? (prefersStill || settings.reduceMotion);
 
   const startedAt = useRef(0);
   const logged = useRef(false);
@@ -83,6 +90,12 @@ export function ScenePlayer({
   const caption = scene.captions[beat];
   const ms = scene.beatMs[beat] ?? 2000;
   const hasCaptions = scene.template !== 'worked_solution';
+
+  useEffect(() => {
+    if (!settings.voice || !caption) return;
+    speakThai(caption);
+    return stopSpeaking;
+  }, [settings.voice, caption]);
 
   const onKeyDown = (event: KeyboardEvent) => {
     if (event.key === 'ArrowRight') {

@@ -1,0 +1,383 @@
+'use client';
+
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useLayoutEffect, useRef, useState } from 'react';
+import { LoadingScreen } from '@/components/learn/LoadingScreen';
+import { Button, LinkButton } from '@/components/ui/Button';
+import {
+  BoltIcon,
+  CheckIcon,
+  FlameIcon,
+  LockIcon,
+  PlayIcon,
+  StarIcon,
+} from '@/components/ui/Icons';
+import { CONFIG } from '@/lib/config';
+import { th } from '@/lib/content/th';
+import { fillTokens } from '@/lib/core/tokens';
+import type { PathStep, Profile } from '@/lib/director/types';
+import { itemsOn, streakOf } from '@/lib/learner/activity';
+import { skillStateOf } from '@/lib/learner/profile';
+import { mapOf, nextSkill, type SkillStatus, type UnitOnMap } from '@/lib/learner/progress';
+import { recommendationFor, type Recommendation } from '@/lib/learner/recommend';
+import { skillById, type SkillId } from '@/lib/topics/matrix/skills';
+import { Mascot } from './Mascot';
+import { learner, useLearner, useRequiredProfile } from './useLearner';
+
+function recommendationText(recommendation: Recommendation): string {
+  const copy = th.learn.recommend;
+  switch (recommendation.kind) {
+    case 'done':
+      return copy.done;
+    case 'fix':
+      return fillTokens(copy.fix, { m: th.misconceptionShort[recommendation.misconception] });
+    default:
+      return fillTokens(copy[recommendation.kind], {
+        skill: skillById(recommendation.skill).nameTh,
+      });
+  }
+}
+
+function Chips({ profile, now }: { profile: Profile; now: number }) {
+  const streak = streakOf(profile.activity, now);
+  return (
+    <div className="flex shrink-0 items-center gap-2 font-matrix text-sm font-bold tabular-nums">
+      <span
+        role="img"
+        aria-label={fillTokens(th.learn.streak, { n: String(streak) })}
+        className={`inline-flex items-center gap-1 ${streak > 0 ? 'text-flame' : 'text-muted'}`}
+      >
+        <FlameIcon className="size-5" />
+        {streak}
+      </span>
+      <span
+        role="img"
+        aria-label={fillTokens(th.common.xpLabel, { xp: String(profile.xp) })}
+        className="inline-flex items-center gap-1 text-xp"
+      >
+        <BoltIcon className="size-5" />
+        {profile.xp}
+      </span>
+    </div>
+  );
+}
+
+function DailyGoal({ done }: { done: number }) {
+  const goal = CONFIG.dailyGoalItems;
+  const shown = Math.min(done, goal);
+  return (
+    <div className="flex items-center gap-2 text-sm">
+      <span className="shrink-0 font-semibold">{th.learn.dailyGoal}</span>
+      <span
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={goal}
+        aria-valuenow={shown}
+        aria-label={th.learn.dailyGoal}
+        className="h-2.5 min-w-0 flex-1 overflow-hidden rounded-full bg-sunken"
+      >
+        <span
+          className="block h-full origin-left rounded-full bg-good transition-transform"
+          style={{ transform: `scaleX(${shown / goal})` }}
+        />
+      </span>
+      <span className="shrink-0 font-matrix text-muted tabular-nums">
+        {done >= goal
+          ? th.learn.dailyDone
+          : fillTokens(th.learn.dailyCount, { n: String(done), goal: String(goal) })}
+      </span>
+    </div>
+  );
+}
+
+function ForYou({ profile, now }: { profile: Profile; now: number }) {
+  const recommendation = recommendationFor(profile);
+  const label =
+    recommendation.kind === 'done'
+      ? th.learn.keepPracticing
+      : profile.itemsDone === 0
+        ? th.learn.start
+        : th.learn.continue;
+  return (
+    <section className="flex flex-col gap-3 rounded-3xl border border-line bg-surface p-4 shadow-sm">
+      <div className="flex items-center gap-3">
+        <Mascot
+          className="size-14 shrink-0"
+          mood={recommendation.kind === 'done' ? 'cheer' : 'happy'}
+        />
+        <div className="min-w-0">
+          <p className="text-xs font-bold text-brand">{th.learn.forYou}</p>
+          <p className="font-semibold">{recommendationText(recommendation)}</p>
+        </div>
+      </div>
+      <LinkButton href="/learn/session" className="w-full">
+        <PlayIcon className="size-4" />
+        {label}
+      </LinkButton>
+      <DailyGoal done={itemsOn(profile.activity, now)} />
+    </section>
+  );
+}
+
+const NODE_LOOK: Record<SkillStatus, string> = {
+  passed: 'bg-good text-on-brand shadow-[0_5px_0_var(--good-edge)]',
+  current: 'bg-brand text-on-brand shadow-[0_5px_0_var(--brand-edge)]',
+  open: 'border-2 border-brand bg-surface text-brand shadow-[0_5px_0_var(--line)]',
+  locked: 'bg-sunken text-muted shadow-[0_5px_0_var(--line)]',
+};
+
+const NODE_ICON = {
+  passed: CheckIcon,
+  current: PlayIcon,
+  open: StarIcon,
+  locked: LockIcon,
+} as const;
+
+/** The winding path of the map, in px from the middle. It stays inside 328px of width at 360px. */
+const WIND = [0, 42, 62, 42, 0, -42, -62, -42];
+
+function SkillNode({
+  id,
+  status,
+  index,
+  onOpen,
+}: {
+  id: SkillId;
+  status: SkillStatus;
+  index: number;
+  onOpen(id: SkillId): void;
+}) {
+  const Icon = NODE_ICON[status];
+  const { nameTh } = skillById(id);
+  return (
+    <li className="flex justify-center">
+      <button
+        type="button"
+        onClick={() => onOpen(id)}
+        // The button moves, not the row, which would widen the page past the screen.
+        style={{ transform: `translateX(${WIND[index % WIND.length]}px)` }}
+        className="group flex w-32 touch-manipulation flex-col items-center gap-2 rounded-2xl pb-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+      >
+        <span className="relative">
+          {status === 'current' && (
+            <span
+              aria-hidden
+              className="absolute inset-0 rounded-full bg-brand motion-safe:animate-pulse-ring"
+            />
+          )}
+          <span
+            className={`relative flex size-16 items-center justify-center rounded-full transition-transform duration-75 group-active:translate-y-[3px] ${NODE_LOOK[status]}`}
+          >
+            <Icon className="size-7" />
+          </span>
+        </span>
+        <span
+          className={`text-center text-sm leading-snug font-semibold ${status === 'locked' ? 'text-muted' : ''}`}
+        >
+          {nameTh}
+          <span className="sr-only"> ({th.learn.status[status]})</span>
+        </span>
+      </button>
+    </li>
+  );
+}
+
+function UnitPath({ unit, passed, skills, onOpen }: UnitOnMap & { onOpen(id: SkillId): void }) {
+  const done = skills.filter(({ status }) => status === 'passed').length;
+  return (
+    <section className="flex flex-col gap-4">
+      <h2
+        className={`flex items-center gap-2 rounded-2xl px-4 py-2 font-bold ${
+          passed ? 'bg-good-soft text-good' : 'bg-brand-soft text-brand'
+        }`}
+      >
+        <span className="min-w-0 flex-1">
+          <span className="block text-xs font-semibold">
+            {fillTokens(th.learn.unit, { n: String(unit) })}
+          </span>
+          {th.units[unit]}
+        </span>
+        <span className="font-matrix text-sm tabular-nums">
+          {done}/{skills.length}
+        </span>
+      </h2>
+      <ol className="flex flex-col gap-4">
+        {skills.map(({ id, status }, index) => (
+          <SkillNode key={id} id={id} status={status} index={index} onOpen={onOpen} />
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+/** Slides up from the bottom. A dialog keeps focus inside, and Escape or the button closes it. */
+function SkillSheet({
+  profile,
+  id,
+  status,
+  onClose,
+}: {
+  profile: Profile;
+  id: SkillId;
+  status: SkillStatus;
+  onClose(): void;
+}) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  const router = useRouter();
+  useLayoutEffect(() => {
+    const element = dialog.current;
+    element?.showModal();
+    return () => element?.close();
+  }, []);
+
+  const { nameTh, prereq, unit } = skillById(id);
+  const percent = Math.round(skillStateOf(profile, id).pKnown * 100);
+  const openPrereqs = prereq.filter((other) => profile.skills[other]?.passed !== true);
+
+  const go = () => {
+    // The skill the director is already on just carries on, with whatever is open.
+    if (nextSkill(profile) !== id) learner.dispatch({ type: 'practice', skill: id });
+    router.push('/learn/session');
+  };
+
+  return (
+    <dialog
+      ref={dialog}
+      aria-label={nameTh}
+      onCancel={(event) => {
+        event.preventDefault();
+        onClose();
+      }}
+      onClick={(event) => {
+        if (event.target === dialog.current) onClose();
+      }}
+      className="fixed inset-x-0 top-auto bottom-0 m-0 w-full max-w-none rounded-t-3xl bg-surface p-0 text-ink backdrop:bg-black/40 md:inset-auto md:top-1/2 md:left-1/2 md:max-w-md md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-3xl"
+    >
+      <div className="flex flex-col gap-3 p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] motion-safe:animate-rise">
+        <p className="text-sm font-semibold text-muted">
+          {fillTokens(th.learn.unit, { n: String(unit) })} · {th.units[unit]}
+        </p>
+        <h2 className="text-xl font-bold">{nameTh}</h2>
+        <p className="text-sm font-semibold">{th.learn.status[status]}</p>
+        {status !== 'locked' && (
+          <div className="flex items-center gap-2 text-sm">
+            <span
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={percent}
+              aria-label={fillTokens(th.learn.mastery, { p: String(percent) })}
+              className="h-2.5 min-w-0 flex-1 overflow-hidden rounded-full bg-sunken"
+            >
+              <span
+                className="block h-full origin-left rounded-full bg-brand"
+                style={{ transform: `scaleX(${percent / 100})` }}
+              />
+            </span>
+            <span className="shrink-0 text-muted">
+              {fillTokens(th.learn.mastery, { p: String(percent) })}
+            </span>
+          </div>
+        )}
+        {status === 'locked' ? (
+          <p className="text-muted">
+            {fillTokens(th.learn.sheetLocked, {
+              skills: openPrereqs.map((other) => skillById(other).nameTh).join(', '),
+            })}
+          </p>
+        ) : (
+          <Button className="w-full" onClick={go}>
+            {status === 'passed'
+              ? th.learn.sheetAgain
+              : status === 'current'
+                ? th.learn.sheetContinue
+                : th.learn.sheetStart}
+          </Button>
+        )}
+        <Button variant="secondary" className="w-full" onClick={onClose}>
+          {th.common.close}
+        </Button>
+      </div>
+    </dialog>
+  );
+}
+
+/** The latest steps chosen for this student, newest first, each with its reason (SPEC §4). */
+function MyPath({ steps }: { steps: readonly PathStep[] }) {
+  const recent = steps.slice(-CONFIG.pathStepsOnMap).reverse();
+  if (recent.length === 0) return null;
+  return (
+    <section className="flex flex-col gap-2">
+      <h2 className="font-bold">{th.learn.myPath}</h2>
+      <ol className="flex flex-col gap-2 rounded-2xl border border-line bg-surface p-3">
+        {recent.map(({ note, skill }, index) => (
+          <li key={steps.length - index} className={index === 0 ? '' : 'text-muted'}>
+            <p className="text-sm">{note}</p>
+            <p className="text-xs text-muted">{skillById(skill).nameTh}</p>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+/** The home of the app: what คิว suggests, then the whole path. */
+export function LessonsScreen() {
+  const profile = useRequiredProfile();
+  const { mode, offline } = useLearner();
+  const [now] = useState(() => Date.now());
+  const [openSkill, setOpenSkill] = useState<SkillId | null>(null);
+  if (!profile) return <LoadingScreen />;
+
+  const units = mapOf(profile);
+  const openStatus = units
+    .flatMap(({ skills }) => skills)
+    .find(({ id }) => id === openSkill)?.status;
+
+  return (
+    <div className="mx-auto flex w-full max-w-lg flex-col">
+      <header className="sticky top-0 z-10 flex items-center gap-2 border-b border-line bg-canvas/95 px-4 py-2 backdrop-blur">
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate text-lg leading-tight font-bold">{th.learn.topic}</h1>
+          <p className="truncate text-xs text-muted">{th.learn.topicNote}</p>
+        </div>
+        <Chips profile={profile} now={now} />
+      </header>
+
+      <main className="flex flex-col gap-6 px-4 py-4">
+        {mode === 'guest' && (
+          <p className="flex flex-wrap items-center justify-between gap-x-2 rounded-2xl bg-sunken px-4 py-2 text-sm">
+            {th.learn.guestBanner}
+            <Link
+              href="/settings"
+              className="flex min-h-11 items-center font-semibold text-brand underline"
+            >
+              {th.learn.guestAction}
+            </Link>
+          </p>
+        )}
+        {offline && (
+          <p role="status" className="rounded-2xl bg-warn-soft px-4 py-2 text-sm text-warn">
+            {th.learn.offline}
+          </p>
+        )}
+        <ForYou profile={profile} now={now} />
+        {units.map((unit) => (
+          <UnitPath key={unit.unit} {...unit} onOpen={setOpenSkill} />
+        ))}
+        <MyPath steps={profile.path} />
+      </main>
+
+      {openSkill && openStatus && (
+        <SkillSheet
+          key={openSkill}
+          profile={profile}
+          id={openSkill}
+          status={openStatus}
+          onClose={() => setOpenSkill(null)}
+        />
+      )}
+    </div>
+  );
+}

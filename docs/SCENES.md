@@ -145,8 +145,17 @@ interface SceneSpec<T extends TemplateId = TemplateId> {
 - **ใช้กับ:**
   - "ดูวิธีทำ"
   - hint L3 (โฟกัสขั้นหรือช่องเดียว)
-  - misconception ที่ไม่มี template เฉพาะ (M05, M07, M15)
 - **ตัวอย่างขั้น (mult ช่อง 1,1):** c₁₁ = a₁₁b₁₁ + a₁₂b₂₁ = 2·1 + 1·2 = 4
+
+### 3.6 `cell_by_cell`: ทีละช่อง
+- **ใช้กับ:** M05 · M07 · concept ของ `addsub` (เมื่อมิติเท่ากัน) และ `scalar` · intro ของ Unit 2
+- **params:** `{ op: 'add'|'sub'|'scalar', left, right?, k?, result, names, work, student?, variant?, also? }`
+- **beats:** `compare` (เฉพาะแก้ความเข้าใจผิด: คำตอบของนักเรียนโดยไฮไลต์ช่องที่ผิด) → `setup` → `cell_1`, `cell_2` (ไฮไลต์ช่องเดียวกันทุกเมทริกซ์ แล้วเขียนการคำนวณ) → `rest` → `done` → `also` (เฉพาะ intro ของ Unit 2: kA)
+- ช่องแรกที่ทำคือช่องแรกที่นักเรียนตอบผิด
+
+### 3.7 `det_sum`: det ของผลบวก
+- **ใช้กับ:** M15
+- **beats:** `compare` det A + det B ของนักเรียน → `add_first` A + B → `det_of_sum` det ของผลบวก → `differ` สองค่าไม่เท่ากัน
 
 ## 4. Tier B
 - **`cell_locator` (M02):**
@@ -179,8 +188,9 @@ interface SceneSpec<T extends TemplateId = TemplateId> {
 - **สี:** ธีมไม่มีสีแดง ใช้สี `warn` ของแอปแทน ความหมายเดียวกับสีเตือนใน `FeedbackCard`
 
 ## 5. Intro ของแต่ละ unit (≤ 40 วิ ประกอบจาก template ด้วยตัวอย่างชีวิตจริง)
+ตัวเลขสุ่มด้วย seed ของนักเรียน และเรื่องเล่ามาจากเรื่องที่เลือกตอนเริ่ม (ร้านค้า เกม กีฬา ดนตรี อาหาร) ข้อความอยู่ที่ `th.scenes.intro.stories` รายการด้านล่างคือแบบร้านค้า
 - **U1:** ตารางยอดขาย ร้าน × สินค้า ก็คือเมทริกซ์ แถวกับหลักบอกอะไร ด้วย `dimension_match` single ที่มีป้ายร้านและสินค้า
-- **U2:** ยอดขายสองสาขารวมกัน (A + B) และสั่งของเพิ่มเป็น k เท่า (kA) ด้วย `worked_solution`
+- **U2:** ยอดขายสองสาขารวมกัน (A + B) และสั่งของเพิ่มเป็น k เท่า (kA) ด้วย `cell_by_cell`
 - **U3:** จำนวนสินค้า × ราคา = รายได้ (แถว·หลัก) ด้วย `row_col_dot`
 - **U4:** det = พื้นที่ขยายกี่เท่า ด้วย `grid_transform` det_area
 - **U5:** อินเวอร์ส = ย้อนการแปลง ด้วย `grid_transform` undo (ธีม "ถอดรหัส" ใช้เป็นโจทย์ประยุกต์ข้อสุดท้ายได้ 1 ข้อ)
@@ -193,8 +203,8 @@ interface SceneSpec<T extends TemplateId = TemplateId> {
 | `dim` | `dimension_match` | single |
 | `index` | `cell_locator` | |
 | `transpose` | `transpose_flip` | |
-| `addsub` | `dimension_match` | add |
-| `scalar` | `worked_solution` | ไฮไลต์ทุกช่อง |
+| `addsub` | `cell_by_cell` (มิติไม่เท่ากันใช้ `dimension_match` add) | add หรือ sub |
+| `scalar` | `cell_by_cell` | scalar |
 | `mult_defined` | `dimension_match` | mult |
 | `mult` | `row_col_dot` | ไม่มี beat compare |
 | `mult_noncomm` | `grid_transform` | compose |
@@ -217,4 +227,4 @@ interface SceneSpec<T extends TemplateId = TemplateId> {
 
 ## 7. Stretch
 - **คลิป hook ต่อ unit:** อัดจาก `/dev/scenes` โหมด presentation หรือทำด้วย Manim ล่วงหน้า (ไม่สร้างตอน runtime)
-- **เสียงพากย์ไทย:** ลอง Web Speech API `th-TH` ถ้าเครื่องรองรับ หรือใช้ TTS แบบ pre-render
+- **เสียงพากย์ไทย:** มีตัวเลือกในตั้งค่า อ่าน caption ด้วย Web Speech API `th-TH` ของเครื่อง ปิดเป็นค่าเริ่มต้น เพราะคุณภาพต่างกันแต่ละเครื่องและยังไม่มีใครฟังตรวจ

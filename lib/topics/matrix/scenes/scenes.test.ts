@@ -2,6 +2,8 @@ import fc from 'fast-check';
 import katex from 'katex';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { cellByCellScene } from './cellByCell';
+import { detSumScene } from './detSum';
 import { CONFIG } from '@/lib/config';
 import { th } from '@/lib/content/th';
 import { answersEqual, classify } from '@/lib/core/classify';
@@ -718,15 +720,15 @@ describe('every ★ misconception has a scene with numbers from the generator', 
       M02_INDEX_SWAP: 'cell_locator',
       M03_TRANSPOSE_WRONG: 'transpose_flip',
       M04_ADD_DIM_MISMATCH: 'dimension_match',
-      M05_SUB_REVERSED: 'worked_solution',
-      M07_SCALAR_PARTIAL: 'worked_solution',
+      M05_SUB_REVERSED: 'cell_by_cell',
+      M07_SCALAR_PARTIAL: 'cell_by_cell',
       M08_MULT_DIM_RULE: 'dimension_match',
       M09_MULT_ELEMENTWISE: 'row_col_dot',
       M10_MULT_ROW_ROW: 'row_col_dot',
       M12_DET2_FORMULA: 'sarrus',
       M13_DET3_SIGN: 'sarrus',
       M14_DET_SCALAR_LINEAR: 'grid_transform',
-      M15_DET_ADDITIVE: 'worked_solution',
+      M15_DET_ADDITIVE: 'det_sum',
       M18_INV_SINGULAR: 'grid_transform',
       M19_INV_ZERO_ENTRY: 'grid_transform',
       M20_INV2_RECIPE: 'inverse_recipe',
@@ -826,9 +828,9 @@ describe('every ★ misconception has a scene with numbers from the generator', 
       },
       { id: 'M07_SCALAR_PARTIAL', variant: 'FIRST_ROW' },
     );
-    if (spec.template !== 'worked_solution') throw new Error('wrong template');
-    expect(spec.params.allCells?.k).toBe('3');
-    expect(spec.params.allCells?.result).toEqual(
+    if (spec.template !== 'cell_by_cell') throw new Error('wrong template');
+    expect(String(spec.params.k)).toBe('3');
+    expect(spec.params.result).toEqual(
       matrix([
         [3, -6],
         [15, 12],
@@ -864,8 +866,8 @@ describe('every ★ skill has a concept scene', () => {
       dim: 'dimension_match',
       index: 'cell_locator',
       transpose: 'transpose_flip',
-      addsub: 'dimension_match',
-      scalar: 'worked_solution',
+      addsub: 'cell_by_cell',
+      scalar: 'cell_by_cell',
       mult_defined: 'dimension_match',
       mult: 'row_col_dot',
       mult_noncomm: 'grid_transform',
@@ -881,13 +883,12 @@ describe('every ★ skill has a concept scene', () => {
   });
 
   it('plays the modes of SCENES §5.1, with no compare beat', () => {
-    const dimension = (id: 'dim' | 'addsub' | 'mult_defined') => {
+    const dimension = (id: 'dim' | 'mult_defined') => {
       const spec = conceptScene(id, { seed: 1 });
       if (spec.template !== 'dimension_match') throw new Error('wrong template');
       return spec.params.op;
     };
     expect(dimension('dim')).toBe('single');
-    expect(dimension('addsub')).toBe('add');
     expect(dimension('mult_defined')).toBe('mult');
 
     const grid = (id: 'mult_noncomm' | 'det_props' | 'invertible') => {
@@ -902,8 +903,8 @@ describe('every ★ skill has a concept scene', () => {
     expect((conceptScene('mult', { seed: 1 }).beats as string[]).includes('compare')).toBe(false);
     expect(conceptScene('inv2', { seed: 1 }).flagged).toBeUndefined();
     const scalarScene = conceptScene('scalar', { seed: 1 });
-    if (scalarScene.template !== 'worked_solution') throw new Error('wrong template');
-    expect(scalarScene.params.allCells).toBeDefined();
+    if (scalarScene.template !== 'cell_by_cell') throw new Error('wrong template');
+    expect(scalarScene.params.work).toHaveLength(scalarScene.params.left.flat().length);
   });
 
   it('never shows the item being worked on, and never its answer', () => {
@@ -1067,9 +1068,41 @@ describe('unit intros', () => {
     expect(sceneDurationMs(spec)).toBeLessThanOrEqual(40000);
   });
 
+  it('give each student their own numbers and their own story', () => {
+    const numbersOf = (spec: unknown) => JSON.stringify((spec as { params: unknown }).params);
+    const first = introScene(3, { seed: 1, theme: 'game' });
+    expect(numbersOf(introScene(3, { seed: 1, theme: 'game' }))).toBe(numbersOf(first));
+    expect(numbersOf(introScene(3, { seed: 2, theme: 'game' }))).not.toBe(numbersOf(first));
+    const seen = new Set(
+      Array.from({ length: 40 }, (_, seed) => numbersOf(introScene(1, { seed, theme: 'shop' }))),
+    );
+    expect(seen.size).toBeGreaterThan(35);
+    const stories = (['shop', 'game', 'sport', 'music', 'food'] as const).map(
+      (theme) => introScene(1, { seed: 1, theme }).captions,
+    );
+    expect(new Set(stories.map((captions) => JSON.stringify(captions))).size).toBe(5);
+  });
+
+  it('work out every intro of every student from the engine, within the time limit', () => {
+    for (let seed = 0; seed < 60; seed += 1) {
+      for (const unit of [1, 2, 3, 4, 5] as const) {
+        for (const theme of ['shop', 'game', 'sport', 'music', 'food'] as const) {
+          const spec = introScene(unit, { seed, theme });
+          expect(sceneDurationMs(spec)).toBeLessThanOrEqual(sceneLimitMs('intro'));
+          for (const beat of spec.beats as string[]) {
+            const caption = (spec.captions as Record<string, string | undefined>)[beat];
+            if (spec.template !== 'worked_solution')
+              expect(caption, `${unit} ${beat}`).toBeTruthy();
+            expect(caption ?? '').not.toContain('{{');
+          }
+        }
+      }
+    }
+  });
+
   it('use the templates of SCENES §5', () => {
     expect(introScene(1).template).toBe('dimension_match');
-    expect(introScene(2).template).toBe('worked_solution');
+    expect(introScene(2).template).toBe('cell_by_cell');
     expect(introScene(3).template).toBe('row_col_dot');
     const four = introScene(4);
     const five = introScene(5);
@@ -1169,5 +1202,80 @@ describe('scene copy', () => {
       if (!quoted || lines[index - 1].trim() === '// TODO(review)') return;
       expect(doc).toContain(quoted[1]);
     });
+  });
+});
+
+describe('cell_by_cell', () => {
+  const A = matrix([
+    [3, -2],
+    [5, 4],
+  ]);
+  const B = matrix([
+    [1, -6],
+    [0, 7],
+  ]);
+
+  it('works out each cell with the engine, brackets around a negative term', () => {
+    const spec = cellByCellScene({ op: 'sub', left: A, right: B, purpose: 'concept' });
+    expect(spec.params.result).toEqual(
+      matrix([
+        [2, 4],
+        [5, -3],
+      ]),
+    );
+    expect(spec.params.work[1].expression).toBe('−2 − (−6) = 4');
+  });
+
+  it('scales every cell', () => {
+    const spec = cellByCellScene({ op: 'scalar', left: A, k: Rational.of(-3), purpose: 'concept' });
+    expect(spec.params.work).toHaveLength(4);
+    expect(spec.params.work[1].expression).toBe('(−3) × (−2) = 6');
+  });
+
+  it('starts from the cell the student got wrong', () => {
+    const spec = cellByCellScene({
+      op: 'add',
+      left: A,
+      right: B,
+      focus: [2, 2],
+      variant: 'REVERSED',
+      student: A,
+      purpose: 'remediate',
+    });
+    expect([spec.params.work[0].i, spec.params.work[0].j]).toEqual([2, 2]);
+    expect(spec.beats[0]).toBe('compare');
+    expect(spec.flagged).toBe('compare');
+  });
+
+  it('has a caption for every beat, within the time limit', () => {
+    const spec = cellByCellScene({ op: 'add', left: A, right: B, purpose: 'concept' });
+    for (const beat of spec.beats) expect(spec.captions[beat]).toBeTruthy();
+    expect(sceneDurationMs(spec)).toBeLessThanOrEqual(sceneLimitMs('concept'));
+  });
+});
+
+describe('det_sum', () => {
+  it('shows the two ways giving different answers, from the engine', () => {
+    const spec = detSumScene({
+      A: matrix([
+        [2, 1],
+        [1, 3],
+      ]),
+      B: matrix([
+        [1, 2],
+        [0, 1],
+      ]),
+      purpose: 'remediate',
+    });
+    expect(spec.params.sum).toEqual(
+      matrix([
+        [3, 3],
+        [1, 4],
+      ]),
+    );
+    expect(String(spec.params.wrong)).toBe('6');
+    expect(String(spec.params.detSum)).toBe('9');
+    expect(spec.params.rightLine).toBe('3 × 4 − 3 × 1 = 9');
+    expect(sceneDurationMs(spec)).toBeLessThanOrEqual(sceneLimitMs('remediate'));
   });
 });

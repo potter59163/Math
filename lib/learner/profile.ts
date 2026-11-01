@@ -5,6 +5,7 @@ import { comboAfter, xpFor } from '@/lib/practice/rewards';
 import { CATALOG, catalogEntry } from '@/lib/topics/matrix/misconceptions';
 import { skillById, type SkillId } from '@/lib/topics/matrix/skills';
 import type { MisconceptionId } from '@/lib/topics/matrix/types';
+import { logActivity } from './activity';
 import { guessRate, updateKnown } from './bkt';
 import { nextLevel } from './difficulty';
 import { meetsMastery } from './mastery';
@@ -16,7 +17,7 @@ import type {
   HintLevel,
   LearnerConfig,
   LearnerProfile,
-  LocalStudent,
+  Student,
   PretestResult,
   SkillState,
 } from './types';
@@ -24,7 +25,7 @@ import type {
 // The learner model of SPEC §7: (profile, event, config) → profile. Pure, and any clock time is passed
 // in. The functions are generic so that a profile carrying more fields keeps them.
 
-export function newLearnerProfile(student: LocalStudent): LearnerProfile {
+export function newLearnerProfile(student: Student): LearnerProfile {
   return {
     student,
     counter: 0,
@@ -186,6 +187,7 @@ export function applyAttempt<P extends LearnerProfile>(
     skills: { ...profile.skills, [skill]: { ...state, passed } },
     misconceptions,
     current: undefined,
+    activity: logActivity(profile.activity, at, xp + bonusXp),
   };
 
   const justPassed = passed && !before.passed;

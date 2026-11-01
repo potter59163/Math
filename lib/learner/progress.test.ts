@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { SKILLS } from '@/lib/topics/matrix/skills';
 import { newLearnerProfile } from './profile';
 import { ALL_UNITS, isUnitPassed, isUnlocked, mapOf, nextSkill, skillStatus } from './progress';
-import type { LearnerProfile, LocalStudent, SkillState, UnitId } from './types';
+import type { LearnerProfile, Student, SkillState, UnitId } from './types';
 
-function student(units: readonly UnitId[] = ALL_UNITS): LocalStudent {
-  return { id: 'ABC123-7', classCode: 'ABC123', seatNo: 7, units: [...units] };
+function student(units: readonly UnitId[] = ALL_UNITS): Student {
+  return { id: 'ABC123-7', units: [...units] };
 }
 
 const passed: SkillState = {

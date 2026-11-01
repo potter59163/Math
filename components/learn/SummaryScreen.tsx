@@ -1,6 +1,8 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { Mascot } from '@/components/app/Mascot';
+import { useRequiredProfile } from '@/components/app/useLearner';
 import { LinkButton } from '@/components/ui/Button';
 import { BoltIcon, CheckIcon, FlameIcon } from '@/components/ui/Icons';
 import { th } from '@/lib/content/th';
@@ -10,7 +12,6 @@ import { badgesOf, type Badge } from '@/lib/practice/rewards';
 import { CATALOG } from '@/lib/topics/matrix/misconceptions';
 import { skillById } from '@/lib/topics/matrix/skills';
 import { LoadingScreen } from './LoadingScreen';
-import { useRequiredProfile } from './useProfile';
 
 function Tile({ icon, label, value }: { icon?: ReactNode; label: string; value: string }) {
   return (
@@ -63,7 +64,10 @@ export function SummaryScreen() {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-5 px-4 py-6">
-      <h1 className="text-2xl font-bold">{th.summary.title}</h1>
+      <header className="flex flex-col items-center gap-2 text-center">
+        <Mascot className="size-20 motion-safe:animate-float" mood="cheer" />
+        <h1 className="text-2xl font-bold">{th.summary.title}</h1>
+      </header>
 
       <div className="grid grid-cols-3 gap-2">
         <Tile

@@ -9,19 +9,24 @@ import { Keypad } from '@/components/input/Keypad';
 import { MatrixInput } from '@/components/input/MatrixInput';
 import { Button } from '@/components/ui/Button';
 import { BulbIcon, CheckIcon } from '@/components/ui/Icons';
+import { learner, useLearner, useRequiredProfile } from '@/components/app/useLearner';
 import { LazyScene, preloadScenes } from '@/components/scenes/LazyScene';
 import type { SceneView } from '@/components/scenes/playerState';
 import { th } from '@/lib/content/th';
-import { restoreAnswer } from '@/lib/core/answerJson';
+import { restoreAnswer, storeAnswer } from '@/lib/core/answerJson';
 import { fillTokens } from '@/lib/core/tokens';
 import type { Answer } from '@/lib/core/types';
 import { rebuildItem } from '@/lib/director/items';
 import { stripNote } from '@/lib/director/pathStep';
-import { requestHelp, startSession, submitAttempt } from '@/lib/director/rules';
-import { sceneOrNull, workedRequest } from '@/lib/director/scene';
-import { finishScene, finishTurn, noteWorkedView } from '@/lib/director/turn';
-import type { ClosedAttempt, NextTurn, Profile, SceneRequest } from '@/lib/director/types';
-import { advanceHint, openMisconceptions } from '@/lib/learner/profile';
+import { sceneOfChosen, sceneOrNull, workedRequest } from '@/lib/director/scene';
+import type {
+  ChosenScene,
+  ClosedAttempt,
+  NextTurn,
+  Profile,
+  SceneRequest,
+} from '@/lib/director/types';
+import { openMisconceptions } from '@/lib/learner/profile';
 import type { AttemptOutcome, HintLevel } from '@/lib/learner/types';
 import {
   draftFromAnswer,
@@ -39,8 +44,6 @@ import {
 } from '@/lib/practice/draft';
 import { hintAt, type Hint } from '@/lib/practice/hints';
 import { actionFromKey } from '@/lib/practice/keyboard';
-import { sceneLog } from '@/lib/practice/sceneLog';
-import { profileStore } from '@/lib/practice/store';
 import type { SceneSpec } from '@/lib/topics/matrix/scenes';
 import { skillById, type SkillId } from '@/lib/topics/matrix/skills';
 import type { MatrixItem } from '@/lib/topics/matrix/types';
@@ -51,7 +54,6 @@ import { preloadFormula } from './LazyFormula';
 import { LoadingScreen } from './LoadingScreen';
 import { PathStrip } from './PathStrip';
 import { StatBadges } from './StatBadges';
-import { useRequiredProfile } from './useProfile';
 
 /**
  * The keypad, the choice buttons and the feedback card all live in this one fixed slot, which is how
@@ -80,15 +82,13 @@ function sceneTitle(spec: SceneSpec, skill: SkillId): string {
   return spec.purpose === 'reveal' ? th.session.workedTitle : nameTh;
 }
 
-/** Stays on this device until /api/event exists in Phase 5. The clock is read here, not in the engine. */
-function logView(profile: Profile, spec: SceneSpec, view: SceneView): void {
-  sceneLog.add({
-    studentId: profile.student.id,
-    decisionId: null,
-    template: spec.template,
-    purpose: spec.purpose,
-    ...view,
-    createdAt: new Date().toISOString(),
+/** How long "ข้อถัดไป" waits for the tutor, a little over the server's own limit (AI_DIRECTOR §4.5). */
+const TUTOR_WAIT_MS = 4500;
+
+function logView(spec: SceneSpec, view: SceneView): void {
+  learner.dispatch({
+    type: 'scene_view',
+    view: { template: spec.template, purpose: spec.purpose, ...view },
   });
 }
 
@@ -98,9 +98,10 @@ export function SessionScreen() {
 }
 
 /** A clip with no feedback to go back to, like the lead clip of a new session. Never blocks the item. */
-function ClipOnly({ profile, request }: { profile: Profile; request: SceneRequest }) {
-  const spec = useMemo(() => sceneOrNull(request), [request]);
-  const skip = useEffectEvent(() => profileStore.save(finishScene(profile)));
+function ClipOnly({ profile, clip }: { profile: Profile; clip: ChosenScene }) {
+  const { request } = clip;
+  const spec = useMemo(() => sceneOfChosen(clip), [clip]);
+  const skip = useEffectEvent(() => learner.dispatch({ type: 'finish_scene' }));
   useEffect(() => {
     if (!spec) skip();
   }, [spec]);
@@ -113,8 +114,8 @@ function ClipOnly({ profile, request }: { profile: Profile; request: SceneReques
           modal
           spec={spec}
           title={sceneTitle(spec, skillOfScene(request, profile.current?.ref.skill ?? 'dim'))}
-          onView={(view) => logView(profile, spec, view)}
-          onDone={() => profileStore.save(finishScene(profile))}
+          onView={(view) => logView(spec, view)}
+          onDone={() => learner.dispatch({ type: 'finish_scene' })}
         />
       )}
     </>
@@ -138,14 +139,14 @@ function SessionLoop({ profile }: { profile: Profile }) {
   const lostTurn = pending && !closed && !clip;
 
   useEffect(() => {
-    if (lostTurn) profileStore.save(finishTurn(profile));
-    else if (!pending && !open) profileStore.save(startSession(profile));
-  }, [lostTurn, pending, open, profile]);
+    if (lostTurn) learner.dispatch({ type: 'finish_turn' });
+    else if (!pending && !open) learner.dispatch({ type: 'start' });
+  }, [lostTurn, pending, open]);
 
   useEffect(preloadScenes, []);
 
   if (clip) {
-    return <ClipOnly key={JSON.stringify(clip.request)} profile={profile} request={clip.request} />;
+    return <ClipOnly key={JSON.stringify(clip.request)} profile={profile} clip={clip} />;
   }
 
   const item = closed?.item ?? open;
@@ -154,14 +155,18 @@ function SessionLoop({ profile }: { profile: Profile }) {
   const submit = (answer: Answer, time: { timeMs: number; at: number }) => {
     if (!open) return;
     const hintLevel = profile.current?.hintLevel ?? 0;
-    const result = submitAttempt(profile, { item: open, answer, hintLevel, ...time });
-    profileStore.save(result.profile);
-    if (result.outcome.classification.type !== 'correct') preloadFormula();
+    const { outcome } = learner.dispatch({
+      type: 'attempt',
+      ref: open.ref,
+      answer: storeAnswer(answer),
+      hintLevel,
+      ...time,
+    });
+    if (outcome?.classification.type !== 'correct') preloadFormula();
   };
 
   const askHint = () => {
-    const next = advanceHint(profile);
-    profileStore.save(next);
+    const { profile: next } = learner.dispatch({ type: 'hint' });
     // Hint L3 shows a formula, so have it ready by the time the student asks.
     if (next.current?.hintLevel === 2) preloadFormula();
   };
@@ -174,8 +179,8 @@ function SessionLoop({ profile }: { profile: Profile }) {
       closed={closed}
       onSubmit={submit}
       onHint={askHint}
-      onNext={() => profileStore.save(finishTurn(profile))}
-      onSceneDone={() => profileStore.save(finishScene(profile))}
+      onNext={() => learner.dispatch({ type: 'finish_turn' })}
+      onSceneDone={() => learner.dispatch({ type: 'finish_scene' })}
     />
   );
 }
@@ -217,6 +222,8 @@ function ItemScreen({
   const [issue, setIssue] = useState<NotReadyReason | null>(null);
   // Lives over this screen, which stays mounted underneath: what was typed so far is still there after.
   const [scene, setScene] = useState<OpenScene | null>(null);
+  const [waiting, setWaiting] = useState(false);
+  const { llm, thinking } = useLearner();
   const helpPresses = useRef(0);
   const scroller = useRef<HTMLElement>(null);
   const hintSpot = useRef<HTMLDivElement>(null);
@@ -245,12 +252,11 @@ function ItemScreen({
     onHint();
   };
   const askHelp = () => {
-    const result = requestHelp(profile, item, helpPresses.current);
+    const { turn } = learner.dispatch({ type: 'help', ref: item.ref, nth: helpPresses.current });
     helpPresses.current += 1;
     setIssue(null);
-    if (!result) return;
-    profileStore.save(result.profile);
-    const spec = sceneOrNull(result.turn.scenes[0].request);
+    if (!turn) return;
+    const spec = sceneOrNull(turn.scenes[0].request);
     if (spec) setScene({ spec, skill: item.ref.skill });
   };
 
@@ -299,14 +305,23 @@ function ItemScreen({
   const skill = skillById(item.ref.skill);
   const answered = closed ? answeredLine(item, draft) : '';
 
-  /** R1 and friends: what the director chose plays now, and the next item comes after it. */
-  const goOn = () => {
-    const next = closed?.turn.scenes[0];
+  /**
+   * R1 and friends: what the director chose plays now, and the next item comes after it. With the tutor
+   * on, its decision may still be on the way, so wait a moment and then read whichever is newest.
+   */
+  const goOn = async () => {
+    if (llm && thinking) {
+      setWaiting(true);
+      await learner.settled(TUTOR_WAIT_MS);
+      setWaiting(false);
+    }
+    const turn = learner.getState().profile?.pending?.turn ?? closed?.turn;
+    const next = turn?.scenes[0];
     if (!next) {
       onNext();
       return;
     }
-    const spec = sceneOrNull(next.request);
+    const spec = sceneOfChosen(next);
     if (!spec) {
       onSceneDone();
       return;
@@ -328,7 +343,7 @@ function ItemScreen({
     setScene({
       spec,
       skill: item.ref.skill,
-      then: () => profileStore.save(noteWorkedView(profile, request)),
+      then: () => learner.dispatch({ type: 'note_worked', request }),
     });
   };
 
@@ -398,7 +413,9 @@ function ItemScreen({
               <FeedbackCard
                 outcome={closed.outcome}
                 turn={closed.turn}
-                onNext={goOn}
+                thinking={llm && thinking}
+                waiting={waiting}
+                onNext={() => void goOn()}
                 onShowWorked={showWorked}
               />
             ) : isChoice ? (
@@ -455,7 +472,7 @@ function ItemScreen({
           spec={scene.spec}
           title={sceneTitle(scene.spec, scene.skill)}
           doneLabel={scene.doneLabel}
-          onView={(view) => logView(profile, scene.spec, view)}
+          onView={(view) => logView(scene.spec, view)}
           onDone={() => {
             setScene(null);
             scene.then?.();

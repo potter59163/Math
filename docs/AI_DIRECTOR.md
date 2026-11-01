@@ -128,7 +128,7 @@ export const LlmDecision = z.object({
   message: z.string().min(1).max(160),              // ถึงนักเรียน
   narration: z.array(z.object({
     beat: z.string(),
-    text: z.string().min(1).max(80),
+    text: z.string().min(1).max(70),
   })).max(6).optional(),                             // เฉพาะ candidate ที่มี scene
   reason: z.string().min(1).max(200),               // ถึงครู
 }).strict();
@@ -137,7 +137,7 @@ export const LlmDecision = z.object({
 ### 4.3 `validateDecision` (ไม่ผ่านข้อใดข้อหนึ่ง → fallback)
 1. parse JSON + Zod → `schema_invalid`
 2. `choice` อยู่ใน candidates → `choice_invalid`
-3. `message` และ `narration[].text` ห้ามมีตัวเลข `/[0-9๐-๙]/` → `digit_violation` (`reason` ของครูมีตัวเลขได้)
+3. `message` และ `narration[].text` ห้ามมีตัวเลข อารบิก ไทย ตัวยก หรือคำอ่านตัวเลข → `digit_violation` (`reason` มีตัวเลขได้)
 4. token ทุกตัว `{{name}}` อยู่ใน `allowedTokens` · ถ้า `revealAllowed = false` ห้ามใช้ token ที่เฉลย → `token_violation`
 5. ห้ามมี `{` หรือ `}` ที่ไม่ใช่ token
 6. `narration[].beat` อยู่ใน beats ของ scene ที่เลือก และถ้า candidate ไม่มี scene ต้องไม่มี narration → `beat_invalid`
@@ -216,10 +216,12 @@ export const LlmDecision = z.object({
 
 ---
 
+### 4.8 เมื่อไม่มี LLM
+ระบบกฎยังมีข้อความถึงนักเรียนจาก `th.tutor.messages` สถานการณ์ละ 2–3 ประโยค เลือกด้วย seed ของนักเรียนและจำนวนข้อ จึงไม่ซ้ำทุกครั้งและ reload แล้วได้ประโยคเดิม ถ้าถูกจับ misconception ในข้อเมทริกซ์จะชี้ช่องของคนนั้นด้วยตัวเลขจาก engine กลุ่มควบคุมไม่มีข้อความ
+
 ## 5. Logging
 ทุกการตัดสินใจเขียนลงตาราง `decisions`
 - **ข้อมูลที่บันทึก:** trigger, mode, candidates, choice, message, narration, reason, latency_ms, fallback_reason
-- **ครูเห็น:** ใน dashboard
 - **นักวิจัยใช้วัด:**
   - fallback rate
   - LLM เลือกต่างจาก rules บ่อยแค่ไหน

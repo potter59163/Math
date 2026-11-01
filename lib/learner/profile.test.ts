@@ -17,12 +17,10 @@ import {
   noteSceneSeen,
   openMisconceptions,
 } from './profile';
-import type { AttemptEvent, HintLevel, LearnerProfile, LocalStudent } from './types';
+import type { AttemptEvent, HintLevel, LearnerProfile, Student } from './types';
 
-const STUDENT: LocalStudent = {
+const STUDENT: Student = {
   id: 'ABC123-7',
-  classCode: 'ABC123',
-  seatNo: 7,
   units: [1, 2, 3, 4, 5],
 };
 

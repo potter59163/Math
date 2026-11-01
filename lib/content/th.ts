@@ -2,13 +2,28 @@ import { CONFIG } from '@/lib/config';
 
 // All Thai UI copy lives here. Draft copy stays marked TODO(review) until Potter and a math teacher check it.
 export const th = {
+  // TODO(review): everything in this block.
   home: {
-    // TODO(review)
-    tagline: 'ฝึกเมทริกซ์ทีละขั้น ดูคลิปสั้นๆ แล้วลองทำเอง',
-    // TODO(review)
-    description: `ถ้าตอบผิด ${CONFIG.tutorName}จะพาดูว่าคลาดเคลื่อนตรงไหน แล้วเลือกขั้นต่อไปให้เหมาะกับคุณ`,
-    // TODO(review)
-    start: 'เริ่มเรียน',
+    // Split at its first space for the end card of the trial clip.
+    tagline: 'เรียนคณิตแบบที่ปรับตามคุณ เริ่มจากเรื่องเมทริกซ์',
+    description: `ทุกคำตอบบอกอะไรบางอย่างเกี่ยวกับวิธีคิดของคุณ ${CONFIG.tutorName}จะดูว่าคลาดเคลื่อนตรงไหน แล้วจัดขั้นต่อไปให้คุณคนเดียว`,
+    features: [
+      { title: 'รู้ว่าผิดเพราะอะไร', body: 'ไม่ได้บอกแค่ว่าผิด แต่บอกว่าคิดคลาดตรงไหน' },
+      { title: 'คลิปที่ใช้ตัวเลขของคุณ', body: 'อธิบายด้วยข้อที่คุณเพิ่งทำ ไม่ใช่ตัวอย่างลอยๆ' },
+      { title: 'บทเรียนของคุณคนเดียว', body: 'ลำดับ ความยาก และตัวเลข ไม่ซ้ำกับใคร' },
+    ],
+    signIn: 'เข้าสู่ระบบด้วย Google',
+    signingIn: 'กำลังพาไปหน้า Google…',
+    tryFirst: 'ลองเรียนก่อน ไม่ต้องล็อกอิน',
+    guestNote: 'โหมดลองเรียนเก็บข้อมูลไว้ในเครื่องนี้เท่านั้น และไม่เข้าตารางอันดับ',
+    continue: 'เรียนต่อ',
+    privacy: 'ความเป็นส่วนตัว',
+    loginFailed: 'เข้าสู่ระบบไม่สำเร็จ ลองอีกครั้งได้เลย',
+    inApp: {
+      title: 'เปิดในเบราว์เซอร์ก่อนนะ',
+      body: 'Google ไม่ให้ล็อกอินจากในแอปนี้ กดปุ่มเมนูของแอป แล้วเลือกเปิดใน Chrome หรือ Safari',
+      line: 'เปิดในเบราว์เซอร์',
+    },
   },
 
   common: {
@@ -24,31 +39,72 @@ export const th = {
     xpLabel: '{{xp}} XP',
     // TODO(review)
     comboLabel: 'ตอบถูกติดกัน {{combo}} ข้อ',
+    // TODO(review)
+    back: 'ย้อนกลับ',
+    // TODO(review)
+    next: 'ต่อไป',
+    // TODO(review)
+    close: 'ปิด',
+    // TODO(review)
+    save: 'บันทึก',
+    // TODO(review)
+    saved: 'บันทึกแล้ว',
   },
 
-  join: {
-    // TODO(review)
-    title: 'เข้าห้องเรียน',
-    // TODO(review)
-    codeLabel: 'รหัสห้อง',
-    // TODO(review)
-    codeHelp: 'รหัส 6 ตัวที่ครูให้มา',
-    // TODO(review)
-    seatLabel: 'เลขที่',
-    // TODO(review)
-    nicknameLabel: 'ชื่อเล่น (ไม่ใส่ก็ได้)',
-    // TODO(review)
-    submit: 'เข้าเรียน',
-    // TODO(review)
-    localNote: 'ตอนนี้ข้อมูลเก็บอยู่ในเครื่องนี้เท่านั้น',
-    errors: {
-      // TODO(review)
-      code: 'รหัสห้องต้องมี 6 ตัว เป็นตัวอักษรอังกฤษหรือตัวเลข',
-      // TODO(review)
-      seat: 'ใส่เลขที่เป็นตัวเลข 1 ถึง 99',
-      // TODO(review)
-      nickname: 'ชื่อเล่นยาวเกินไป',
-    },
+  // TODO(review): everything in this block.
+  welcome: {
+    step: 'ขั้นที่ {{n}} จาก {{total}}',
+    nameTitle: 'ให้เรียกคุณว่าอะไรดี',
+    nameHelp: 'ชื่อนี้จะขึ้นในตารางอันดับ ไม่ต้องใช้ชื่อจริงก็ได้',
+    nameLabel: 'ชื่อที่แสดง',
+    nameTooLong: 'ยาวไปหน่อย ขอไม่เกิน {{max}} ตัวอักษร',
+    avatarTitle: 'เลือกรูปประจำตัว',
+    themeTitle: 'คุณสนใจเรื่องไหนที่สุด',
+    themeHelp: `${CONFIG.tutorName}จะใช้เรื่องนี้เป็นตัวอย่างในคลิปสอน เปลี่ยนได้ในตั้งค่า`,
+    consentTitle: 'ก่อนเริ่มเรียน',
+    consentIntro: 'แอปนี้เป็นส่วนหนึ่งของโครงงานนวัตกรรมของนักเรียน',
+    consentItems: [
+      'เก็บชื่อที่คุณตั้ง คำตอบ และเวลาที่ใช้ เพื่อปรับบทเรียนให้เหมาะกับคุณ และวิเคราะห์แบบไม่ระบุตัวตนเพื่อส่งประกวด',
+      'อีเมลจาก Google ใช้เพื่อเข้าสู่ระบบเท่านั้น ไม่แสดงให้ใครเห็น',
+      'ข้อมูลบางส่วนที่ไม่ระบุตัวตนจะถูกส่งไปยังบริการ AI เพื่อช่วยเลือกบทเรียน',
+      'ไม่เก็บรูป เสียง หรือตำแหน่ง',
+      'หยุดใช้และลบบัญชีได้เองทุกเมื่อในตั้งค่า ข้อมูลทั้งหมดจะถูกลบภายใน 31 มี.ค. 2570',
+    ],
+    consentAgree: 'ฉันอ่านแล้วและยินยอม',
+    start: 'เริ่มเรียนเลย',
+    failed: 'บันทึกไม่สำเร็จ ลองอีกครั้งนะ',
+    pretestTitle: `อยากให้${CONFIG.tutorName}รู้จักคุณก่อนไหม`,
+    pretestBody: 'ทำแบบทดสอบก่อนเรียน 14 ข้อ ราว 20 นาที จะได้ข้ามเรื่องที่ทำได้อยู่แล้ว และเริ่มจากจุดที่ต้องการจริงๆ',
+    pretestYes: 'ทำแบบทดสอบก่อน',
+    pretestNo: 'ข้าม เริ่มเรียนเลย',
+  },
+
+  // TODO(review): everything in this block.
+  themes: {
+    shop: { name: 'ร้านค้า', hint: 'ยอดขายและราคาสินค้า' },
+    game: { name: 'เกม', hint: 'ไอเทมและเหรียญ' },
+    sport: { name: 'กีฬา', hint: 'ทีมและคะแนน' },
+    music: { name: 'ดนตรี', hint: 'วงดนตรีและบัตรคอนเสิร์ต' },
+    food: { name: 'อาหาร', hint: 'ร้านอาหารและเมนู' },
+  },
+
+  // TODO(review): everything in this block.
+  avatars: {
+    bracket: 'วงเล็บเมทริกซ์',
+    sigma: 'ซิกมา',
+    pi: 'พาย',
+    delta: 'เดลตา',
+    theta: 'ทีตา',
+    infinity: 'อนันต์',
+  },
+
+  // TODO(review): everything in this block.
+  tabs: {
+    nav: 'เมนูหลัก',
+    learn: 'บทเรียน',
+    leaderboard: 'อันดับ',
+    profile: 'โปรไฟล์',
+    settings: 'ตั้งค่า',
   },
 
   // Names from docs/SPEC.md §3.
@@ -60,35 +116,230 @@ export const th = {
     5: 'อินเวอร์ส',
   },
 
+  // TODO(review): everything in this block.
   learn: {
-    // TODO(review)
-    title: 'เส้นทางเรียน',
-    // TODO(review)
-    who: 'ห้อง {{code}} เลขที่ {{seat}}',
-    // TODO(review)
+    title: 'บทเรียน',
+    topic: 'เมทริกซ์',
+    topicNote: 'เรื่องแรกของคณิต ม.ปลาย',
     unit: 'หน่วยที่ {{n}}',
     status: {
-      // TODO(review)
       passed: 'ผ่านแล้ว',
-      // TODO(review)
       current: 'เรื่องที่กำลังเรียน',
-      // TODO(review)
       open: 'เปิดแล้ว',
-      // TODO(review)
       locked: 'ยังไม่เปิด',
     },
-    // TODO(review)
+    forYou: `${CONFIG.tutorName}แนะนำ`,
+    recommend: {
+      start: 'เริ่มจากเรื่องแรกกันเลย: {{skill}}',
+      fix: 'ยังค้างเรื่อง "{{m}}" อยู่ มาแก้ให้จบกัน',
+      stuck: 'เรื่อง{{skill}} ยากอยู่ เดี๋ยวพาดูทีละขั้น',
+      review: 'ไม่ได้เจอเรื่อง{{skill}} มาสักพัก แวะทบทวนกัน',
+      next: 'เรื่องต่อไปของคุณคือ {{skill}}',
+      carryOn: 'ทำเรื่อง{{skill}} ต่อจากเมื่อกี้กัน',
+      done: 'ผ่านครบทุกเรื่องแล้ว มาทบทวนให้แม่นกัน',
+    },
+    start: 'เริ่มเรียน',
     continue: 'เรียนต่อ',
-    // TODO(review)
-    allDone: 'ผ่านครบทุกเรื่องแล้ว',
-    // TODO(review)
     keepPracticing: 'ทบทวนต่อ',
-    // TODO(review)
-    seeSummary: 'ดูสรุป',
-    // TODO(review)
-    leave: 'เปลี่ยนคน',
-    // TODO(review)
+    dailyGoal: 'เป้าหมายวันนี้',
+    dailyCount: '{{n}}/{{goal}} ข้อ',
+    dailyDone: 'ครบแล้ววันนี้',
+    streak: '{{n}} วันติด',
+    mastery: 'ความแม่น {{p}}%',
+    sheetStart: 'เรียนเรื่องนี้',
+    sheetContinue: 'เรียนต่อเรื่องนี้',
+    sheetAgain: 'ฝึกอีกครั้ง',
+    sheetLocked: 'ต้องผ่าน {{skills}} ก่อน',
     myPath: 'เส้นทางของฉัน',
+    guestBanner: 'กำลังลองเรียน ความคืบหน้าอยู่ในเครื่องนี้เท่านั้น',
+    guestAction: 'ล็อกอินเพื่อเก็บไว้',
+    offline: 'ออฟไลน์อยู่ ข้อที่ทำจะซิงก์เมื่อกลับมาออนไลน์',
+  },
+
+  // TODO(review): everything in this block.
+  board: {
+    title: 'อันดับประจำสัปดาห์',
+    resets: 'เริ่มนับใหม่ทุกวันจันทร์',
+    you: 'คุณ',
+    xp: '{{xp}} XP',
+    rank: 'อันดับ {{n}}',
+    empty: 'สัปดาห์นี้ยังไม่มีใครได้ XP เริ่มก่อนใครเลย',
+    hidden: 'คุณซ่อนชื่อจากตารางอยู่ เปิดได้ในตั้งค่า',
+    guest: 'ล็อกอินเพื่อเข้าตารางอันดับ และแข่งกับเพื่อนในแต่ละสัปดาห์',
+    failed: 'โหลดตารางไม่สำเร็จ',
+    notYet: 'ยังไม่มี XP สัปดาห์นี้ ทำสักข้อเพื่อขึ้นตาราง',
+  },
+
+  // TODO(review): everything in this block.
+  profile: {
+    title: 'โปรไฟล์',
+    guestName: 'ผู้เรียนรับเชิญ',
+    stats: {
+      xp: 'XP สะสม',
+      streak: 'วันติดกัน',
+      items: 'ข้อที่ทำแล้ว',
+      bestCombo: 'ถูกติดกันสูงสุด',
+    },
+    week: '7 วันที่ผ่านมา',
+    weekLabel: '{{day}}: {{n}} ข้อ',
+    days: ['จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส', 'อา'],
+    mastery: 'ความแม่นรายเรื่อง',
+    badges: 'เหรียญที่ได้',
+    badgesNone: 'ผ่านหน่วยหรือแก้ความเข้าใจผิดเพื่อรับเหรียญ',
+    fixed: 'ความเข้าใจผิดที่แก้ได้',
+    open: 'กำลังแก้อยู่',
+    fixedNone: 'ยังไม่มี',
+    path: 'เส้นทางล่าสุด',
+    tests: 'แบบทดสอบ',
+    pre: 'ก่อนเรียน',
+    post: 'หลังเรียน',
+    take: 'ทำแบบทดสอบ',
+    score: '{{score}}/{{total}} คะแนน',
+    improved: 'ดีขึ้น {{points}} คะแนน',
+    guestTests: 'ล็อกอินเพื่อทำแบบทดสอบและเก็บผลไว้',
+  },
+
+  // TODO(review): everything in this block.
+  settings: {
+    title: 'ตั้งค่า',
+    account: 'บัญชี',
+    displayName: 'ชื่อที่แสดง',
+    avatar: 'รูปประจำตัว',
+    showOnBoard: 'แสดงชื่อในตารางอันดับ',
+    learning: 'การเรียน',
+    theme: 'เรื่องที่สนใจ',
+    themeHelp: 'ใช้เป็นตัวอย่างในคลิปสอน',
+    voice: 'อ่านคำบรรยายคลิปออกเสียง',
+    voiceHelp: 'ใช้เสียงในเครื่อง ถ้าเครื่องไม่มีเสียงภาษาไทยจะไม่มีเสียง',
+    display: 'หน้าจอ',
+    colorScheme: 'สีของแอป',
+    schemes: { system: 'ตามเครื่อง', light: 'สว่าง', dark: 'มืด' },
+    reduceMotion: 'ลดการเคลื่อนไหว',
+    about: 'เกี่ยวกับ',
+    privacy: 'ความเป็นส่วนตัว',
+    signOut: 'ออกจากระบบ',
+    signIn: 'เข้าสู่ระบบด้วย Google',
+    guestNote: 'ล็อกอินแล้วความคืบหน้าในเครื่องนี้จะตามไปด้วย',
+    resetGuest: 'เริ่มใหม่ทั้งหมด',
+    resetGuestConfirm: 'ความคืบหน้าในเครื่องนี้จะหายไป เริ่มใหม่เลยไหม',
+    dangerZone: 'ลบบัญชี',
+    deleteBody: 'ลบบัญชีและข้อมูลการเรียนทั้งหมด กู้คืนไม่ได้',
+    deleteType: 'พิมพ์คำว่า {{word}} เพื่อยืนยัน',
+    deleteWord: 'ลบ',
+    deleteAction: 'ลบบัญชีถาวร',
+    deleteFailed: 'ลบไม่สำเร็จ ลองอีกครั้งนะ',
+  },
+
+  // TODO(review): everything in this block. Have the advisor check it before the trial.
+  privacy: {
+    title: 'ความเป็นส่วนตัว',
+    sections: [
+      {
+        title: 'เก็บอะไรบ้าง',
+        body: 'ชื่อที่คุณตั้ง รูปประจำตัวที่เลือก คำตอบ เวลาที่ใช้ การกดขอใบ้ และการดูคลิป ส่วนอีเมลจาก Google ใช้เพื่อเข้าสู่ระบบเท่านั้น',
+      },
+      { title: 'ไม่เก็บอะไร', body: 'ไม่เก็บรูปจาก Google รูปถ่าย เสียง หรือตำแหน่ง' },
+      {
+        title: 'ใครเห็นอะไร',
+        body: 'คนอื่นเห็นแค่ชื่อที่ตั้ง รูปประจำตัว และ XP สัปดาห์นี้ในตารางอันดับ ซึ่งปิดได้ในตั้งค่า',
+      },
+      {
+        title: 'ส่งอะไรให้ AI',
+        body: `${CONFIG.tutorName}ได้เห็นผลการเรียนและคำตอบล่าสุด โดยไม่มีชื่อ อีเมล หรือข้อมูลที่ระบุตัวคุณ`,
+      },
+      {
+        title: 'ใช้ทำอะไร',
+        body: 'ปรับบทเรียนให้เหมาะกับคุณ และวิเคราะห์แบบไม่ระบุตัวตนเพื่อส่งประกวดโครงงานนวัตกรรม',
+      },
+      {
+        title: 'ลบเมื่อไหร่',
+        body: 'ลบบัญชีได้เองทุกเมื่อในตั้งค่า และข้อมูลทั้งหมดจะถูกลบภายใน 31 มี.ค. 2570',
+      },
+    ],
+  },
+
+  // TODO(review): everything in this block. Rules-mode words: praise the thinking, never the student.
+  tutor: {
+    thinking: `${CONFIG.tutorName}กำลังคิด…`,
+    name: CONFIG.tutorName,
+    messages: {
+      level_up: [
+        'ถูกติดกันแล้ว ลองข้อที่ยากขึ้นอีกนิดกัน',
+        'วิธีคิดนี้ใช้ได้ดีเลย ขอท้าทายด้วยข้อถัดไป',
+        'จับทางได้แล้ว งั้นเพิ่มความยากอีกขั้น',
+      ],
+      same_level: [
+        'วิธีนี้ถูกแล้ว ทำอีกข้อให้มือขึ้น',
+        'คิดถูกทาง ลองอีกข้อที่ตัวเลขต่างออกไปนะ',
+        'ถูกต้อง ขออีกข้อให้แน่ใจว่าแม่นจริง',
+      ],
+      advance: [
+        'เรื่องนี้แน่นแล้ว ไปเรื่องใหม่กัน',
+        'ทำได้ครบตามเกณฑ์แล้ว เรื่องต่อไปรออยู่',
+        'ผ่านเรื่องนี้แล้ว ลองดูว่าเรื่องต่อไปต่อยอดยังไง',
+      ],
+      review: [
+        'เรื่องนี้ผ่านมาสักพักแล้ว แวะดูว่ายังจำได้ไหม',
+        'สลับมาทบทวนเรื่องเก่าสักข้อ ช่วยให้จำได้นานขึ้น',
+      ],
+      fixing: [
+        'ข้อนี้ถูกแล้ว ขอเช็กอีกข้อให้แน่ใจว่าหายสงสัย',
+        'เริ่มเข้าทางแล้ว ลองอีกข้อเรื่องเดิมนะ',
+      ],
+      fixed: [
+        'จากที่เคยคลาด ตอนนี้แก้ได้แล้ว นี่แหละความก้าวหน้า',
+        'เรื่องที่เคยพลาดตอนนี้ทำถูกติดกันแล้ว',
+      ],
+      caught_cell: [
+        'ลองดูช่องแถว {{i}} หลัก {{j}} ที่ตอบ {{studentCell}} นะ คลิปนี้ใช้ตัวเลขจากข้อเมื่อกี้เลย',
+        'จุดที่คลาดอยู่ตรงช่องแถว {{i}} หลัก {{j}} มาดูกันว่าเลขนี้ควรมาจากไหน',
+      ],
+      caught: [
+        'วิธีคิดนี้เจอบ่อยมาก มาดูกันว่าคลาดตรงไหน แล้วลองใหม่อีกข้อ',
+        'มาดูจุดที่คลาดด้วยข้อเมื่อกี้เลย เสร็จแล้วลองอีกข้อกัน',
+      ],
+      caught_again: [
+        'เรื่องนี้ต้องใช้เวลา ลองทำอีกข้อโดยดูทีละขั้นนะ',
+        'ยังคลาดจุดเดิมอยู่ ไม่เป็นไร ลองช้าลงแล้วคิดทีละขั้น',
+      ],
+      slip: [
+        'เกือบแล้ว วิธีถูก พลาดแค่ช่องเดียว ลองอีกข้อนะ',
+        'วิธีคิดถูกแล้ว น่าจะแค่พลาดตอนคิดเลข',
+      ],
+      unknown: [
+        'ไม่เป็นไร มาดูทีละขั้นกันก่อน แล้วค่อยลองอีกข้อ',
+        'คำตอบนี้ยังไม่เข้าทาง มาไล่ดูด้วยกันนะ',
+      ],
+      stuck: [
+        'เรื่องนี้ยากจริงๆ พักข้อยากก่อน ดูทีละขั้น แล้วกลับมาเริ่มจากข้อง่าย',
+        'ผิดติดกันไม่ได้แปลว่าทำไม่ได้ มาดูทีละขั้น แล้วเริ่มใหม่จากข้อง่ายกัน',
+      ],
+    },
+  },
+
+  // TODO(review): everything in this block.
+  test: {
+    titles: { pre: 'แบบทดสอบก่อนเรียน', post: 'แบบทดสอบหลังเรียน' },
+    intro: {
+      pre: 'ทำเท่าที่ทำได้ ไม่มีใบ้และไม่บอกผลระหว่างทำ คะแนนนี้ไม่มีผลกับเกรด',
+      post: 'มาดูกันว่าคุณไปไกลแค่ไหน ไม่มีใบ้และไม่บอกผลระหว่างทำ',
+    },
+    begin: 'เริ่มทำ',
+    progress: 'ข้อ {{n}} จาก {{total}}',
+    next: 'ข้อถัดไป',
+    skip: 'ข้ามข้อนี้',
+    finish: 'ส่งแบบทดสอบ',
+    failed: 'ส่งไม่สำเร็จ ลองอีกครั้งนะ',
+    resultTitle: 'ส่งแล้ว',
+    result: 'ได้ {{score}} จาก {{total}} คะแนน',
+    resultNote: {
+      pre: `${CONFIG.tutorName}จะจัดเส้นทางจากผลนี้ เรื่องที่ทำได้จะข้ามคลิปนำให้`,
+      post: 'ดูผลเทียบกับก่อนเรียนได้ในหน้าโปรไฟล์',
+    },
+    goLearn: 'ไปเรียนต่อ',
+    done: 'คุณทำแบบทดสอบนี้แล้ว',
+    guest: 'ต้องล็อกอินก่อนจึงจะทำแบบทดสอบได้',
+    unavailable: 'โหลดแบบทดสอบไม่สำเร็จ',
   },
 
   session: {
@@ -422,6 +673,8 @@ export const th = {
     // TODO(review)
     request: 'เปิดคลิปนี้ตามที่ขอ',
     // TODO(review)
+    chosen: 'ฝึกเรื่องนี้ตามที่เลือก',
+    // TODO(review)
     start: 'เริ่มจากเรื่องนี้ก่อน',
     // The control group sees no reasons (AI_DIRECTOR §3.1).
     fixed: '',
@@ -430,7 +683,7 @@ export const th = {
   // Why the rules offered each candidate, for the teacher (docs/AI_DIRECTOR.md §3). Digits are allowed.
   ruleReasons: {
     // TODO(review)
-    stuck: 'ผิดครั้งแรกติดกัน {{n}} ข้อ → ดูวิธีทำ แล้วกลับไประดับ 1 และแจ้งครู',
+    stuck: 'ผิดครั้งแรกติดกัน {{n}} ข้อ → ดูวิธีทำ แล้วกลับไประดับ 1',
     // TODO(review)
     review: 'ไม่ได้เจอ {{skill}} มา {{n}} ข้อ → แทรกข้อทบทวน',
     // TODO(review)
@@ -465,6 +718,8 @@ export const th = {
     start_probe: 'พบ{{m}} → เริ่มด้วยข้อทดสอบ',
     // TODO(review)
     request: 'นักเรียนกด "ไม่เข้าใจ" → เปิดคลิปแนวคิดด้วยตัวอย่างอื่น',
+    // TODO(review)
+    chosen: 'นักเรียนเลือกฝึก {{skill}} เอง',
     // TODO(review)
     fixed: 'เส้นทางตายตัว: {{skill}} ระดับ {{level}}',
   },
@@ -809,54 +1064,259 @@ export const th = {
       },
     },
     // Real-life unit intros (SCENES §5).
+    cellByCell: {
+      setup: {
+        // TODO(review)
+        add: 'บวกทีละช่อง ตำแหน่งเดียวกันบวกกัน',
+        // TODO(review)
+        sub: 'ลบทีละช่อง โดยเอาค่าของตัวหน้าตั้ง',
+        // TODO(review)
+        scalar: 'สเกลาร์คูณเข้าไปทุกช่อง',
+      },
+      // TODO(review)
+      cell: 'แถว {{i}} หลัก {{j}}: {{expression}}',
+      // TODO(review)
+      rest: 'ช่องที่เหลือก็ทำแบบเดียวกัน',
+      // TODO(review)
+      done: 'ครบทุกช่องแล้ว',
+      compare: {
+        // TODO(review)
+        REVERSED: 'ที่ทำมา: เอาตัวหลังลบตัวหน้า ลำดับจึงสลับกัน',
+        // TODO(review)
+        FIRST_ROW: 'ที่ทำมา: คูณแค่แถวแรก แถวอื่นยังเหมือนเดิม',
+        // TODO(review)
+        DIAGONAL: 'ที่ทำมา: คูณแค่แนวทแยง ช่องอื่นยังเหมือนเดิม',
+        // TODO(review)
+        ADD: 'ที่ทำมา: เอาค่ามาบวก แต่ต้องคูณทุกช่อง',
+      },
+    },
+    detSum: {
+      // TODO(review)
+      compare: 'ที่ทำมา: หา det ทีละตัวแล้วเอามาบวกกัน',
+      // TODO(review)
+      add_first: 'ต้องบวกเมทริกซ์ให้เสร็จก่อน',
+      // TODO(review)
+      det_of_sum: 'แล้วค่อยหา det ของผลบวก',
+      // TODO(review)
+      differ: 'ได้ {{right}} ไม่ใช่ {{wrong}} det แยกผลบวกไม่ได้',
+    },
     intro: {
-      shops: {
-        // TODO(review)
-        rows: ['ร้าน ก', 'ร้าน ข'],
-        // TODO(review)
-        cols: ['สมุด', 'ปากกา', 'ยางลบ'],
-      },
-      u1: {
-        // TODO(review)
-        blocks: 'ยอดขายของแต่ละร้าน เขียนเป็นตารางได้',
-        // TODO(review)
-        count_rows: 'แถวบอกว่าเป็นร้านไหน มี {{rows}} แถว',
-        // TODO(review)
-        count_cols: 'หลักบอกว่าเป็นสินค้าอะไร มี {{cols}} หลัก',
-        // TODO(review)
-        result: 'ตารางตัวเลขนี้คือเมทริกซ์มิติ {{dims}}',
-      },
-      u2: {
-        // TODO(review)
-        branch_a: 'สาขาแรกขายได้ตามตาราง A',
-        // TODO(review)
-        branch_b: 'สาขาที่สองขายได้ตามตาราง B',
-        // TODO(review)
-        total: 'ยอดรวมสองสาขา: บวกทีละช่อง',
-        // TODO(review)
-        reorder: 'สั่งของเพิ่มเป็น {{k}} เท่าของ A: คูณทุกช่อง',
-      },
-      u3: {
-        // TODO(review)
-        left: 'จำนวน',
-        // TODO(review)
-        right: 'ราคา',
-        // TODO(review)
-        result: 'รายได้',
-        // TODO(review)
-        setup: 'จำนวนสินค้า × ราคา = รายได้',
-        // TODO(review)
-        pick_row: 'ร้านแรกขายอะไรไปเท่าไร: ใช้แถวที่ {{i}}',
-        // TODO(review)
-        pick_col: 'ราคาต่อชิ้น: ใช้หลักที่ {{j}}',
-        // TODO(review)
-        pair: 'สินค้าแต่ละอย่างคู่กับราคาของมัน',
-        // TODO(review)
-        multiply: 'จำนวน × ราคา ของแต่ละอย่าง',
-        // TODO(review)
-        sum: 'รวมเป็นรายได้ของร้านแรก',
-        // TODO(review)
-        fill_rest: 'ร้านที่สองก็ทำแบบเดียวกัน',
+      // TODO(review)
+      u1_result: 'ตารางตัวเลขนี้คือเมทริกซ์มิติ {{dims}}',
+      // TODO(review)
+      u2_rest: 'ช่องที่เหลือก็บวกแบบเดียวกัน',
+      // TODO(review)
+      u3_pick_col: 'ราคาต่อหน่วย: ใช้หลักที่ {{j}}',
+      // TODO(review)
+      u3_pair: 'แต่ละอย่างคู่กับราคาของมัน',
+      // TODO(review)
+      u3_multiply: 'จำนวน × ราคา ของแต่ละอย่าง',
+      stories: {
+        shop: {
+          labels: { rows: ['ร้าน ก', 'ร้าน ข'], cols: ['สมุด', 'ปากกา', 'ยางลบ'] },
+          u1: {
+            // TODO(review)
+            blocks: 'ยอดขายของแต่ละร้าน เขียนเป็นตารางได้',
+            // TODO(review)
+            count_rows: 'แถวบอกว่าเป็นร้านไหน มี {{rows}} แถว',
+            // TODO(review)
+            count_cols: 'หลักบอกว่าเป็นสินค้าอะไร มี {{cols}} หลัก',
+          },
+          u2: {
+            // TODO(review)
+            left: 'สาขา 1',
+            // TODO(review)
+            right: 'สาขา 2',
+            // TODO(review)
+            result: 'รวม',
+            // TODO(review)
+            setup: 'ยอดรวมสองสาขา: บวกทีละช่อง',
+            // TODO(review)
+            done: 'ได้ยอดรวมของทุกสินค้า',
+            // TODO(review)
+            also: 'สั่งของเพิ่มเป็น {{k}} เท่าของสาขาแรก: คูณทุกช่อง',
+          },
+          u3: {
+            // TODO(review)
+            left: 'จำนวน',
+            // TODO(review)
+            right: 'ราคา',
+            // TODO(review)
+            result: 'รายได้',
+            // TODO(review)
+            setup: 'จำนวนสินค้า × ราคา = รายได้',
+            // TODO(review)
+            pick_row: 'ร้านแรกขายอะไรไปเท่าไร: ใช้แถวที่ {{i}}',
+            // TODO(review)
+            sum: 'รวมเป็นรายได้ของร้านแรก',
+            // TODO(review)
+            fill_rest: 'ร้านที่สองก็ทำแบบเดียวกัน',
+          },
+        },
+        game: {
+          labels: { rows: ['ผู้เล่น ก', 'ผู้เล่น ข'], cols: ['ดาบ', 'โล่', 'ยา'] },
+          u1: {
+            // TODO(review)
+            blocks: 'ไอเทมของผู้เล่นแต่ละคน เขียนเป็นตารางได้',
+            // TODO(review)
+            count_rows: 'แถวบอกว่าเป็นผู้เล่นคนไหน มี {{rows}} แถว',
+            // TODO(review)
+            count_cols: 'หลักบอกว่าเป็นไอเทมอะไร มี {{cols}} หลัก',
+          },
+          u2: {
+            // TODO(review)
+            left: 'ด่าน 1',
+            // TODO(review)
+            right: 'ด่าน 2',
+            // TODO(review)
+            result: 'รวม',
+            // TODO(review)
+            setup: 'ไอเทมรวมสองด่าน: บวกทีละช่อง',
+            // TODO(review)
+            done: 'ได้จำนวนไอเทมรวมของทุกอย่าง',
+            // TODO(review)
+            also: 'ได้โบนัส {{k}} เท่าจากด่านแรก: คูณทุกช่อง',
+          },
+          u3: {
+            // TODO(review)
+            left: 'จำนวน',
+            // TODO(review)
+            right: 'ราคา',
+            // TODO(review)
+            result: 'เหรียญ',
+            // TODO(review)
+            setup: 'จำนวนไอเทม × ราคา = เหรียญที่ใช้',
+            // TODO(review)
+            pick_row: 'ผู้เล่นคนแรกซื้ออะไรเท่าไร: ใช้แถวที่ {{i}}',
+            // TODO(review)
+            sum: 'รวมเป็นเหรียญที่คนแรกใช้',
+            // TODO(review)
+            fill_rest: 'คนที่สองก็ทำแบบเดียวกัน',
+          },
+        },
+        sport: {
+          labels: { rows: ['ทีม ก', 'ทีม ข'], cols: ['ชนะ', 'เสมอ', 'แพ้'] },
+          u1: {
+            // TODO(review)
+            blocks: 'ผลการแข่งของแต่ละทีม เขียนเป็นตารางได้',
+            // TODO(review)
+            count_rows: 'แถวบอกว่าเป็นทีมไหน มี {{rows}} แถว',
+            // TODO(review)
+            count_cols: 'หลักบอกว่าเป็นผลแบบไหน มี {{cols}} หลัก',
+          },
+          u2: {
+            // TODO(review)
+            left: 'ครึ่งแรก',
+            // TODO(review)
+            right: 'ครึ่งหลัง',
+            // TODO(review)
+            result: 'รวม',
+            // TODO(review)
+            setup: 'ผลรวมสองช่วงของฤดูกาล: บวกทีละช่อง',
+            // TODO(review)
+            done: 'ได้ผลรวมของทั้งฤดูกาล',
+            // TODO(review)
+            also: 'ถ้าแข่ง {{k}} เท่าของครึ่งแรก: คูณทุกช่อง',
+          },
+          u3: {
+            // TODO(review)
+            left: 'จำนวนนัด',
+            // TODO(review)
+            right: 'แต้ม',
+            // TODO(review)
+            result: 'แต้มรวม',
+            // TODO(review)
+            setup: 'จำนวนนัด × แต้มต่อนัด = แต้มรวม',
+            // TODO(review)
+            pick_row: 'ทีมแรกแข่งไปกี่นัด: ใช้แถวที่ {{i}}',
+            // TODO(review)
+            sum: 'รวมเป็นแต้มของทีมแรก',
+            // TODO(review)
+            fill_rest: 'ทีมที่สองก็ทำแบบเดียวกัน',
+          },
+        },
+        music: {
+          labels: { rows: ['วง ก', 'วง ข'], cols: ['ป๊อป', 'ร็อก', 'แจ๊ส'] },
+          u1: {
+            // TODO(review)
+            blocks: 'เพลงที่แต่ละวงเล่น เขียนเป็นตารางได้',
+            // TODO(review)
+            count_rows: 'แถวบอกว่าเป็นวงไหน มี {{rows}} แถว',
+            // TODO(review)
+            count_cols: 'หลักบอกว่าเป็นแนวเพลงอะไร มี {{cols}} หลัก',
+          },
+          u2: {
+            // TODO(review)
+            left: 'รอบบ่าย',
+            // TODO(review)
+            right: 'รอบค่ำ',
+            // TODO(review)
+            result: 'รวม',
+            // TODO(review)
+            setup: 'บัตรที่ขายได้สองรอบ: บวกทีละช่อง',
+            // TODO(review)
+            done: 'ได้จำนวนบัตรรวมของทุกโซน',
+            // TODO(review)
+            also: 'เปิดขาย {{k}} เท่าของรอบบ่าย: คูณทุกช่อง',
+          },
+          u3: {
+            // TODO(review)
+            left: 'จำนวนบัตร',
+            // TODO(review)
+            right: 'ราคา',
+            // TODO(review)
+            result: 'รายได้',
+            // TODO(review)
+            setup: 'จำนวนบัตร × ราคา = รายได้',
+            // TODO(review)
+            pick_row: 'วงแรกขายบัตรไปเท่าไร: ใช้แถวที่ {{i}}',
+            // TODO(review)
+            sum: 'รวมเป็นรายได้ของวงแรก',
+            // TODO(review)
+            fill_rest: 'วงที่สองก็ทำแบบเดียวกัน',
+          },
+        },
+        food: {
+          labels: { rows: ['ร้าน ก', 'ร้าน ข'], cols: ['ชานม', 'ข้าวมัน', 'ลูกชิ้น'] },
+          u1: {
+            // TODO(review)
+            blocks: 'เมนูที่แต่ละร้านขายได้ เขียนเป็นตารางได้',
+            // TODO(review)
+            count_rows: 'แถวบอกว่าเป็นร้านไหน มี {{rows}} แถว',
+            // TODO(review)
+            count_cols: 'หลักบอกว่าเป็นเมนูอะไร มี {{cols}} หลัก',
+          },
+          u2: {
+            // TODO(review)
+            left: 'มื้อเช้า',
+            // TODO(review)
+            right: 'มื้อเย็น',
+            // TODO(review)
+            result: 'รวม',
+            // TODO(review)
+            setup: 'ยอดขายสองมื้อรวมกัน: บวกทีละช่อง',
+            // TODO(review)
+            done: 'ได้ยอดขายรวมของทุกเมนู',
+            // TODO(review)
+            also: 'เตรียมของ {{k}} เท่าของมื้อเช้า: คูณทุกช่อง',
+          },
+          u3: {
+            // TODO(review)
+            left: 'จำนวนจาน',
+            // TODO(review)
+            right: 'ราคา',
+            // TODO(review)
+            result: 'ยอดเงิน',
+            // TODO(review)
+            setup: 'จำนวนจาน × ราคา = ยอดเงิน',
+            // TODO(review)
+            pick_row: 'โต๊ะแรกสั่งอะไรเท่าไร: ใช้แถวที่ {{i}}',
+            // TODO(review)
+            sum: 'รวมเป็นยอดเงินของโต๊ะแรก',
+            // TODO(review)
+            fill_rest: 'โต๊ะที่สองก็ทำแบบเดียวกัน',
+          },
+        },
       },
       u4: {
         // TODO(review)

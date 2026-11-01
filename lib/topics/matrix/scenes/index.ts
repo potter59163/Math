@@ -6,17 +6,20 @@ import { Rational } from '@/lib/core/rational';
 import { fillTokens } from '@/lib/core/tokens';
 import type { Answer, Level, Matrix } from '@/lib/core/types';
 import { generate } from '../generators';
-import { mat } from '../latex';
 import { sceneFor, type SceneRef } from '../misconceptions';
-import { add, equals, matrix, mul, sarrusLines, scalar, shape, transpose } from '../ops';
+import { equals, matrix, mul, sarrusLines, shape, transpose } from '../ops';
 import type { Skill, SkillId } from '../skills';
 import type { MatrixItem, MisconceptionId } from '../types';
+import type { ThemeId } from '@/lib/learner/types';
+import { cellByCellScene } from './cellByCell';
 import { cellLocatorScene } from './cellLocator';
+import { detSumScene } from './detSum';
 import { dimensionScene } from './dimensionMatch';
 import { gridScene } from './gridTransform';
 import { inverseScene } from './inverseRecipe';
 import { rowColDotScene } from './rowColDot';
 import { sarrusScene } from './sarrus';
+import { DOCUMENTED_NUMBERS, introNumbers } from './stories';
 import { transposeScene } from './transposeFlip';
 import type {
   AnyScene,
@@ -28,7 +31,7 @@ import type {
   SceneSpec,
   TransposeVariant,
 } from './types';
-import { workedScene, workedSceneOf } from './workedSolution';
+import { workedScene } from './workedSolution';
 
 export type { SceneSpec, ScenePurpose, TemplateId } from './types';
 
@@ -226,13 +229,16 @@ export function conceptScene(skill: SkillId, options: ConceptOptions): SceneSpec
   switch (data.form) {
     case 'dim':
       return dimensionScene({ op: 'single', first: shape(data.A), values: data.A, purpose });
-    case 'addsub':
-      return dimensionScene({
-        op: 'add',
-        first: shape(data.A),
-        second: shape(data.B),
-        purpose,
-      });
+    case 'addsub': {
+      // Mismatched dims have no working to show, so that example teaches the check instead.
+      const fits =
+        shape(data.A).rows === shape(data.B).rows && shape(data.A).cols === shape(data.B).cols;
+      return fits
+        ? cellByCellScene({ op: data.op, left: data.A, right: data.B, purpose })
+        : dimensionScene({ op: 'add', first: shape(data.A), second: shape(data.B), purpose });
+    }
+    case 'scalar':
+      return cellByCellScene({ op: 'scalar', left: data.A, k: Rational.of(data.k), purpose });
     case 'mult_defined': {
       const isAB = data.order === 'AB';
       return dimensionScene({
@@ -266,7 +272,7 @@ export function conceptScene(skill: SkillId, options: ConceptOptions): SceneSpec
     case 'det3':
       return sarrusScene({ A: data.A, purpose });
     default:
-      return workedScene(example, purpose, { allCells: data.form === 'scalar' });
+      return workedScene(example, purpose);
   }
 }
 
@@ -451,108 +457,121 @@ export function remediationScene(item: MatrixItem, answer: Answer, caught: Caugh
         purpose,
       });
     }
+    case 'cell_by_cell':
+      return cellByCellRemediation(item, answer, caught);
+    case 'det_sum': {
+      if (data.form !== 'det_sum')
+        throw new Error(`remediationScene: ${caught.id} on ${data.form}`);
+      return detSumScene({ A: data.A, B: data.B, studentAnswer: answer, purpose });
+    }
     case 'worked_solution':
-      return workedScene(item, purpose, {
-        allCells: ref.mode === 'all_cells',
-        studentAnswer: answer,
-        variant: caught.variant,
-      });
+      return workedScene(item, purpose, { studentAnswer: answer, variant: caught.variant });
   }
 }
 
-// Numbers of the real-life intros (SCENES §5). The inputs are fixed and everything drawn from them
-// goes through the engine, so a test can check them against docs/SCENES.md.
-const SHOP_SALES = matrix([
-  [12, 5, 8],
-  [7, 9, 4],
-]);
-const BRANCH_A = matrix([
-  [12, 5],
-  [7, 9],
-]);
-const BRANCH_B = matrix([
-  [3, 8],
-  [5, 2],
-]);
-const REORDER = 2;
-const QUANTITIES = matrix([
-  [3, 2],
-  [1, 4],
-]);
-const PRICES = matrix([[20], [15]]);
-const STRETCH = matrix([
-  [2, 1],
-  [0, 1],
-]);
-// Holds a zero, which `invertible` L1 never does, so this intro can never be the item after it.
-const UNDOABLE = matrix([
-  [1, 2],
-  [0, 1],
-]);
+/** M05 and M07: the student's own answer beside the same cells worked out properly. */
+function cellByCellRemediation(item: MatrixItem, answer: Answer, caught: Caught): SceneSpec {
+  const { data, correct } = item;
+  const shared = {
+    purpose: 'remediate' as const,
+    studentAnswer: answer,
+    variant: caught.variant ?? 'REVERSED',
+    focus: firstWrongCell(answer, correct),
+    ...(answer.kind === 'matrix' && { student: answer.value }),
+  };
+  switch (data.form) {
+    case 'addsub':
+      return cellByCellScene({ op: data.op, left: data.A, right: data.B, ...shared });
+    case 'scalar':
+      return cellByCellScene({ op: 'scalar', left: data.A, k: Rational.of(data.k), ...shared });
+    // 2A − 3B: its first half is the part M07 is about, on the item's own numbers.
+    case 'combo':
+      return cellByCellScene({
+        op: 'scalar',
+        left: data.A,
+        k: Rational.of(data.p),
+        purpose: 'remediate',
+        studentAnswer: answer,
+        variant: caught.variant ?? 'REVERSED',
+      });
+    default:
+      throw new Error(`remediationScene: ${caught.id} on ${data.form}`);
+  }
+}
+
+export interface IntroOptions {
+  /** Draws this student's own numbers. Without it, the fixed ones of docs/SCENES.md §5. */
+  seed?: number;
+  /** Which story it tells. */
+  theme?: ThemeId;
+}
 
 /** The first clip a student sees in a unit, at most 40 seconds (SPEC §4, SCENES §5). */
-export function introScene(unit: Skill['unit']): SceneSpec {
+export function introScene(
+  unit: Skill['unit'],
+  { seed, theme = 'shop' }: IntroOptions = {},
+): SceneSpec {
   const purpose = 'intro';
   const copy = th.scenes.intro;
+  const story = copy.stories[theme];
+  const numbers = seed === undefined ? DOCUMENTED_NUMBERS : introNumbers(seed);
   switch (unit) {
     case 1: {
-      const dims = shape(SHOP_SALES);
+      const dims = shape(numbers.sales);
       return dimensionScene({
         op: 'single',
         first: dims,
-        values: SHOP_SALES,
-        labels: copy.shops,
+        values: numbers.sales,
+        labels: story.labels,
         purpose,
         captions: {
-          blocks: copy.u1.blocks,
-          count_rows: fillTokens(copy.u1.count_rows, { rows: String(dims.rows) }),
-          count_cols: fillTokens(copy.u1.count_cols, { cols: String(dims.cols) }),
-          result: fillTokens(copy.u1.result, { dims: `${dims.rows}×${dims.cols}` }),
+          blocks: story.u1.blocks,
+          count_rows: fillTokens(story.u1.count_rows, { rows: String(dims.rows) }),
+          count_cols: fillTokens(story.u1.count_cols, { cols: String(dims.cols) }),
+          result: fillTokens(copy.u1_result, { dims: `${dims.rows}×${dims.cols}` }),
         },
       });
     }
     case 2:
-      return workedSceneOf({
-        steps: [
-          [{ text: copy.u2.branch_a, latex: `A = ${mat(BRANCH_A)}` }],
-          [{ text: copy.u2.branch_b, latex: `B = ${mat(BRANCH_B)}` }],
-          [{ text: copy.u2.total, latex: `A + B = ${mat(add(BRANCH_A, BRANCH_B))}` }],
-          [
-            {
-              text: fillTokens(copy.u2.reorder, { k: String(REORDER) }),
-              latex: `${REORDER}A = ${mat(scalar(Rational.of(REORDER), BRANCH_A))}`,
-            },
-          ],
-        ],
+      return cellByCellScene({
+        op: 'add',
+        left: numbers.branchA,
+        right: numbers.branchB,
+        names: { left: story.u2.left, right: story.u2.right, result: story.u2.result },
         purpose,
+        captions: { setup: story.u2.setup, rest: copy.u2_rest, done: story.u2.done },
+        also: {
+          k: Rational.of(numbers.reorder),
+          caption: fillTokens(story.u2.also, { k: String(numbers.reorder) }),
+        },
       });
     case 3:
       return rowColDotScene({
-        left: QUANTITIES,
-        right: PRICES,
-        names: { left: copy.u3.left, right: copy.u3.right, result: copy.u3.result },
+        left: numbers.quantities,
+        right: numbers.prices,
+        names: { left: story.u3.left, right: story.u3.right, result: story.u3.result },
         purpose,
         captions: {
-          setup: copy.u3.setup,
-          pick_row: fillTokens(copy.u3.pick_row, { i: '1' }),
-          pick_col: fillTokens(copy.u3.pick_col, { j: '1' }),
-          pair: copy.u3.pair,
-          multiply: copy.u3.multiply,
-          sum: copy.u3.sum,
-          fill_rest: copy.u3.fill_rest,
+          setup: story.u3.setup,
+          pick_row: fillTokens(story.u3.pick_row, { i: '1' }),
+          pick_col: fillTokens(copy.u3_pick_col, { j: '1' }),
+          pair: copy.u3_pair,
+          multiply: copy.u3_multiply,
+          sum: story.u3.sum,
+          fill_rest: story.u3.fill_rest,
         },
       });
     case 4:
       return gridScene({
         mode: 'det_area',
-        M: STRETCH,
+        M: numbers.stretch,
         purpose,
         captions: { apply: copy.u4.apply },
       });
     case 5:
       return gridScene({
         mode: 'undo',
-        M: UNDOABLE,
+        M: numbers.undoable,
         purpose,
         captions: { unit: copy.u5.unit, undo: copy.u5.undo, back: copy.u5.back },
       });

@@ -30,7 +30,7 @@ const specs: SceneSpec[] = [
     return caught ? [caught.spec] : [];
   }),
   ...SKILLS.map(({ id }) => conceptScene(id, { seed: 20261113 })),
-  ...([1, 2, 3, 4, 5] as const).map(introScene),
+  ...([1, 2, 3, 4, 5] as const).map((unit: 1 | 2 | 3 | 4 | 5) => introScene(unit)),
 ];
 
 describe('SceneStage', () => {

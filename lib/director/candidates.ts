@@ -10,7 +10,7 @@ import {
   openMisconceptions,
   skillStateOf,
 } from '@/lib/learner/profile';
-import { hasPassed, nextSkill } from '@/lib/learner/progress';
+import { hasPassed, isUnlocked, nextSkill } from '@/lib/learner/progress';
 import type { AttemptOutcome, LearnerProfile } from '@/lib/learner/types';
 import { probeLevel, probeLevels } from '@/lib/topics/matrix/misconceptions';
 import { exampleSeed } from '@/lib/topics/matrix/scenes';
@@ -449,6 +449,35 @@ export function sessionStartCandidates(profile: LearnerProfile): Candidate[] {
 }
 
 /** student_request (AI_DIRECTOR §2). No candidate when no example can be built: nothing plays. */
+/**
+ * The student tapped a skill on the map. An unlocked one opens as a new skill would, a passed one as
+ * practice at its own level. A locked one offers nothing.
+ */
+export function practiceCandidates(profile: LearnerProfile, skill: SkillId): Candidate[] {
+  if (!isUnlocked(profile, skill)) return [];
+  if (hasPassed(profile, skill)) {
+    return finalizeCandidates([
+      {
+        rule: 'request',
+        score: SCORE.only,
+        next: { skill, level: levelOf(profile, skill), purpose: 'review' },
+        stepKind: 'chosen',
+        ruleReason: reason('chosen', { skill: skillName(skill) }),
+      },
+    ]);
+  }
+  const entered = enterSkill(profile, skill);
+  return finalizeCandidates([
+    {
+      rule: 'request',
+      score: SCORE.only,
+      ...entered,
+      stepKind: entered.misconception ? entered.stepKind : 'chosen',
+      ruleReason: reason('chosen', { skill: skillName(skill) }),
+    },
+  ]);
+}
+
 export function requestCandidates(item: MatrixItem, nth: number): Candidate[] {
   const scene = chosenScene(helpRequest(item, nth));
   if (!scene) return [];

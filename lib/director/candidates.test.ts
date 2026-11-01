@@ -27,7 +27,7 @@ const NOW = 20;
 
 /** A student on this skill, with everything before it passed just now, so no review is due. */
 function on(skill: SkillId, units: UnitId[], state: Partial<SkillState> = {}): Profile {
-  const base = newProfile({ id: 'ABC123-7', classCode: 'ABC123', seatNo: 7, units });
+  const base = newProfile({ id: 'ABC123-7', units });
   const skills: Profile['skills'] = {};
   const open = SKILLS.filter(({ unit }) => units.includes(unit)).map(({ id }) => id);
   for (const id of open.slice(0, open.indexOf(skill))) skills[id] = passedState(NOW);
@@ -117,7 +117,7 @@ describe('R1: last answer was a misconception', () => {
     for (const candidate of candidates) expect(candidate.next.level).toBe(2);
   });
 
-  it('merges the worked option when the scene of m is itself the worked solution at that level', () => {
+  it('offers its own clip, the probe alone and the worked solution, all for M05 at that level', () => {
     const sub = generate({ skill: 'addsub', difficulty: 2, seed: 3, target: 'M05_SUB_REVERSED' });
     const { candidates } = after(
       on('addsub', [2]),
@@ -125,8 +125,9 @@ describe('R1: last answer was a misconception', () => {
       misconceptionAnswer(sub, 'M05_SUB_REVERSED')!,
     );
     expect(candidates.map(brief).map(([, , score, template]) => [score, template])).toEqual([
-      [0.9, 'worked_solution'],
+      [0.9, 'cell_by_cell'],
       [0.7, null],
+      [0.6, 'worked_solution'],
     ]);
   });
 
@@ -511,7 +512,7 @@ describe('every decision', () => {
 
 describe('session_start (AI_DIRECTOR §2)', () => {
   const fresh = (units: UnitId[] = [1, 2, 3, 4, 5]) =>
-    newProfile({ id: 'ABC123-7', classCode: 'ABC123', seatNo: 7, units });
+    newProfile({ id: 'ABC123-7', units });
 
   it('starts at the first skill with its unit intro, as a single path', () => {
     const candidates = sessionStartCandidates(fresh());

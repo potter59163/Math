@@ -48,7 +48,9 @@ export type SceneTemplate =
   | 'worked_solution'
   | 'cell_locator'
   | 'transpose_flip'
-  | 'sarrus';
+  | 'sarrus'
+  | 'cell_by_cell'
+  | 'det_sum';
 
 export interface SceneRef {
   template: SceneTemplate;
@@ -248,7 +250,7 @@ export const CATALOG: MisconceptionEntry[] = [
   entry({
     id: 'M05_SUB_REVERSED',
     hintKey: 'M05_SUB_REVERSED',
-    scene: { template: 'worked_solution' },
+    scene: { template: 'cell_by_cell', mode: 'compare' },
     probes: [{ skill: 'addsub', levels: [2, 3] }],
     variants: [
       on('addsub', {
@@ -260,7 +262,7 @@ export const CATALOG: MisconceptionEntry[] = [
   entry({
     id: 'M07_SCALAR_PARTIAL',
     hintKey: 'M07_SCALAR_PARTIAL',
-    scene: { template: 'worked_solution', mode: 'all_cells' },
+    scene: { template: 'cell_by_cell', mode: 'compare' },
     probes: [{ skill: 'scalar', levels: [1, 2] }],
     variants: [
       on('scalar', {
@@ -481,7 +483,7 @@ export const CATALOG: MisconceptionEntry[] = [
   entry({
     id: 'M15_DET_ADDITIVE',
     hintKey: 'M15_DET_ADDITIVE',
-    scene: { template: 'worked_solution' },
+    scene: { template: 'det_sum', mode: 'compare' },
     probes: [{ skill: 'det_props', levels: [2] }],
     variants: [
       on('det_sum', {

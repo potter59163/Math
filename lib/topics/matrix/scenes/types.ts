@@ -135,8 +135,6 @@ export interface WorkedSceneStep {
 
 export interface WorkedSolutionParams {
   steps: WorkedSceneStep[];
-  /** M07 and `scalar`: k multiplies every cell, so every cell lights up (SCENES §5.1). */
-  allCells?: { k: string; A: Matrix; result: Matrix };
 }
 
 export type CellBeat = 'row' | 'col' | 'hit' | 'compare';
@@ -181,7 +179,51 @@ export interface SarrusParams {
   wrong?: { variant: SarrusVariant; value: Rational; expression: string };
 }
 
+export type CellByCellOp = 'add' | 'sub' | 'scalar';
+
+export type CellByCellBeat = 'compare' | 'setup' | `cell_${number}` | 'rest' | 'done' | 'also';
+
+export interface CellWork {
+  /** 1-based, like the rest of the matrix copy. */
+  i: number;
+  j: number;
+  a: Rational;
+  b?: Rational;
+  value: Rational;
+  /** Already written out, such as "3 + 5 = 8". */
+  expression: string;
+}
+
+export interface CellByCellParams {
+  op: CellByCellOp;
+  left: Matrix;
+  right?: Matrix;
+  k?: Rational;
+  result: Matrix;
+  names: { left: string; right?: string; result: string };
+  /** Every cell, the first ones being those worked out in full. */
+  work: CellWork[];
+  cellsInFull: number;
+  student?: Matrix;
+  variant?: string;
+  also?: { k: Rational; result: Matrix };
+}
+
+export type DetSumBeat = 'compare' | 'add_first' | 'det_of_sum' | 'differ';
+
+export interface DetSumParams {
+  A: Matrix;
+  B: Matrix;
+  sum: Matrix;
+  wrongLine: string;
+  rightLine: string;
+  detSum: Rational;
+  wrong: Rational;
+}
+
 export interface BeatsByTemplate {
+  cell_by_cell: CellByCellBeat;
+  det_sum: DetSumBeat;
   row_col_dot: RowColBeat;
   dimension_match: DimensionBeat;
   grid_transform: GridBeat;
@@ -193,6 +235,8 @@ export interface BeatsByTemplate {
 }
 
 export interface ParamsByTemplate {
+  cell_by_cell: CellByCellParams;
+  det_sum: DetSumParams;
   row_col_dot: RowColDotParams;
   dimension_match: DimensionMatchParams;
   grid_transform: GridTransformParams;

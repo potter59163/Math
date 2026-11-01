@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import { LazyFormula } from '@/components/learn/LazyFormula';
-import { MatrixView } from '@/components/ui/MatrixView';
 import type { SceneSpecOf, WorkedBeat } from '@/lib/topics/matrix/scenes/types';
 
 interface Props {
@@ -10,10 +9,9 @@ interface Props {
 
 /** SCENES §3.5. Steps open one at a time and stay on screen, each scrolled into view. */
 export function WorkedSolution({ spec, beat }: Props) {
-  const { steps, allCells } = spec.params;
+  const { steps } = spec.params;
   const beatIndex = spec.beats.indexOf(beat);
   const shown = steps.filter((step) => spec.beats.indexOf(step.beat) <= beatIndex);
-  const isLast = beatIndex === spec.beats.length - 1;
 
   const newest = useRef<HTMLLIElement>(null);
   useEffect(() => {
@@ -26,19 +24,6 @@ export function WorkedSolution({ spec, beat }: Props) {
       tabIndex={0}
       className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto p-1 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand"
     >
-      {allCells && (
-        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-lg">
-          <span className="font-matrix font-semibold text-brand tabular-nums">{allCells.k}</span>
-          <span className="text-muted">×</span>
-          <MatrixView value={allCells.A} cellClassName="rounded bg-brand-soft" />
-          {isLast && (
-            <>
-              <span className="text-muted">=</span>
-              <MatrixView value={allCells.result} />
-            </>
-          )}
-        </div>
-      )}
       <ol className="flex flex-col gap-3">
         {shown.map((step, index) => (
           <li

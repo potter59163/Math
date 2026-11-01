@@ -69,7 +69,7 @@ export function runStudent({
   minutes = Infinity,
   pretest,
 }: SimOptions): SimRun {
-  const fresh = newProfile({ id, classCode: 'SIMSIM', seatNo: 1, units });
+  const fresh = newProfile({ id, units });
   const start = pretest ? applyPretest(fresh, pretest, { at: 0 }) : fresh;
 
   const steps: SimStep[] = [];

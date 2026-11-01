@@ -1,7 +1,13 @@
 import type { th } from '@/lib/content/th';
 import type { StoredAnswer } from '@/lib/core/answerJson';
 import type { Level } from '@/lib/core/types';
-import type { AttemptOutcome, HintLevel, LearnerProfile, UnitId } from '@/lib/learner/types';
+import type {
+  AttemptOutcome,
+  HintLevel,
+  LearnerProfile,
+  ThemeId,
+  UnitId,
+} from '@/lib/learner/types';
 import type { Caught, TemplateId } from '@/lib/topics/matrix/scenes';
 import type { SkillId } from '@/lib/topics/matrix/skills';
 import type { MatrixItemRef, MisconceptionId } from '@/lib/topics/matrix/types';
@@ -10,7 +16,19 @@ import type { MatrixItemRef, MisconceptionId } from '@/lib/topics/matrix/types';
 
 export type Trigger = 'session_start' | 'after_attempt' | 'student_request';
 
-export type TurnMode = 'rules' | 'fixed';
+export type TurnMode = 'rules' | 'fixed' | 'llm';
+
+/** Why the LLM's decision was not used (AI_DIRECTOR §4.3). `disabled` means it was never asked. */
+export type FallbackReason =
+  | 'disabled'
+  | 'timeout'
+  | 'rate_limited'
+  | 'provider_error'
+  | 'schema_invalid'
+  | 'choice_invalid'
+  | 'digit_violation'
+  | 'token_violation'
+  | 'beat_invalid';
 
 export type Condition = 'adaptive' | 'fixed';
 
@@ -34,7 +52,7 @@ export interface NextStep {
 
 /** How to build a scene, so that it can be rebuilt after a reload or on another machine. */
 export type SceneRequest =
-  | { kind: 'intro'; unit: UnitId; skill: SkillId }
+  | { kind: 'intro'; unit: UnitId; skill: SkillId; seed?: number; theme?: ThemeId }
   | {
       kind: 'concept';
       skill: SkillId;
@@ -50,8 +68,10 @@ export type SceneRequest =
 export interface ChosenScene {
   request: SceneRequest;
   template: TemplateId;
-  /** AI_DIRECTOR §4.1, and what `narration` may name in Phase 6. */
+  /** AI_DIRECTOR §4.1, and what `narration` may name. */
   beats: string[];
+  /** The tutor's own captions for this student, beat by beat. A beat with none keeps the template's. */
+  narration?: Partial<Record<string, string>>;
 }
 
 export type PathKind = keyof typeof th.pathNotes;
@@ -95,8 +115,12 @@ export interface NextTurn {
   pathStep: PathStep;
   /** R7 fired, so the teacher should be alerted, whichever candidate was chosen. */
   stuck: boolean;
-  /** The generator failed and a plain item replaced the one chosen. Phase 5 logs this. */
+  /** The generator failed and a plain item replaced the one chosen. Logged to `decisions`. */
   fallback?: 'generator';
+  /** The tutor's words to the student, with every number already filled in by the server or engine. */
+  message?: string;
+  latencyMs?: number;
+  fallbackReason?: FallbackReason;
 }
 
 /** The item just answered, kept so that a reload after sending shows the same feedback. */

@@ -24,7 +24,7 @@ function profile(
     skills[id as SkillId] = passedAt(lastSeen);
   }
   return {
-    ...newLearnerProfile({ id: 'A-1', classCode: 'AAAAAA', seatNo: 1, units: [1, 2, 3] }),
+    ...newLearnerProfile({ id: 'A-1', units: [1, 2, 3] }),
     itemsDone,
     skills,
     ...extra,

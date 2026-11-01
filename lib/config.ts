@@ -14,6 +14,7 @@ export const CONFIG = {
   interleave: { every: 6, lookback: 10 },
   stuckAfterWrong: 3,
   pathStepsOnMap: 5,
+  dailyGoalItems: 10,
   hintL2CountsAsWrong: true,
   llm: { timeoutMs: 4000, maxCandidates: 4, maxCallsPerMinutePerStudent: 20 },
   xp: { firstTry: 10, withL1Hint: 7, withDeepHint: 3, misconceptionResolved: 20 },

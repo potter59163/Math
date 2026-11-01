@@ -1,18 +1,9 @@
 import { th } from '@/lib/content/th';
-import { Rational } from '@/lib/core/rational';
 import { fillTokens } from '@/lib/core/tokens';
 import type { Answer } from '@/lib/core/types';
-import { signed } from '../format';
-import { scalar } from '../ops';
 import type { MatrixItem } from '../types';
 import { workedSteps, type Step } from '../worked';
-import type {
-  ScenePurpose,
-  SceneSpecOf,
-  WorkedBeat,
-  WorkedSceneStep,
-  WorkedSolutionParams,
-} from './types';
+import type { ScenePurpose, SceneSpecOf, WorkedBeat, WorkedSceneStep } from './types';
 
 const STEP_MS = 3000;
 
@@ -35,7 +26,6 @@ function groupSteps(steps: Step[]): Step[][] {
 
 interface WorkedParts {
   steps: { text: string; latex: string }[][];
-  allCells?: WorkedSolutionParams['allCells'];
   purpose: ScenePurpose;
   studentAnswer?: Answer;
   variant?: string;
@@ -44,7 +34,6 @@ interface WorkedParts {
 /** Each entry of `steps` is one beat. Earlier steps stay on screen, so a beat only adds to them. */
 export function workedSceneOf({
   steps,
-  allCells,
   purpose,
   studentAnswer,
   variant,
@@ -55,7 +44,7 @@ export function workedSceneOf({
   );
   return {
     template: 'worked_solution',
-    params: { steps: flat, ...(allCells && { allCells }) },
+    params: { steps: flat },
     beats,
     captions: {},
     beatMs: Object.fromEntries(beats.map((beat) => [beat, STEP_MS])),
@@ -65,8 +54,6 @@ export function workedSceneOf({
 }
 
 interface WorkedOptions {
-  /** k multiplies every cell (SCENES §5.1). Only `scalar` items can show this. */
-  allCells?: boolean;
   studentAnswer?: Answer;
   variant?: string;
 }
@@ -75,9 +62,8 @@ interface WorkedOptions {
 export function workedScene(
   item: Pick<MatrixItem, 'data' | 'correct'>,
   purpose: ScenePurpose,
-  { allCells = false, studentAnswer, variant }: WorkedOptions = {},
+  { studentAnswer, variant }: WorkedOptions = {},
 ): SceneSpecOf<'worked_solution'> {
-  const { data } = item;
   return workedSceneOf({
     steps: groupSteps(workedSteps(item)).map((group) =>
       group.map((step) => ({
@@ -85,14 +71,6 @@ export function workedScene(
         latex: step.latex,
       })),
     ),
-    ...(allCells &&
-      data.form === 'scalar' && {
-        allCells: {
-          k: signed(data.k),
-          A: data.A,
-          result: scalar(Rational.of(data.k), data.A),
-        },
-      }),
     purpose,
     studentAnswer,
     variant,

@@ -10,15 +10,26 @@ export type UnitId = Skill['unit'];
 /** How far down the hint ladder a student went on one item. 0 means no hint. */
 export type HintLevel = 0 | 1 | 2 | 3;
 
-export interface LocalStudent {
-  /** Seeds this student's items through deriveSeed. */
+/** What the real-life examples in a student's lesson clips are about (SCENES §5). */
+export type ThemeId = 'shop' | 'game' | 'sport' | 'music' | 'food';
+
+/**
+ * Only what the learner model needs. A display name lives in `profiles` and never enters this, so a
+ * profile can be read by the LLM's input builder without anything that identifies the student.
+ */
+export interface Student {
+  /** An account id or, for a guest, a random one. Seeds this student's items through deriveSeed. */
   id: string;
-  classCode: string;
-  seatNo: number;
-  /** Stays on this device. */
-  nickname?: string;
-  /** Stand-in for settings.unitsEnabled until Phase 5. */
+  /** All of them unless a trial narrows them. */
   units: UnitId[];
+  theme?: ThemeId;
+}
+
+/** One day of work, for the streak and the daily goal. `day` is YYYY-MM-DD in Thai time. */
+export interface DayActivity {
+  day: string;
+  items: number;
+  xp: number;
 }
 
 export interface FirstAttempt {
@@ -81,7 +92,7 @@ export interface OpenItem {
 }
 
 export interface LearnerProfile {
-  student: LocalStudent;
+  student: Student;
   /** Next value for deriveSeed (SPEC §6). */
   counter: number;
   xp: number;
@@ -96,6 +107,9 @@ export interface LearnerProfile {
   clipsSeen: SkillId[];
   /** `itemsDone` when the last review item opened (SPEC §7.4). */
   lastReviewAt: number;
+  activity?: DayActivity[];
+  /** Fingerprints of the latest items, so a student does not meet the same one twice. */
+  recentItems?: string[];
 }
 
 export interface AttemptEvent {

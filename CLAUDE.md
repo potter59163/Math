@@ -2,6 +2,7 @@
 
 Adaptive web app that teaches maths to Thai upper-secondary students. Matrices (ม.5–6) are the first topic and the only one in this MVP.
 Duolingo-style path: short animation → exercise → diagnosis of *why* an answer is wrong (misconception) → AI tutor "คิว" picks each student's next step.
+Students sign in with Google and learn on their own: there are no teacher pages for now. Tabs: lessons, leaderboard, profile, settings.
 Successor of QEDify (physics). Built for the Chula Innovative Award 2027 (submission 27 Nov 2026) and a real classroom trial (13–19 Nov 2026).
 **Stability beats features.** App name and tutor name are placeholders in `lib/config.ts`. The app's real name is Potter's to choose. Do not make one up, and do not use "QEDify", which clashes with other work.
 
@@ -13,19 +14,20 @@ Successor of QEDify (physics). Built for the Chula Innovative Award 2027 (submis
 - `docs/AI_DIRECTOR.md`: rules director, LLM contract, prompt, validator.
 - `docs/RESEARCH.md`: pre/post test, trial protocol, analysis.
 - `docs/DECISIONS.md`: append non-obvious decisions (date, decision, why).
+- `docs/SETUP.md`: the accounts and keys Potter sets up (Supabase, Google, Vercel, LLM).
 
 ## Non-negotiables
 1. IMPORTANT: The LLM never does math. Every number, answer key, classification, worked step and scene value comes from the engine (`lib/core`, `lib/topics/matrix`) using exact `Rational` arithmetic.
 2. The app must work 100% with `LLM_PROVIDER=none` (rules director). LLM output is Zod-validated; invalid / timeout / 429 → rules decision, logged with `fallback_reason`.
 3. The LLM may only pick one of the candidates the rules engine offers. Student-facing LLM text contains no digit characters (0-9, ๐-๙); numbers appear only through whitelisted `{{tokens}}` resolved server-side.
 4. Every generated item passes `validateItem` (MISCONCEPTIONS.md §2). Deterministic: seeded PRNG only. No `Math.random` / `Date.now` inside engine, learner model or rules director.
-5. Privacy: students are identified by class code + seat number (+ optional nickname that never leaves our DB). Nothing identifying goes to the LLM. No camera, mic, location or face data.
+5. Privacy: a student signs in with Google, but only the name they chose is ever shown, and their email stays in Supabase Auth. `LearnerProfile` holds no name or email, and nothing identifying goes to the LLM. Consent is asked once, before any data is stored. A student can leave the leaderboard and delete their account in Settings. No camera, mic, location or face data, and no Google photo.
 6. Scope is matrices only. No story/open-world mode, no runtime video generation, no native app.
 7. UI text is Thai and lives in `lib/content/th.ts`. Code, comments and commits are English.
 8. Mobile-first: works at 360px wide, touch targets ≥ 44px, custom on-screen keypad (no system keyboard, no sliders), honors `prefers-reduced-motion`.
 
 ## Stack
-Next.js (App Router) + TypeScript strict + Tailwind · `motion` (Framer Motion) on SVG for scenes · KaTeX for static formulas · Zod · Supabase Postgres accessed server-side only · Supabase Auth (magic link) for teachers · signed httpOnly cookie for students · Vitest + fast-check · Playwright (optional) · Vercel (region `sin1`) + Supabase (Singapore) · Python 3 (pandas, scipy, matplotlib) in `analysis/`.
+Next.js (App Router) + TypeScript strict + Tailwind · `motion` (Framer Motion) on SVG for scenes · KaTeX for static formulas · Zod · Supabase Postgres accessed server-side only, row level security on with no policies · Supabase Auth with Google · Anthropic SDK, or Gemini or OpenAI over REST, for the tutor · Vitest + fast-check · Vercel (region `sin1`) + Supabase (Singapore) · Python 3 (pandas, scipy, matplotlib) in `analysis/`.
 
 ## Commands
 - `npm run dev`: dev server
@@ -33,31 +35,36 @@ Next.js (App Router) + TypeScript strict + Tailwind · `motion` (Framer Motion) 
 - `npm run format`: Prettier (skips the hand-edited docs)
 - `npx vitest run <path>`: run one test file
 - `npm run sim`: simulated-learner report (Phase 4+)
-- `npm run eval:director`: LLM director eval (Phase 6+, needs an LLM key)
+- `npm run eval:director`: LLM director eval (needs an LLM key, and costs real money)
+- `npm run export -- <cohort>`: research CSVs into `exports/` (needs the service role key)
 - `python analysis/analyze.py <export-dir>`: research report (Phase 9)
 
 ## Layout
 ```
-app/(student)/  join · consent · learn · learn/session · test/[phase] · summary
-app/teacher/    teacher login, class dashboard
+app/(tabs)/     learn · leaderboard · profile · settings
+app/(student)/  welcome · learn/session · test/[phase] · summary
+app/auth/       callback from Google, through Supabase
 app/dev/        engine · scenes · director  (dev-only playgrounds)
-app/api/        join · attempt · hint · event · help · assessment · teacher · export
+app/api/        me · welcome · sync · leaderboard · assessment/[phase]
 lib/config.ts   all tunable numbers (BKT, thresholds, timeouts, XP, names)
 lib/core/       rational · prng · types · parse · validate · classify · tokens (topic-agnostic)
 lib/topics/matrix/  ops · skills · generators/ · misconceptions · worked · assessment · scenes/
 lib/learner/    bkt · mastery · difficulty · misconceptionStatus · interleave · progress · profile · types
-lib/director/   candidates · rules · turn · fixedPath · scene · items · pathStep · tokens · types · (Phase 6) llm/ · prompt · schema · validate
-lib/practice/   draft · keyboard · hints · feedback · rewards · and the stand-ins store · join · sceneLog
+lib/director/   candidates · rules · turn · fixedPath · scene · items · pathStep · tokens · messages · types · llm/ (config · input · prompt · schema · validate · providers · decide)
+lib/sync/       actions (every change to a student, as data) · types · leaderboard · assessment
+lib/client/     learner (this device's copy and its queue) · auth · settings · inAppBrowser
+lib/server/     supabase · store · sync · account · schemas · http  (server only)
+lib/practice/   draft · keyboard · hints · feedback · rewards
 lib/content/th.ts   Thai copy: prompts, feedback, hints, captions
 lib/sim/        simulated learners (tests + `npm run sim`, which runs through vitest)
-lib/db/         Supabase server client + queries
-components/     input/ (MatrixInput, Keypad) · scenes/ · learn/ · teacher/ · ui/
+components/     app/ (screens) · input/ (MatrixInput, Keypad) · scenes/ · learn/ · ui/
 supabase/migrations/   SQL
 analysis/       analyze.py, requirements.txt
+scripts/        export-data.mjs
 ```
 
 ## Workflow
-- One phase per session. Read that phase in `docs/PLAN.md`, then propose a short plan before editing.
+- Read the relevant part of `docs/PLAN.md`, then propose a short plan before editing.
 - Tests first for engine, learner and director logic. Property tests (fast-check, ≥1000 runs) for every generator × difficulty.
 - Show evidence at the end of a task: the `npm run check` summary, and for UI a note that 360px and desktop were checked.
 - New Thai copy you draft goes in `lib/content/th.ts` with `// TODO(review)` so Potter (and a math teacher) can check wording and math.

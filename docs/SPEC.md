@@ -16,7 +16,7 @@
 1. **วินิจฉัยว่าผิดเพราะอะไร:** engine คำนวณไว้ก่อนว่าถ้าเข้าใจผิดแต่ละแบบจะได้คำตอบอะไร แล้วเทียบกับคำตอบของนักเรียน ใน MVP มี bug library 18 แบบ (ดู MISCONCEPTIONS.md)
 2. **อธิบายด้วย animation ที่ใช้ตัวเลขของนักเรียนเอง:** เป็น template ที่ engine ใส่ตัวเลขจริงลงไป แล้วเล่นในเบราว์เซอร์ได้ทันที (ดู SCENES.md)
 3. **AI tutor "คิว" จัดบทเรียนให้แต่ละคนแบบสดๆ:** อ่าน learner profile แล้วเลือกขั้นถัดไป เช่น อธิบาย ทดสอบ เพิ่มความยาก ทบทวน หรือไปด่านต่อ ตัวเลือกทั้งหมดผ่านระบบกฎมาแล้ว ทุกการเลือกมีเหตุผลที่ครูเปิดดูได้ และนักเรียนเห็นเหตุผลสั้นๆ บนเส้นทางของตัวเอง (ดู AI_DIRECTOR.md)
-4. **ครูเห็นภาพรวมห้อง:** ใครติดเรื่องไหน และความเข้าใจผิดแบบไหนเจอบ่อย
+4. **เรียนได้เอง:** เข้าด้วย Google มีหน้าบทเรียน อันดับ โปรไฟล์ และตั้งค่า ส่วนหน้าของครูเลื่อนไปก่อน
 
 **หลักออกแบบ:** AI เป็นผู้กำกับ ไม่ใช่เครื่องคิดเลข ตัวเลขทุกตัวมาจาก engine ที่คำนวณแบบเศษส่วน exact
 
@@ -48,7 +48,7 @@ pilot เดิมเป็นฟิสิกส์ นักเรียน n=3
 
 ## 2. ผู้ใช้และบริบท
 - **นักเรียน:** ม.5–6 ที่กำลังเรียนหรือเคยเรียนเมทริกซ์แล้ว (ยืนยันกับครูว่าโรงเรียนสอนบทนี้ชั้นไหน) ใช้ในคาบหลังสอนเนื้อหา หรือใช้ทบทวนก่อนสอบ
-- **ครูคณิต:** เปิดห้อง ดู dashboard เปิด/ปิด pre-test และ post-test แล้ว export ข้อมูล
+- **ครูคณิต:** ยังไม่มีหน้าของครู การทดลองในห้องเรียนยังต้องขออนุญาตและขอคาบจากครู แล้วแจกลิงก์ `?cohort=` ให้นักเรียน
 - **อุปกรณ์:** มือถือนักเรียน (Android รุ่นกลางถึงล่าง และ iPhone) กับคอมห้องคอม ใช้เน็ตโรงเรียน
 - **ช่วงทดลอง:** 2 คาบ (ดู RESEARCH.md)
 
@@ -78,21 +78,18 @@ pilot เดิมเป็นฟิสิกส์ นักเรียน n=3
 
 **ระดับที่ misconception แต่ละแบบใช้ได้:** ดูตารางใน MISCONCEPTIONS §4.1
 
-ครูเลือกได้ว่าห้องนี้เปิด unit ไหนบ้าง (`settings.unitsEnabled`)
-- **prereq ข้าม unit:** prereq ที่อยู่ใน unit ที่ปิดให้ถือว่าผ่านแล้ว เช่น ปิด Unit 2 แล้ว `inv2` ไม่ต้องรอ `scalar`
-- **ล็อกเมื่อเปิด pre-test:** เปลี่ยน unit ไม่ได้หลังครูเปิด pre-test เพื่อให้ pre และ post วัดข้อชุดเดียวกัน
-- **วิธีเลือก:** ดูตารางเวลาใน RESEARCH §3.1
+ทุกคนเปิดครบทุก unit (`student.units`) และ prereq ใน unit ที่ปิดให้ถือว่าผ่านแล้ว ถ้าการทดลองต้องการน้อยกว่านี้ ดูตารางเวลาใน RESEARCH §3.1
 
 ---
 
 ## 4. Student flow
 
-1. **`/join`:** ใส่ class code 6 ตัว (หรือสแกน QR) + เลขที่ + ตั้ง PIN 4 หลัก + ชื่อเล่น (ไม่บังคับ)
-   - ครั้งต่อไปใช้ code + เลขที่ + PIN
-   - ครูรีเซ็ต PIN ให้ได้
-2. **`/consent`:** แสดงครั้งแรกครั้งเดียว (ข้อความใน §15)
-3. **ถ้าครูเปิด pre-test และยังไม่ได้ทำ:** ไป `/test/pre` ไม่มี feedback และไม่มี hint
-4. **`/learn` (แผนที่):**
+1. **`/`:** ปุ่ม "เข้าสู่ระบบด้วย Google" และลิงก์ลองเรียนโดยไม่ล็อกอิน (ข้อมูลอยู่ในเครื่องเท่านั้น และไม่เข้าตารางอันดับ) ถ้าเปิดจากในแอปอย่าง LINE จะบอกให้เปิดในเบราว์เซอร์ก่อน
+2. **`/welcome` (ครั้งแรก):** ตั้งชื่อที่แสดงและเลือกรูปสัญลักษณ์ → เลือกเรื่องที่สนใจ ใช้เป็นเรื่องเล่าในคลิปเปิดหน่วย → ยินยอม (ข้อความใน §15) → เลือกว่าจะทำ pre-test ก่อนไหม
+3. **`/test/pre`:** ไม่บังคับ ไม่มี feedback และไม่มี hint
+4. **`/learn` (บทเรียน):**
+   - การ์ด "คิวแนะนำ" บอกขั้นถัดไปจากข้อมูลของคนนั้น พร้อมเป้าหมายวันนี้และจำนวนวันติดกัน
+   - แตะเรื่องบนเส้นทางเพื่อดูความแม่นและเลือกฝึกเรื่องที่เปิดแล้วได้
    - unit เรียงเป็นเส้นทาง ปลดล็อกตาม prereq
    - skill ปัจจุบันถูกไฮไลต์
    - **เส้นทางของฉัน:** แสดงขั้นล่าสุดที่คิวเลือกให้ (สูงสุด 5 ขั้น) พร้อมเหตุผลสั้นๆ ของแต่ละขั้น
@@ -113,11 +110,12 @@ pilot เดิมเป็นฟิสิกส์ นักเรียน n=3
    - **ข้อปิดทันทีหลังส่ง ไม่มีการแก้ข้อเดิม:** ถ้าผิด ข้อถัดไปมักเป็นข้อทดสอบ (probe) เรื่องเดิมแต่เปลี่ยนตัวเลข
    - **ปุ่ม "ไม่เข้าใจ" ใช้ได้ตลอด:** ส่ง trigger `student_request` → ได้ concept scene ของ skill นั้น
      - ใช้ตัวอย่างพี่น้อง (seed ใหม่) ไม่ใช้ตัวเลขของข้อที่กำลังทำ เพื่อไม่เฉลย
-6. **`/summary`:** แสดงเมื่อนักเรียนกด "พอแค่นี้" หรือครูจบคาบ
+6. **`/summary`:** แสดงเมื่อนักเรียนกด "พอแค่นี้"
    - skill ที่ผ่าน
    - ความเข้าใจผิดที่แก้ได้
    - XP
-7. **`/test/post`:** เมื่อครูเปิด
+7. **`/test/post`:** เปิดจากหน้าโปรไฟล์ แล้วเทียบผลกับก่อนเรียนได้
+8. **แท็บอื่น:** `/leaderboard` XP ประจำสัปดาห์ · `/profile` สถิติ เหรียญ ความแม่น และแบบทดสอบ · `/settings` ชื่อ รูป เรื่องที่สนใจ สี การเคลื่อนไหว เสียงอ่าน การแสดงในอันดับ ออกจากระบบ ลบบัญชี
 
 ---
 
@@ -306,12 +304,13 @@ resolved ──เจออีก──▶ active (relapse)
 - **combo:** นับข้อถูกติดกัน ข้อที่ถูกหลังใช้ hint L2–L3 ไม่เพิ่มและไม่รีเซ็ต combo
 - **ปุ่ม "ไม่เข้าใจ":** ไม่มีผลกับ XP และ combo
 - **badge:** ผ่าน unit และ "แก้ความเข้าใจผิดสำเร็จ"
-- **ไม่มี leaderboard:** หลีกเลี่ยงการเทียบกันในห้อง และครูก็ไม่เห็นอันดับ XP
+- **leaderboard:** XP ประจำสัปดาห์ เริ่มนับใหม่ทุกวันจันทร์ตามเวลาไทย แสดงเฉพาะชื่อที่ตั้งเองและรูปสัญลักษณ์ ปิดการแสดงได้ในตั้งค่า
+- **streak และเป้าหมายวันนี้:** นับวันที่ทำอย่างน้อย 1 ข้อ เป้าหมาย 10 ข้อต่อวัน (`CONFIG.dailyGoalItems`)
 
 ---
 
-## 12. Teacher dashboard (`/teacher/class/[id]`)
-poll ทุก 10 วินาที
+## 12. Teacher dashboard (เลื่อนไปก่อน)
+ตัดออกจาก MVP ตามที่ Potter ตัดสินใจเมื่อ 1 พ.ย. 2569 ด้านล่างเก็บไว้เป็นแผนเมื่อกลับมาทำ ส่วนการส่งออกข้อมูลใช้ `npm run export` แทน
 
 - **ภาพรวม:** ตารางนักเรียน × skill ระบายสี (P(L) < 0.5 แดง, P(L) ≥ 0.5 เหลือง, ผ่านตาม §7.1 เขียว), ทำอะไรอยู่ตอนนี้, ธงเตือน "ติด"
 - **Misconceptions:** % นักเรียนที่ suspected, active หรือ resolved ต่อ misconception (10 อันดับแรก)
@@ -334,23 +333,23 @@ poll ทุก 10 วินาที
 ## 13. Data model (Postgres / Supabase)
 Claude Code ปรับรายละเอียดได้ แต่ต้องคงความหมายเดิม เปิด RLS ทุกตาราง ไม่มี policy สำหรับ anon และเข้าถึงผ่าน server เท่านั้น
 ```
-classes(id uuid pk, code text unique, name text, teacher_id uuid, settings jsonb, created_at)
-students(id uuid pk, class_id fk, seat_no int, nickname text null, pin_hash text,
-         condition text default 'adaptive', form_pre text, form_post text, created_at,
-         unique(class_id, seat_no))
-sessions(id, student_id, started_at, ended_at, user_agent)
-learner_profiles(student_id pk, profile jsonb, updated_at)
-attempts(id, session_id, student_id, item_ref jsonb, skill, difficulty, kind, target null,
+profiles(id uuid pk → auth.users on delete cascade, display_name, avatar, show_on_leaderboard,
+         consent_at, cohort null, condition default 'adaptive', form_pre, form_post, created_at, updated_at)
+learner_profiles(user_id pk, profile jsonb, rev int, devices jsonb, updated_at)
+sessions(id, user_id, started_at, user_agent)
+attempts(id, user_id, device_id, seq, item_ref jsonb, skill, difficulty, kind, target null,
          answer jsonb, classification, misconception null, variant null, wrong_cells jsonb null,
-         time_ms, hint_level, revealed bool, created_at)
-decisions(id, student_id, attempt_id null, trigger, mode, candidates jsonb, choice, message, path_note,
+         time_ms, hint_level, xp, created_at, unique(user_id, device_id, seq))
+decisions(id, user_id, attempt_id null, trigger, mode, candidates jsonb, choice, message, path_note,
           narration jsonb null, reason, latency_ms, fallback_reason null, created_at)
-scene_views(id, student_id, decision_id null, template, purpose, beats_total, beats_seen,
-            replays, skipped bool, duration_ms, created_at)
-hint_events(id, student_id, item_ref jsonb, level, created_at)
-assessments(id, student_id, phase 'pre'|'post', form 'A'|'B', started_at, submitted_at)
-assessment_responses(id, assessment_id, item_no, item_ref jsonb, answer jsonb, correct bool,
+scene_views(id, user_id, template, purpose, beats_total, beats_seen, replays, skipped bool,
+            duration_ms, created_at)
+hint_events(id, user_id, item_ref jsonb, level, created_at)
+assessments(id, user_id, phase 'pre'|'post', form 'A'|'B', score, total, started_at, submitted_at,
+            unique(user_id, phase))
+assessment_responses(id, assessment_id, item_no, item_ref jsonb, answer jsonb null, correct bool,
                      misconception null, variant null, time_ms)
+weekly_leaderboard(week_start, max_rows): ฟังก์ชันที่ server เรียกได้เท่านั้น
 ```
 สร้าง index ที่ `(student_id, created_at)` ของทุกตาราง log
 
@@ -359,48 +358,47 @@ assessment_responses(id, assessment_id, item_no, item_ref jsonb, answer jsonb, c
 ## 14. API (route handlers)
 | route | ทำอะไร |
 |---|---|
-| `POST /api/join` | {code, seatNo, pin, nickname?} → ตั้ง cookie (signed, httpOnly) → {student, needsConsent, next} |
-| `POST /api/consent` | บันทึกการยินยอม |
-| `POST /api/session/start` | เปิด session → NextTurn (trigger `session_start`) |
-| `POST /api/attempt` | {itemRef, answer, timeMs, hintLevel, revealed} → server regenerate, classify, อัปเดต profile, เรียก director, log → {classification, nextTurn} |
-| `POST /api/hint` | {itemRef, level} → {text, step?} + log |
-| `POST /api/help` | {itemRef} (กด "ไม่เข้าใจ") → NextTurn ที่มี concept scene (ใช้ตัวอย่างพี่น้อง) |
-| `POST /api/event` | scene_view และ event อื่นของ client |
-| `GET /api/path` | ขั้นล่าสุดบนเส้นทางของนักเรียน (สำหรับหน้า `/learn`) |
-| `GET /api/assessment/[phase]` · `POST .../submit` | ฟอร์มและการส่งคำตอบ |
-| `/api/teacher/*` | classes CRUD, overview, settings, assign-conditions, reset-pin, delete-data (ต้องเป็นครูที่ login) |
-| `GET /api/export?class=&table=` | CSV |
+| `GET /auth/callback` | รับ code จาก Google ผ่าน Supabase แล้วตั้ง session cookie |
+| `GET /api/me` | ใครล็อกอินอยู่ พร้อมบัญชีและ profile ทำงานได้แม้ยังไม่ตั้งคีย์ (`configured: false`) |
+| `PATCH /api/me` · `DELETE /api/me` | แก้ชื่อ รูป การแสดงในอันดับ · ลบบัญชีและข้อมูลทั้งหมด |
+| `POST /api/welcome` | {displayName, avatar, theme, consent: true, cohort?, guestProfile?} สร้างบัญชี |
+| `POST /api/sync` | {deviceId, actions: [{seq, action}]} ใช้ action แบบเดียวกับในเครื่อง regenerate และ classify เอง อัปเดต profile ถาม LLM เฉพาะคำตอบล่าสุด แล้ว log → {lastSeq, profile, turn} |
+| `GET /api/leaderboard` | ตารางสัปดาห์นี้ ไม่มี user id |
+| `GET /api/assessment/status` · `GET /api/assessment/[phase]` · `POST .../[phase]` | คะแนน · ฟอร์ม (เฉพาะ ItemRef) · ส่งคำตอบ ตรวจที่ server และตั้งค่าเส้นทางจาก pre-test |
+
+action ทั้งหมดอยู่ใน `lib/sync/actions.ts`: start, practice, hint, attempt, help, finish_scene, finish_turn, note_worked, scene_view, set_theme
 
 ---
 
 ## 15. Privacy, consent, security
 
 **เก็บ:**
-- เลขที่ และชื่อเล่น (ไม่บังคับ)
+- อีเมลจาก Google (อยู่ใน Supabase Auth ใช้เข้าสู่ระบบเท่านั้น)
+- ชื่อที่ตั้งเอง และรูปสัญลักษณ์ที่เลือก
 - คำตอบ เวลาที่ใช้
 - การกด hint และการดู scene
 
-**ไม่เก็บ:** ชื่อจริง รูป เสียง ตำแหน่ง
+**ไม่เก็บ:** รูปจาก Google รูปถ่าย เสียง ตำแหน่ง
 
 **ข้อความยินยอม (ร่าง ให้ครูที่ปรึกษาตรวจก่อนใช้):**
-> แอปนี้เป็นส่วนหนึ่งของโครงงานนวัตกรรมของนักเรียน ระบบจะเก็บเลขที่ ชื่อเล่น (ถ้าใส่) คำตอบ และเวลาที่ใช้ เพื่อปรับบทเรียนให้เหมาะกับแต่ละคน และนำไปวิเคราะห์แบบไม่ระบุตัวตนเพื่อส่งประกวด ข้อมูลบางส่วนที่ไม่ระบุตัวตนจะถูกส่งไปยังบริการ AI เพื่อช่วยเลือกบทเรียน ไม่มีการเก็บชื่อจริง รูป หรือเสียง หยุดใช้เมื่อไหร่ก็ได้ และข้อมูลทั้งหมดจะถูกลบภายใน 31 มี.ค. 2570
+ข้อความจริงอยู่ที่ `th.welcome.consentItems` ใน `lib/content/th.ts` และหน้า `/privacy`
 
 ถ้าโรงเรียนกำหนดให้ผู้ปกครองยินยอมด้วย ให้ทำตามโรงเรียน
 
 **Security:**
 - **Keys:** service-role key และ LLM key อยู่ฝั่ง server เท่านั้น
-- **PIN:** เก็บเป็น hash (bcrypt หรือ scrypt)
-- **cookie:** signed ด้วย `SESSION_SECRET`
-- **Rate limit:** `/api/attempt`, `/api/hint`, `/api/help` และ `/api/join` (กันเดา PIN)
+- **ตัวตน:** ทุก route ถาม Supabase ว่าใครล็อกอิน แล้วใช้ user id นั้นในทุก query
+- **ฐานข้อมูล:** RLS เปิดทุกตารางและไม่มี policy จึงมีแต่ server ที่เข้าถึงได้
+- **Rate limit:** `/api/sync` จำกัด 120 ข้อต่อนาที และ LLM 20 ครั้งต่อนาทีต่อคน
 - **Input:** validate ทุก request ด้วย Zod และจำกัดขนาด input
-- **ลบข้อมูล:** ครูกดลบข้อมูลห้องได้หลังจบการศึกษา
+- **ลบข้อมูล:** นักเรียนลบบัญชีเองได้ในตั้งค่า แถวทั้งหมดถูกลบตาม
 
 ---
 
 ## 16. Demo, offline และแผนสำรอง
-- **`DEMO_MODE=1`:** seed ห้องตัวอย่างและนักเรียนจำลอง 3 คนที่มีความเข้าใจผิดต่างกัน ไม่ต้องใช้เน็ตไปหา LLM (rules mode)
+- **โหมดลองเรียน:** ใช้ได้ทันทีโดยไม่ต้องล็อกอินและไม่ต้องใช้เน็ตไปหา LLM เหมาะกับการเดโม
 - **`/demo/split` (nice-to-have):** นักเรียนจำลอง 2 คนทำ unit เดียวกันคู่กัน ให้เห็นว่าเส้นทางแยกกัน ใช้ถ่ายวิดีโอ 3 นาทีและเดโม 14 ม.ค.
-- **LLM ล่มหรือโดน rate limit:** ทำงานต่อด้วย rules อัตโนมัติ ครูปิด LLM ทั้งห้องได้
+- **LLM ล่มหรือโดน rate limit:** ทำงานต่อด้วย rules อัตโนมัติ ปิดทั้งระบบได้ด้วย `LLM_PROVIDER=none`
 - **เน็ตโรงเรียนล่มวันสอบ:** ใช้ฟอร์ม A/B แบบพิมพ์ (พร้อมเฉลย) แล้วกรอกผลภายหลัง
 
 ---
@@ -418,6 +416,7 @@ export const CONFIG = {
   interleave: { every: 6, lookback: 10 },
   stuckAfterWrong: 3,
   pathStepsOnMap: 5,
+  dailyGoalItems: 10,
   hintL2CountsAsWrong: true,
   llm: { timeoutMs: 4000, maxCandidates: 4, maxCallsPerMinutePerStudent: 20 },
   xp: { firstTry: 10, withL1Hint: 7, withDeepHint: 3, misconceptionResolved: 20 },

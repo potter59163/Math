@@ -24,25 +24,35 @@
   --color-brand: var(--brand);
   --color-brand-strong: var(--brand-strong);
   --color-brand-soft: var(--brand-soft);
+  --color-brand-edge: var(--brand-edge);
   --color-on-brand: var(--on-brand);
   --color-good: var(--good);
   --color-good-soft: var(--good-soft);
+  --color-good-edge: var(--good-edge);
   --color-warn: var(--warn);
   --color-warn-soft: var(--warn-soft);
   --color-xp: var(--xp);
+  --color-xp-soft: var(--xp-soft);
   --color-flame: var(--flame);
+  --color-gold: var(--gold);
+  --color-silver: var(--silver);
+  --color-bronze: var(--bronze);
 }
 
 /* Motion is only ever opacity and transform, so none of it can shift the layout. */
 @theme {
-  --animate-rise: rise 140ms ease-out;
+  --animate-rise: rise 180ms ease-out;
   --animate-pop: pop 260ms ease-out;
   --animate-caret: caret 1s steps(1) infinite;
+  --animate-float: float 3.2s ease-in-out infinite;
+  --animate-pulse-ring: pulse-ring 1.8s ease-out infinite;
+  --animate-think: think 1.2s ease-in-out infinite;
+  --animate-fade: fade 220ms ease-out;
 
   @keyframes rise {
     from {
       opacity: 0;
-      transform: translateY(6px);
+      transform: translateY(8px);
     }
   }
 
@@ -57,57 +67,132 @@
       opacity: 0;
     }
   }
+
+  @keyframes float {
+    50% {
+      transform: translateY(-5px);
+    }
+  }
+
+  @keyframes pulse-ring {
+    from {
+      opacity: 0.7;
+      transform: scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: scale(1.35);
+    }
+  }
+
+  @keyframes think {
+    50% {
+      opacity: 0.35;
+    }
+  }
+
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+  }
 }
 
 @layer base {
+  /* Every text and icon colour here meets WCAG AA on the backgrounds it sits on, in both schemes. */
   :root {
-    color-scheme: light dark;
+    color-scheme: light;
 
-    --canvas: #f6f7fb;
+    --canvas: #f4f5fb;
     --surface: #ffffff;
-    --sunken: #eceff6;
-    --line: #d5dbe7;
+    --sunken: #e9ebf6;
+    --line: #d7daea;
     /* The edge is all that shows an empty input is there, so it needs 3:1 against the page. */
-    --edge: #848ea0;
-    --ink: #131722;
-    --muted: #566072;
-    --brand: #1f5fd6;
-    --brand-strong: #184cae;
-    --brand-soft: #e4edfc;
+    --edge: #7f85a3;
+    --ink: #15172b;
+    --muted: #555a78;
+    --brand: #4338ca;
+    --brand-strong: #3730a3;
+    --brand-soft: #e6e6fb;
+    --brand-edge: #2e2a84;
     --on-brand: #ffffff;
-    --good: #14713a;
-    --good-soft: #e3f6ea;
+    --good: #12703a;
+    --good-soft: #dcf5e5;
+    --good-edge: #0c5129;
     --warn: #9a4a06;
-    --warn-soft: #fdf1da;
-    --xp: #a85704;
-    --flame: #c8460d;
+    --warn-soft: #fdf0d7;
+    --xp: #a35200;
+    --xp-soft: #fdeed6;
+    --flame: #c2410c;
+    --gold: #f5b70a;
+    --silver: #b4bacb;
+    --bronze: #cd8a4f;
   }
 
   @media (prefers-color-scheme: dark) {
-    :root {
-      --canvas: #0e1117;
-      --surface: #171b24;
-      --sunken: #0b0e13;
-      --line: #2e3543;
-      --edge: #5f6879;
-      --ink: #eef1f7;
-      --muted: #a3acbc;
-      --brand: #76a7ff;
-      --brand-strong: #9cc0ff;
-      --brand-soft: #1a2a48;
-      --on-brand: #08142c;
+    :root:not([data-scheme='light']) {
+      color-scheme: dark;
+
+      --canvas: #0f1022;
+      --surface: #1a1c33;
+      --sunken: #121328;
+      --line: #2f3253;
+      --edge: #666b92;
+      --ink: #eef0ff;
+      --muted: #aeb2d2;
+      --brand: #a5b0fc;
+      --brand-strong: #c5ccff;
+      --brand-soft: #27295a;
+      --brand-edge: #6d78d8;
+      --on-brand: #111339;
       --good: #4ade80;
       --good-soft: #10291a;
+      --good-edge: #20a858;
       --warn: #fbbf24;
       --warn-soft: #2f2308;
       --xp: #fbbf24;
+      --xp-soft: #33260a;
       --flame: #fb923c;
     }
+  }
+
+  :root[data-scheme='dark'] {
+    color-scheme: dark;
+
+    --canvas: #0f1022;
+    --surface: #1a1c33;
+    --sunken: #121328;
+    --line: #2f3253;
+    --edge: #666b92;
+    --ink: #eef0ff;
+    --muted: #aeb2d2;
+    --brand: #a5b0fc;
+    --brand-strong: #c5ccff;
+    --brand-soft: #27295a;
+    --brand-edge: #6d78d8;
+    --on-brand: #111339;
+    --good: #4ade80;
+    --good-soft: #10291a;
+    --good-edge: #20a858;
+    --warn: #fbbf24;
+    --warn-soft: #2f2308;
+    --xp: #fbbf24;
+    --xp-soft: #33260a;
+    --flame: #fb923c;
+  }
+
+  /* The setting in the app, for anyone whose device does not say. */
+  :root[data-motion='reduce'] *,
+  :root[data-motion='reduce'] *::before,
+  :root[data-motion='reduce'] *::after {
+    animation: none !important;
+    transition: none !important;
   }
 
   html {
     background-color: var(--canvas);
     color: var(--ink);
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {

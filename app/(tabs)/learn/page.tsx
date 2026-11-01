@@ -1,0 +1,9 @@
+import type { Metadata } from 'next';
+import { LessonsScreen } from '@/components/app/LessonsScreen';
+import { th } from '@/lib/content/th';
+
+export const metadata: Metadata = { title: th.learn.title };
+
+export default function LearnPage() {
+  return <LessonsScreen />;
+}

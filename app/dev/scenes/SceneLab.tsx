@@ -47,7 +47,7 @@ const BUTTON =
   'min-h-11 rounded-md border border-neutral-400 px-3 font-medium hover:bg-neutral-100 dark:border-neutral-600 dark:hover:bg-neutral-800';
 
 type Kind = 'caught' | 'concept' | 'intro' | 'reveal' | 'custom';
-type CustomTemplate = Exclude<TemplateId, 'worked_solution'>;
+type CustomTemplate = Exclude<TemplateId, 'worked_solution' | 'cell_by_cell' | 'det_sum'>;
 
 export interface LabQuery {
   kind?: Kind;

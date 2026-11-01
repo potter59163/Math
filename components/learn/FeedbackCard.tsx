@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { TutorBubble } from '@/components/app/TutorBubble';
 import { Button } from '@/components/ui/Button';
 import { CheckIcon, NoticeIcon } from '@/components/ui/Icons';
 import { th } from '@/lib/content/th';
@@ -12,6 +13,10 @@ interface FeedbackCardProps {
   outcome: AttemptOutcome;
   /** What the director chose next. It names the main button. */
   turn: NextTurn;
+  /** The tutor may still answer, and its words would replace the ones shown. */
+  thinking: boolean;
+  /** The student pressed on and is waiting for it. */
+  waiting: boolean;
   onNext(): void;
   onShowWorked(): void;
 }
@@ -26,7 +31,14 @@ function nextLabel({ classification }: AttemptOutcome, { scenes, pathStep }: Nex
 }
 
 /** Fills the slot the keypad was in, so nothing above it moves when the answer is sent. */
-export function FeedbackCard({ outcome, turn, onNext, onShowWorked }: FeedbackCardProps) {
+export function FeedbackCard({
+  outcome,
+  turn,
+  thinking,
+  waiting,
+  onNext,
+  onShowWorked,
+}: FeedbackCardProps) {
   const feedback = feedbackFor(outcome.classification);
   const isCorrect = feedback.tone === 'correct';
   const { allPassed, bonusXp, resolved, skillPassed, unitPassed, xp } = outcome;
@@ -62,6 +74,7 @@ export function FeedbackCard({ outcome, turn, onNext, onShowWorked }: FeedbackCa
 
       <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
         {feedback.detail && <p>{feedback.detail}</p>}
+        <TutorBubble message={turn.message} thinking={thinking} />
         {resolved && (
           <p className="font-semibold">
             {fillTokens(th.session.misconceptionFixed, {
@@ -89,8 +102,8 @@ export function FeedbackCard({ outcome, turn, onNext, onShowWorked }: FeedbackCa
             {th.session.showWorked}
           </Button>
         )}
-        <Button ref={next} onClick={onNext}>
-          {nextLabel(outcome, turn)}
+        <Button ref={next} aria-busy={waiting} disabled={waiting} onClick={onNext}>
+          {waiting ? th.tutor.thinking : nextLabel(outcome, turn)}
         </Button>
       </div>
     </section>

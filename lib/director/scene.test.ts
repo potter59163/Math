@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Rational } from '@/lib/core/rational';
 import type { Answer } from '@/lib/core/types';
 import { markClipSeen } from '@/lib/learner/profile';
-import type { LocalStudent, SkillState, UnitId } from '@/lib/learner/types';
+import type { Student, SkillState, UnitId } from '@/lib/learner/types';
 import { misconceptionAnswer } from '@/lib/sim/answers';
 import { generate } from '@/lib/topics/matrix/generators';
 import { det2, shape } from '@/lib/topics/matrix/ops';
@@ -14,10 +14,8 @@ import { buildScene, helpRequest, leadClip, needsLeadClip, workedRequest } from 
 import { newProfile } from './turn';
 import type { NextStep, Profile } from './types';
 
-const student = (units: UnitId[] = [1, 2, 3, 4, 5]): LocalStudent => ({
+const student = (units: UnitId[] = [1, 2, 3, 4, 5]): Student => ({
   id: 'ABC123-7',
-  classCode: 'ABC123',
-  seatNo: 7,
   units,
 });
 
@@ -123,12 +121,14 @@ describe('a concept clip is never the item that follows it (SPEC §4)', () => {
         );
       case 'inverse_recipe':
         return data.form === 'inv2' && same(spec.params.A, data.A);
+      case 'cell_by_cell':
+        return data.form === 'scalar'
+          ? same(spec.params.left, data.A) && spec.params.k?.equals(Rational.of(data.k)) === true
+          : data.form === 'addsub' && same([spec.params.left, spec.params.right], [data.A, data.B]);
+      case 'det_sum':
+        return data.form === 'det_sum' && same([spec.params.A, spec.params.B], [data.A, data.B]);
       case 'worked_solution':
-        return (
-          data.form === 'scalar' &&
-          same(spec.params.allCells?.A, data.A) &&
-          spec.params.allCells?.k === String(data.k).replace('-', '−')
-        );
+        return false;
       case 'grid_transform': {
         if (data.form === 'det_scaled') {
           const [before, after] = spec.params.shown.map(({ value }) => value);
@@ -206,15 +206,15 @@ describe('helpRequest (SPEC §4)', () => {
 });
 
 describe('workedRequest: what "ดูวิธีทำ" opens', () => {
-  it('opens the scene of a misconception whose scene is the worked solution', () => {
+  it('opens the plain solution for a misconception with a clip of its own', () => {
     const item = generate({ skill: 'addsub', difficulty: 2, seed: 8, target: 'M05_SUB_REVERSED' });
     const answer = misconceptionAnswer(item, 'M05_SUB_REVERSED')!;
     const request = workedRequest(item, answer, {
       type: 'misconception',
       id: 'M05_SUB_REVERSED',
     });
-    expect(request.kind).toBe('remediate');
-    expect(buildScene(request).purpose).toBe('remediate');
+    expect(request.kind).toBe('reveal');
+    expect(buildScene(request).purpose).toBe('reveal');
   });
 
   it('opens the plain solution for a misconception with a clip of its own', () => {

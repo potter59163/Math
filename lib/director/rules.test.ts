@@ -4,7 +4,7 @@ import { restoreAnswer } from '@/lib/core/answerJson';
 import { deriveSeed } from '@/lib/core/prng';
 import type { Level } from '@/lib/core/types';
 import { applyAttempt, applyPretest } from '@/lib/learner/profile';
-import type { LocalStudent, UnitId } from '@/lib/learner/types';
+import type { Student, UnitId } from '@/lib/learner/types';
 import { misconceptionAnswer, slipAnswer, unknownAnswer } from '@/lib/sim/answers';
 import { answerItem, openItem, settle } from '@/lib/sim/drive';
 import { generate } from '@/lib/topics/matrix/generators';
@@ -20,10 +20,8 @@ import type { Profile } from './types';
 const M01: MisconceptionId = 'M01_DIM_SWAP';
 const M09: MisconceptionId = 'M09_MULT_ELEMENTWISE';
 
-const student = (units: UnitId[] = [1, 2, 3, 4, 5]): LocalStudent => ({
+const student = (units: UnitId[] = [1, 2, 3, 4, 5]): Student => ({
   id: 'ABC123-7',
-  classCode: 'ABC123',
-  seatNo: 7,
   units,
 });
 
@@ -87,7 +85,7 @@ describe('startSession', () => {
 
   it('gives two students different numbers', () => {
     const a = startSession(newProfile(student()));
-    const b = startSession(newProfile({ ...student(), id: 'ABC123-8', seatNo: 8 }));
+    const b = startSession(newProfile({ ...student(), id: 'ABC123-8' }));
     expect(a.current?.ref.seed).not.toBe(b.current?.ref.seed);
   });
 });

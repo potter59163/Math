@@ -25,7 +25,7 @@ describe('badgesOf (SPEC §11)', () => {
     rewarded,
   });
   const base = (): LearnerProfile =>
-    newLearnerProfile({ id: 'A-1', classCode: 'AAAAAA', seatNo: 1, units: [4, 3] });
+    newLearnerProfile({ id: 'A-1', units: [4, 3] });
 
   it('starts empty', () => {
     expect(badgesOf(base())).toEqual([]);

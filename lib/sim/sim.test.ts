@@ -222,7 +222,7 @@ describe('reviews (SPEC §7.4)', () => {
         : item.correct;
     const student: SimStudent = { label: 'relapses', answer: answered, onScene: () => {} };
     const passing: Profile = {
-      ...newProfile({ id: 'R-3', classCode: 'SIMSIM', seatNo: 1, units: [3] }),
+      ...newProfile({ id: 'R-3', units: [3] }),
       skills: { mult_defined: passedState(0) },
       itemsDone: 20,
       clipsSeen: ['mult_defined', 'mult'],
@@ -305,7 +305,7 @@ describe('the table of SPEC §7.3, through the director', () => {
   /** At `transpose`, the one typed skill whose items are all a plain matrix, so ผ is always a slip. */
   function atTranspose(pretestRight: boolean): Profile {
     const start: Profile = {
-      ...newProfile({ id: 'T-1', classCode: 'SIMSIM', seatNo: 1, units: [1] }),
+      ...newProfile({ id: 'T-1', units: [1] }),
       skills: { dim: passedState(0), index: passedState(0) },
       clipsSeen: ['dim', 'index', 'transpose'],
     };
@@ -525,7 +525,7 @@ describe('the whole model under any answers', () => {
 });
 
 describe('the checks themselves', () => {
-  const base = (): Profile => newProfile({ id: 'C-1', classCode: 'SIMSIM', seatNo: 1, units: [3] });
+  const base = (): Profile => newProfile({ id: 'C-1', units: [3] });
 
   const turnWith = (extra: Partial<NextTurn>): NextTurn => ({
     trigger: 'after_attempt',

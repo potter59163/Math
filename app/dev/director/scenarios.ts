@@ -215,7 +215,7 @@ function passedLongAgo(): SkillState {
 }
 
 function startOf({ units, passed = [], itemsDone = 0, pretest }: Scenario): Profile {
-  const fresh = newProfile({ id: 'DEV-1', classCode: 'DEVDEV', seatNo: 1, units });
+  const fresh = newProfile({ id: 'DEV-1', units });
   const skills = Object.fromEntries(passed.map((id) => [id, passedLongAgo()]));
   const seeded: Profile = { ...fresh, skills, clipsSeen: passed, itemsDone };
   return pretest ? applyPretest(seeded, pretest, { at: 0 }) : seeded;

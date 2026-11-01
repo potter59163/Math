@@ -21,7 +21,7 @@ import type { ChosenScene, NextStep, SceneRequest } from './types';
 export function buildScene(request: SceneRequest): SceneSpec {
   switch (request.kind) {
     case 'intro':
-      return introScene(request.unit);
+      return introScene(request.unit, { seed: request.seed, theme: request.theme });
     case 'concept':
       return conceptScene(request.skill, {
         seed: request.seed,
@@ -49,6 +49,13 @@ export function sceneOrNull(request: SceneRequest): SceneSpec | null {
   }
 }
 
+/** The clip as this student gets it: the tutor's captions over the template's, beat by beat. */
+export function sceneOfChosen({ request, narration }: ChosenScene): SceneSpec | null {
+  const spec = sceneOrNull(request);
+  if (!spec || !narration) return spec;
+  return { ...spec, captions: { ...spec.captions, ...narration } } as SceneSpec;
+}
+
 export function chosenScene(request: SceneRequest): ChosenScene | undefined {
   const spec = sceneOrNull(request);
   return spec ? { request, template: spec.template, beats: [...spec.beats] } : undefined;
@@ -70,7 +77,15 @@ export function leadClip(profile: LearnerProfile, step: NextStep): ChosenScene |
   const seenInUnit = SKILLS.some(
     (other) => other.unit === unit && profile.clipsSeen.includes(other.id),
   );
-  if (!seenInUnit) return chosenScene({ kind: 'intro', unit, skill });
+  if (!seenInUnit) {
+    return chosenScene({
+      kind: 'intro',
+      unit,
+      skill,
+      seed: exampleSeed(`${profile.student.id}:intro:${unit}`, 0),
+      ...(profile.student.theme && { theme: profile.student.theme }),
+    });
+  }
   const upcoming = drawItem(profile, step).item;
   return chosenScene({
     kind: 'concept',
