@@ -19,6 +19,8 @@ const SAMPLE = matrix([
   [3, 4],
 ]);
 
+const taglineLines = th.home.tagline.split(' ');
+
 const COHORT_KEY = 'math:cohort';
 
 /** A trial's link is /?cohort=ABC. Kept until the first sign-in comes back from Google. */
@@ -64,7 +66,14 @@ export function Landing() {
           </div>
         </div>
         <h1 className="text-3xl leading-tight font-bold">{CONFIG.appName}</h1>
-        <p className="font-semibold text-brand">{th.home.tagline}</p>
+        <p className="font-semibold text-brand">
+          {/* Two lines, because a browser left to wrap it breaks the last Thai word in the middle. */}
+          {taglineLines.map((line) => (
+            <span key={line} className="block">
+              {line}
+            </span>
+          ))}
+        </p>
       </header>
 
       <div className="flex flex-col gap-2">

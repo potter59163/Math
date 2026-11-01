@@ -19,7 +19,7 @@ const numberFont = Inter({
 });
 
 export const metadata: Metadata = {
-  title: CONFIG.appName,
+  title: { default: CONFIG.appName, template: `%s · ${CONFIG.appName}` },
   description: th.home.tagline,
 };
 

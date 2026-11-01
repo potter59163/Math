@@ -1,7 +1,7 @@
 # SPEC: แอปสอนคณิตศาสตร์ ม.ปลาย เรื่องแรก: เมทริกซ์ (MVP)
 
 > **เป้าหมาย:** ส่ง Chula Innovative Award 2027 (ประเภทนักเรียน ระดับมัธยมศึกษา) ภายใน 27 พ.ย. 2569 16:30 น. และทดลองในห้องเรียนจริง 13–19 พ.ย. 2569
-> **ชื่อแอปและชื่อติวเตอร์ ("คิว") เป็นชื่อชั่วคราว:** แก้ได้ที่ `lib/config.ts`
+> **ชื่อแอปคือ Kidma ส่วนชื่อติวเตอร์ ("คิว") ยังเป็นชื่อชั่วคราว:** แก้ได้ที่ `lib/config.ts`
 
 ---
 
@@ -406,7 +406,7 @@ action ทั้งหมดอยู่ใน `lib/sync/actions.ts`: start, pra
 ## 17. Config (`lib/config.ts`) ค่าเริ่มต้น
 ```ts
 export const CONFIG = {
-  appName: 'คณิตศาสตร์ ม.ปลาย',
+  appName: 'Kidma',
   tutorName: 'คิว',
   bkt: { pInit: 0.15, pTransit: 0.15, pSlip: 0.10, pGuessEntry: 0.05 }, // choice: 1/k
   bktFromPretest: { correct: 0.60, misconception: 0.10, otherWrong: 0.25 },

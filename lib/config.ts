@@ -1,5 +1,5 @@
 export const CONFIG = {
-  appName: 'คณิตศาสตร์ ม.ปลาย', // TODO(review): placeholder until Potter picks the name
+  appName: 'Kidma',
   tutorName: 'คิว',
   bkt: { pInit: 0.15, pTransit: 0.15, pSlip: 0.1, pGuessEntry: 0.05 }, // choice: 1/k
   bktFromPretest: { correct: 0.6, misconception: 0.1, otherWrong: 0.25 },

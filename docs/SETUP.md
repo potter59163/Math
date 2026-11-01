@@ -10,7 +10,7 @@
 
 ## 2. Google login
 1. เปิด console.cloud.google.com สร้างโปรเจกต์ แล้วไปที่ **APIs & Services → OAuth consent screen**
-   - เลือก External กรอกชื่อแอปและอีเมล แล้วกด Publish ให้เป็น In production เพื่อให้นักเรียนทุกคนล็อกอินได้
+   - เลือก External กรอกชื่อแอป `Kidma` และอีเมล แล้วกด Publish ให้เป็น In production เพื่อให้นักเรียนทุกคนล็อกอินได้
 2. ไปที่ **Credentials → Create Credentials → OAuth client ID** เลือก Web application
    - **Authorized redirect URI:** `https://<project-ref>.supabase.co/auth/v1/callback` (ดู project-ref ได้จาก Project URL)
 3. กลับไป Supabase ที่ **Authentication → Providers → Google** เปิดใช้ แล้ววาง Client ID กับ Client secret
@@ -19,7 +19,7 @@
    - **Redirect URLs:** เพิ่ม `https://your-app.vercel.app/auth/callback` และ `http://localhost:3000/auth/callback`
 
 ## 3. Vercel (ขึ้นเว็บจริง)
-1. สมัครที่ vercel.com ด้วย GitHub แล้ว Import repo นี้ ตั้งชื่อโปรเจกต์ตามที่คุณเลือก (อย่าใช้คำว่า QEDify)
+1. สมัครที่ vercel.com ด้วย GitHub แล้ว Import repo นี้ ตั้งชื่อโปรเจกต์ `kidma` ถ้าชื่อนี้มีคนใช้แล้ว Vercel จะให้ URL อื่นมา ให้ใช้ URL ที่ได้จริงแทน `your-app.vercel.app` ทุกที่ในคู่มือนี้
 2. ใส่ Environment Variables:
    - `NEXT_PUBLIC_SUPABASE_URL` = Project URL
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY` = anon key
