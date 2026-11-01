@@ -30,6 +30,8 @@ export interface ScenePlayerProps {
   onDone(): void;
   /** Lets /dev/scenes preview a still frame without changing the operating system setting. */
   forceStill?: boolean;
+  /** The last button, when what follows is not what this kind of scene usually leads to. */
+  doneLabel?: string;
 }
 
 export function ScenePlayer({
@@ -39,6 +41,7 @@ export function ScenePlayer({
   onView,
   onDone,
   forceStill,
+  doneLabel,
 }: ScenePlayerProps) {
   const scene = spec as AnyScene;
   const [state, dispatch] = useReducer(playerReducer, scene.beats.length, initialPlayer);
@@ -139,7 +142,7 @@ export function ScenePlayer({
               <span className="text-sm">{th.scenes.player.replay}</span>
             </Button>
             <Button ref={next} onClick={() => dispatch({ type: 'next' })}>
-              {isLast ? th.scenes.player.done[spec.purpose] : th.scenes.player.next}
+              {isLast ? (doneLabel ?? th.scenes.player.done[spec.purpose]) : th.scenes.player.next}
               {!isLast && <ArrowRightIcon className="size-4" />}
             </Button>
           </div>

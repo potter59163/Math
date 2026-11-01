@@ -49,7 +49,8 @@ export function exampleSeed(base: number | string, nth: number): number {
   return deriveSeed(`example:${base}`, nth);
 }
 
-function firstWrongCell(answer: Answer, correct: Answer): CellIndex {
+/** The cell a scene focuses on. Director tokens use it too, so words and picture name the same cell. */
+export function firstWrongCell(answer: Answer, correct: Answer): CellIndex {
   if (answer.kind !== 'matrix' || correct.kind !== 'matrix') return [1, 1];
   if (countDiffCells(answer.value, correct.value) === null) return [1, 1];
   for (let i = 0; i < answer.value.length; i += 1) {

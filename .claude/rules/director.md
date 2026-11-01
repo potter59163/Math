@@ -6,7 +6,7 @@ paths:
 
 # Director & API rules
 
-- `lib/director/candidates.ts` (rules) is the source of truth: it proposes 2–4 candidates with score and Thai `ruleReason`. The LLM only chooses among them; with no LLM the top-scored candidate wins.
+- `lib/director/candidates.ts` (rules) is the source of truth: it proposes 1–4 candidates with score and Thai `ruleReason`. A single path stays single: no alternative is invented to fill a quota, and the LLM then only writes the words. The LLM only chooses among them; with no LLM the top-scored candidate wins.
 - LLM I/O: build input with `buildDirectorInput()`, parse with the Zod schema `LlmDecision`, then `validateDecision()` (choice ∈ candidates, no digits in student-facing text, tokens ⊆ allowed, beats ∈ template, lengths). Any failure → rules top candidate + default content. Log `fallback_reason`.
 - Never send nickname, seat number, class code or any student-typed free text to the LLM (the stretch chat route is the only exception and has its own guard).
 - The server regenerates the item from `ItemRef` and re-classifies. Never trust client-side classification for logging or BKT.

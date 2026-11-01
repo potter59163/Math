@@ -56,6 +56,23 @@ export function emptyDraft(item: DraftItem): Draft {
   };
 }
 
+/** What the boxes showed when this answer was sent, for a closed item after a reload. */
+export function draftFromAnswer(item: DraftItem, answer: Answer): Draft {
+  const draft = emptyDraft(item);
+  switch (answer.kind) {
+    case 'matrix':
+      return { ...draft, cells: answer.value.flat().map((cell) => cell.toString()) };
+    case 'scalar':
+      return { ...draft, cells: [answer.value.toString()] };
+    case 'dims':
+      return { ...draft, cells: [String(answer.rows), String(answer.cols)] };
+    case 'choice':
+      return { ...draft, choice: answer.id };
+    case 'undefined':
+      return { ...draft, isUndefined: true };
+  }
+}
+
 function typeNumber(text: string, char: KeypadChar): string {
   const atLimit = text.length >= MAX_NUMBER_CHARS;
   if (char === '-') {

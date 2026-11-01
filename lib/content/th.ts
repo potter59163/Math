@@ -82,9 +82,13 @@ export const th = {
     // TODO(review)
     allDone: 'ผ่านครบทุกเรื่องแล้ว',
     // TODO(review)
+    keepPracticing: 'ทบทวนต่อ',
+    // TODO(review)
     seeSummary: 'ดูสรุป',
     // TODO(review)
     leave: 'เปลี่ยนคน',
+    // TODO(review)
+    myPath: 'เส้นทางของฉัน',
   },
 
   session: {
@@ -113,8 +117,6 @@ export const th = {
     // TODO(review)
     nextSkill: 'ไปเรื่องถัดไป',
     // TODO(review)
-    finish: 'ดูสรุป',
-    // TODO(review)
     showWorked: 'ดูวิธีทำ',
     // TODO(review)
     workedTitle: 'วิธีทำทีละขั้น',
@@ -127,7 +129,9 @@ export const th = {
     // TODO(review)
     unitPassed: 'ผ่านหน่วยที่ {{unit}} แล้ว',
     // TODO(review)
-    allDone: 'ผ่านครบทุกเรื่องที่เปิดแล้ว',
+    allDone: 'ผ่านครบทุกเรื่องที่เปิดแล้ว ฝึกทบทวนต่อได้เลย',
+    // TODO(review)
+    misconceptionFixed: 'แก้ความเข้าใจผิดเรื่อง "{{m}}" ได้แล้ว {{xp}}',
     issues: {
       // TODO(review)
       incomplete: 'กรอกให้ครบทุกช่องก่อนส่งนะ',
@@ -297,6 +301,14 @@ export const th = {
     // TODO(review)
     unitPassed: 'ผ่านหน่วยที่ {{n}}',
     // TODO(review)
+    fixed: 'ความเข้าใจผิดที่แก้ได้',
+    // TODO(review)
+    fixedNone: 'ยังไม่มีเรื่องที่ต้องแก้ หรือยังแก้ไม่สำเร็จ',
+    // TODO(review)
+    badges: 'เหรียญที่ได้',
+    // TODO(review)
+    badgeFixed: 'แก้ความเข้าใจผิดสำเร็จ',
+    // TODO(review)
     continue: 'เรียนต่อ',
     // TODO(review)
     toMap: 'ดูเส้นทางเรียน',
@@ -339,6 +351,122 @@ export const th = {
     M19_INV_ZERO_ENTRY: 'คิดว่ามีสมาชิกเป็น 0 แล้วจะไม่มีอินเวอร์ส',
     M20_INV2_RECIPE: 'สูตรอินเวอร์ส 2×2 ขาดขั้น',
     M21_INV_RECIPROCAL: 'คิดว่าอินเวอร์สคือกลับเศษทีละช่อง',
+  },
+
+  // Short names from docs/AI_DIRECTOR.md §3.2, at most 16 code units so a path note fits one line.
+  misconceptionShort: {
+    // TODO(review)
+    M01_DIM_SWAP: 'ตอบมิติสลับกัน',
+    // TODO(review)
+    M02_INDEX_SWAP: 'อ่านแถวหลักสลับ',
+    // TODO(review)
+    M03_TRANSPOSE_WRONG: 'หมุนแทนการสะท้อน',
+    // TODO(review)
+    M04_ADD_DIM_MISMATCH: 'บวกต่างมิติ',
+    // TODO(review)
+    M05_SUB_REVERSED: 'ลบสลับลำดับ',
+    // TODO(review)
+    M07_SCALAR_PARTIAL: 'คูณ k ไม่ครบช่อง',
+    // TODO(review)
+    M08_MULT_DIM_RULE: 'ใช้กฎมิติผิด',
+    // TODO(review)
+    M09_MULT_ELEMENTWISE: 'คูณทีละช่อง',
+    // TODO(review)
+    M10_MULT_ROW_ROW: 'จับแถวคู่แถว',
+    // TODO(review)
+    M11_MULT_COMMUTATIVE: 'คิดว่า AB = BA',
+    // TODO(review)
+    M12_DET2_FORMULA: 'ใช้สูตร det ผิด',
+    // TODO(review)
+    M13_DET3_SIGN: 'เครื่องหมายผิด',
+    // TODO(review)
+    M14_DET_SCALAR_LINEAR: 'ลืมยกกำลัง k',
+    // TODO(review)
+    M15_DET_ADDITIVE: 'แยก det ของผลบวก',
+    // TODO(review)
+    M18_INV_SINGULAR: 'ไม่ได้ดู det',
+    // TODO(review)
+    M19_INV_ZERO_ENTRY: 'ดูแค่เลขศูนย์',
+    // TODO(review)
+    M20_INV2_RECIPE: 'ขาดขั้นอินเวอร์ส',
+    // TODO(review)
+    M21_INV_RECIPROCAL: 'กลับเศษทีละช่อง',
+  },
+
+  // Why this step (docs/AI_DIRECTOR.md §3.2): at most 40 code units, no digits, gives nothing away.
+  pathNotes: {
+    // TODO(review)
+    probe: 'เพิ่มข้อนี้เพราะเมื่อกี้{{m}}',
+    // TODO(review)
+    pretest_probe: 'ตอน pre-test {{m}}',
+    // TODO(review)
+    remediate: 'พาดูคลิปนี้เพราะเมื่อกี้{{m}}',
+    // TODO(review)
+    level_up: 'ตอบถูกต่อเนื่อง เลยเพิ่มความท้าทาย',
+    // TODO(review)
+    level_down: 'ปรับให้ง่ายลงก่อน แล้วค่อยไปต่อ',
+    // TODO(review)
+    same_level: 'ฝึกอีกข้อให้แม่นขึ้น',
+    // TODO(review)
+    worked: 'พาดูทีละขั้นก่อนลองอีกข้อ',
+    // TODO(review)
+    concept: 'ดูแนวคิดเรื่องนี้ก่อนลองอีกข้อ',
+    // TODO(review)
+    review: 'เรื่องนี้ผ่านมาสักพัก มาทบทวนกัน',
+    // TODO(review)
+    advance: 'ผ่านเรื่องนี้แล้ว ไปเรื่องถัดไป',
+    // TODO(review)
+    back: 'ทบทวนแล้ว กลับมาเรื่องที่ทำค้างไว้',
+    // TODO(review)
+    skip_clip: 'เรื่องนี้ทำได้แล้ว เลยข้ามคลิปให้',
+    // TODO(review)
+    request: 'เปิดคลิปนี้ตามที่ขอ',
+    // TODO(review)
+    start: 'เริ่มจากเรื่องนี้ก่อน',
+    // The control group sees no reasons (AI_DIRECTOR §3.1).
+    fixed: '',
+  },
+
+  // Why the rules offered each candidate, for the teacher (docs/AI_DIRECTOR.md §3). Digits are allowed.
+  ruleReasons: {
+    // TODO(review)
+    stuck: 'ผิดครั้งแรกติดกัน {{n}} ข้อ → ดูวิธีทำ แล้วกลับไประดับ 1 และแจ้งครู',
+    // TODO(review)
+    review: 'ไม่ได้เจอ {{skill}} มา {{n}} ข้อ → แทรกข้อทบทวน',
+    // TODO(review)
+    scene_then_probe: 'เจอ{{m}} ครั้งที่ {{n}} → อธิบายด้วยคลิป แล้วให้ข้อทดสอบ',
+    // TODO(review)
+    probe_only: 'เจอ{{m}} → ให้ข้อทดสอบซ้ำโดยไม่อธิบาย',
+    // TODO(review)
+    probe_after_scenes: 'ดูคลิปเรื่อง{{m}} มาแล้ว {{n}} ครั้ง → ให้ข้อทดสอบเลย',
+    // TODO(review)
+    worked_then_probe: 'เจอ{{m}} → ดูวิธีทำทีละขั้น แล้วให้ข้อทดสอบที่ง่ายลง',
+    // TODO(review)
+    slip: 'พลาดช่องเดียว → ให้ข้อระดับเดิม',
+    // TODO(review)
+    slip_with_hint: 'พลาดช่องเดียว → ให้ข้อระดับเดิมพร้อมใบ้ขั้นแรก',
+    // TODO(review)
+    worked_then_easier: 'ยังไม่รู้สาเหตุ → ดูวิธีทำ แล้วให้ข้อที่ง่ายลง',
+    // TODO(review)
+    concept_then_same: 'ยังไม่รู้สาเหตุ → ดูคลิปแนวคิด แล้วให้ข้อระดับเดิม',
+    // TODO(review)
+    advance: 'ผ่าน {{skill}} แล้ว → ไป {{next}}',
+    // TODO(review)
+    all_passed: 'ผ่านครบทุกเรื่องที่เปิดแล้ว → ทบทวน {{skill}}',
+    // TODO(review)
+    challenge: 'ผ่าน {{skill}} แล้ว → ข้อท้าทายระดับ {{level}}',
+    // TODO(review)
+    probe_again: 'ยังแก้{{m}}ไม่สำเร็จ → ให้ข้อทดสอบอีกข้อ',
+    // TODO(review)
+    practice: 'ยังไม่ผ่าน {{skill}} → ฝึกต่อที่ระดับ {{level}}',
+    // TODO(review)
+    start: 'เริ่มที่เรื่องแรกที่ยังไม่ผ่าน: {{skill}}',
+    // TODO(review)
+    start_probe: 'พบ{{m}} → เริ่มด้วยข้อทดสอบ',
+    // TODO(review)
+    request: 'นักเรียนกด "ไม่เข้าใจ" → เปิดคลิปแนวคิดด้วยตัวอย่างอื่น',
+    // TODO(review)
+    fixed: 'เส้นทางตายตัว: {{skill}} ระดับ {{level}}',
   },
 
   // L1 hints (SPEC §9), one principle per item form. The unmarked one is the example in SPEC §9.

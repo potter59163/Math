@@ -1,28 +1,30 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { AnswerBox, type ClosedTone } from '@/components/input/AnswerBox';
 import { ChoiceButtons } from '@/components/input/ChoiceButtons';
 import { DimsInput } from '@/components/input/DimsInput';
 import { Keypad } from '@/components/input/Keypad';
 import { MatrixInput } from '@/components/input/MatrixInput';
-import { Button, LinkButton } from '@/components/ui/Button';
+import { Button } from '@/components/ui/Button';
 import { BulbIcon, CheckIcon } from '@/components/ui/Icons';
 import { LazyScene, preloadScenes } from '@/components/scenes/LazyScene';
 import type { SceneView } from '@/components/scenes/playerState';
 import { th } from '@/lib/content/th';
+import { restoreAnswer } from '@/lib/core/answerJson';
 import { fillTokens } from '@/lib/core/tokens';
 import type { Answer } from '@/lib/core/types';
+import { rebuildItem } from '@/lib/director/items';
+import { stripNote } from '@/lib/director/pathStep';
+import { requestHelp, startSession, submitAttempt } from '@/lib/director/rules';
+import { sceneOrNull, workedRequest } from '@/lib/director/scene';
+import { finishScene, finishTurn, noteWorkedView } from '@/lib/director/turn';
+import type { ClosedAttempt, NextTurn, Profile, SceneRequest } from '@/lib/director/types';
+import { advanceHint, openMisconceptions } from '@/lib/learner/profile';
+import type { AttemptOutcome, HintLevel } from '@/lib/learner/types';
 import {
-  helpScene,
-  leadClip,
-  markClipSeen,
-  remediationFor,
-  workedSceneFor,
-} from '@/lib/practice/clips';
-import {
+  draftFromAnswer,
   emptyDraft,
   focusBox,
   moveActive,
@@ -37,17 +39,8 @@ import {
 } from '@/lib/practice/draft';
 import { hintAt, type Hint } from '@/lib/practice/hints';
 import { actionFromKey } from '@/lib/practice/keyboard';
-import { nextSkill } from '@/lib/practice/path';
-import {
-  advanceHint,
-  issueItem,
-  rebuildItem,
-  submitAttempt,
-  type AttemptOutcome,
-} from '@/lib/practice/profile';
 import { sceneLog } from '@/lib/practice/sceneLog';
 import { profileStore } from '@/lib/practice/store';
-import type { HintLevel, Profile } from '@/lib/practice/types';
 import type { SceneSpec } from '@/lib/topics/matrix/scenes';
 import { skillById, type SkillId } from '@/lib/topics/matrix/skills';
 import type { MatrixItem } from '@/lib/topics/matrix/types';
@@ -56,6 +49,7 @@ import { HintBubble } from './HintBubble';
 import { ItemPrompt } from './ItemPrompt';
 import { preloadFormula } from './LazyFormula';
 import { LoadingScreen } from './LoadingScreen';
+import { PathStrip } from './PathStrip';
 import { StatBadges } from './StatBadges';
 import { useRequiredProfile } from './useProfile';
 
@@ -67,13 +61,15 @@ const ANSWER_SLOT = 'mx-auto h-[278px] w-full max-w-lg px-4 py-2';
 
 const DIRECTIONS: readonly string[] = ['left', 'right', 'up', 'down'];
 
-interface ClosedItem {
+interface ClosedItem extends Omit<ClosedAttempt, 'ref' | 'answer'> {
   item: MatrixItem;
   answer: Answer;
-  outcome: AttemptOutcome;
-  /** Kept as they were on sending, so the hint on screen does not change under the feedback. */
-  hintLevel: HintLevel;
-  caught: Profile['caught'];
+  turn: NextTurn;
+}
+
+/** The skill a clip is about: the one it leads into, or else the item on screen. */
+function skillOfScene(request: SceneRequest, fallback: SkillId): SkillId {
+  return request.kind === 'intro' || request.kind === 'concept' ? request.skill : fallback;
 }
 
 function sceneTitle(spec: SceneSpec, skill: SkillId): string {
@@ -101,61 +97,66 @@ export function SessionScreen() {
   return profile ? <SessionLoop profile={profile} /> : <LoadingScreen />;
 }
 
-function SessionLoop({ profile }: { profile: Profile }) {
-  const router = useRouter();
-  const [closed, setClosed] = useState<ClosedItem | null>(null);
+/** A clip with no feedback to go back to, like the lead clip of a new session. Never blocks the item. */
+function ClipOnly({ profile, request }: { profile: Profile; request: SceneRequest }) {
+  const spec = useMemo(() => sceneOrNull(request), [request]);
+  const skip = useEffectEvent(() => profileStore.save(finishScene(profile)));
+  useEffect(() => {
+    if (!spec) skip();
+  }, [spec]);
 
-  const ref = profile.current?.ref;
+  return (
+    <>
+      <LoadingScreen />
+      {spec && (
+        <LazyScene
+          modal
+          spec={spec}
+          title={sceneTitle(spec, skillOfScene(request, profile.current?.ref.skill ?? 'dim'))}
+          onView={(view) => logView(profile, spec, view)}
+          onDone={() => profileStore.save(finishScene(profile))}
+        />
+      )}
+    </>
+  );
+}
+
+function SessionLoop({ profile }: { profile: Profile }) {
+  const { pending, current } = profile;
+  const ref = current?.ref;
   const open = useMemo(() => (ref ? rebuildItem(ref) : null), [ref]);
-  const finished = nextSkill(profile) === null;
-  const lead = useMemo(() => (closed || open ? null : leadClip(profile)), [closed, open, profile]);
+
+  // Lives in the profile, so a reload after sending comes back to this same feedback and next step.
+  const closed = useMemo((): ClosedItem | null => {
+    if (!pending?.closed) return null;
+    const { ref: closedRef, answer, ...rest } = pending.closed;
+    const item = rebuildItem(closedRef);
+    return item && { ...rest, item, answer: restoreAnswer(answer), turn: pending.turn };
+  }, [pending]);
+
+  const clip = !closed && pending ? pending.turn.scenes[0] : undefined;
+  const lostTurn = pending && !closed && !clip;
 
   useEffect(() => {
-    if (!closed && !open && !finished && !lead) profileStore.save(issueItem(profile));
-  }, [closed, open, finished, lead, profile]);
+    if (lostTurn) profileStore.save(finishTurn(profile));
+    else if (!pending && !open) profileStore.save(startSession(profile));
+  }, [lostTurn, pending, open, profile]);
 
   useEffect(preloadScenes, []);
 
-  if (lead) {
-    return (
-      <>
-        <LoadingScreen />
-        <LazyScene
-          modal
-          spec={lead.spec}
-          title={sceneTitle(lead.spec, lead.skill)}
-          onView={(view) => logView(profile, lead.spec, view)}
-          onDone={() => profileStore.save(markClipSeen(profile, lead.skill))}
-        />
-      </>
-    );
+  if (clip) {
+    return <ClipOnly key={JSON.stringify(clip.request)} profile={profile} request={clip.request} />;
   }
 
   const item = closed?.item ?? open;
-  if (!item) return finished ? <AllDone /> : <LoadingScreen />;
+  if (!item) return <LoadingScreen />;
 
-  const submit = (answer: Answer) => {
+  const submit = (answer: Answer, time: { timeMs: number; at: number }) => {
     if (!open) return;
-    const result = submitAttempt(profile, open, answer);
-    setClosed({
-      item: open,
-      answer,
-      outcome: result.outcome,
-      hintLevel: profile.current?.hintLevel ?? 0,
-      caught: profile.caught,
-    });
+    const hintLevel = profile.current?.hintLevel ?? 0;
+    const result = submitAttempt(profile, { item: open, answer, hintLevel, ...time });
     profileStore.save(result.profile);
     if (result.outcome.classification.type !== 'correct') preloadFormula();
-  };
-
-  const goNext = () => {
-    if (closed?.outcome.allPassed) {
-      router.push('/summary');
-      return;
-    }
-    setClosed(null);
-    // A new skill opens with its clip, and the item comes after it.
-    if (!leadClip(profile)) profileStore.save(issueItem(profile));
   };
 
   const askHint = () => {
@@ -173,20 +174,9 @@ function SessionLoop({ profile }: { profile: Profile }) {
       closed={closed}
       onSubmit={submit}
       onHint={askHint}
-      onNext={goNext}
+      onNext={() => profileStore.save(finishTurn(profile))}
+      onSceneDone={() => profileStore.save(finishScene(profile))}
     />
-  );
-}
-
-function AllDone() {
-  return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-4 px-4 text-center">
-      <CheckIcon className="size-12 text-good" />
-      <h1 className="text-xl font-bold">{th.session.allDone}</h1>
-      <LinkButton href="/summary" className="w-full">
-        {th.session.finish}
-      </LinkButton>
-    </main>
   );
 }
 
@@ -194,25 +184,46 @@ interface ItemScreenProps {
   item: MatrixItem;
   profile: Profile;
   closed: ClosedItem | null;
-  onSubmit(answer: Answer): void;
+  onSubmit(answer: Answer, time: { timeMs: number; at: number }): void;
   onHint(): void;
+  /** Press on from the feedback with no clip to play. */
   onNext(): void;
+  /** A clip of this turn has closed, watched or skipped. */
+  onSceneDone(): void;
 }
 
 interface OpenScene {
   spec: SceneSpec;
+  /** Whose clip it is, for its title. */
+  skill: SkillId;
   /** What follows the clip, if anything besides going back to this screen. */
   then?: () => void;
+  doneLabel?: string;
 }
 
-function ItemScreen({ item, profile, closed, onSubmit, onHint, onNext }: ItemScreenProps) {
-  const [draft, setDraft] = useState(() => emptyDraft(item));
+function ItemScreen({
+  item,
+  profile,
+  closed,
+  onSubmit,
+  onHint,
+  onNext,
+  onSceneDone,
+}: ItemScreenProps) {
+  // After a reload a closed item has no typing to show, so its boxes are filled from the answer sent.
+  const [draft, setDraft] = useState(() =>
+    closed ? draftFromAnswer(item, closed.answer) : emptyDraft(item),
+  );
   const [issue, setIssue] = useState<NotReadyReason | null>(null);
   // Lives over this screen, which stays mounted underneath: what was typed so far is still there after.
   const [scene, setScene] = useState<OpenScene | null>(null);
   const helpPresses = useRef(0);
   const scroller = useRef<HTMLElement>(null);
   const hintSpot = useRef<HTMLDivElement>(null);
+  const openedAt = useRef(0);
+  useEffect(() => {
+    openedAt.current = Date.now();
+  }, []);
 
   const isClosed = closed !== null;
   const sceneIsOpen = scene !== null;
@@ -220,7 +231,7 @@ function ItemScreen({ item, profile, closed, onSubmit, onHint, onNext }: ItemScr
   const hintLevel = closed?.hintLevel ?? profile.current?.hintLevel ?? 0;
   const hint =
     hintLevel > 0
-      ? hintAt(item, hintLevel as Hint['level'], closed?.caught ?? profile.caught)
+      ? hintAt(item, hintLevel as Hint['level'], closed?.openAtSend ?? openMisconceptions(profile))
       : null;
   const state = readiness(item, draft);
 
@@ -234,15 +245,19 @@ function ItemScreen({ item, profile, closed, onSubmit, onHint, onNext }: ItemScr
     onHint();
   };
   const askHelp = () => {
-    const spec = helpScene(item, helpPresses.current);
+    const result = requestHelp(profile, item, helpPresses.current);
     helpPresses.current += 1;
     setIssue(null);
-    if (spec) setScene({ spec });
+    if (!result) return;
+    profileStore.save(result.profile);
+    const spec = sceneOrNull(result.turn.scenes[0].request);
+    if (spec) setScene({ spec, skill: item.ref.skill });
   };
 
   const send = () => {
     if (state.ready) {
-      onSubmit(state.answer);
+      const at = Date.now();
+      onSubmit(state.answer, { at, timeMs: at - openedAt.current });
       return;
     }
     setIssue(state.reason);
@@ -283,9 +298,39 @@ function ItemScreen({ item, profile, closed, onSubmit, onHint, onNext }: ItemScr
 
   const skill = skillById(item.ref.skill);
   const answered = closed ? answeredLine(item, draft) : '';
-  const remediation = closed
-    ? remediationFor(item, closed.answer, closed.outcome.classification)
-    : null;
+
+  /** R1 and friends: what the director chose plays now, and the next item comes after it. */
+  const goOn = () => {
+    const next = closed?.turn.scenes[0];
+    if (!next) {
+      onNext();
+      return;
+    }
+    const spec = sceneOrNull(next.request);
+    if (!spec) {
+      onSceneDone();
+      return;
+    }
+    setScene({
+      spec,
+      skill: skillOfScene(next.request, item.ref.skill),
+      then: onSceneDone,
+      // A solution opened by the button closes back to this screen, but this one goes on.
+      doneLabel: spec.purpose === 'reveal' ? th.scenes.player.done.remediate : undefined,
+    });
+  };
+
+  const showWorked = () => {
+    if (!closed) return;
+    const request = workedRequest(item, closed.answer, closed.outcome.classification);
+    const spec = sceneOrNull(request);
+    if (!spec) return;
+    setScene({
+      spec,
+      skill: item.ref.skill,
+      then: () => profileStore.save(noteWorkedView(profile, request)),
+    });
+  };
 
   return (
     <div className="flex h-dvh flex-col">
@@ -306,31 +351,35 @@ function ItemScreen({ item, profile, closed, onSubmit, onHint, onNext }: ItemScr
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col short-landscape:flex-row">
-        <main
-          ref={scroller}
-          className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-2"
-        >
-          <div className="mx-auto flex max-w-lg flex-col gap-3">
-            <ItemPrompt item={item} />
-            {!isChoice && (
-              <div className="flex justify-center">
-                <AnswerBoxes
-                  item={item}
-                  draft={draft}
-                  outcome={closed?.outcome}
-                  onSelect={(box) => edit((current) => focusBox(current, box))}
-                />
-              </div>
-            )}
-            {hint && (
-              <div ref={hintSpot}>
-                <HintBubble key={hint.level} hint={hint} />
-              </div>
-            )}
-            {/* Last in the flow, so appearing on send cannot move anything above it. */}
-            {answered && <p className="text-center text-sm text-muted">{answered}</p>}
-          </div>
-        </main>
+        {/* In landscape the strip takes this column only: the answer slot needs its full height. */}
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <PathStrip steps={profile.path} note={stripNote(profile)} />
+          <main
+            ref={scroller}
+            className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-2"
+          >
+            <div className="mx-auto flex max-w-lg flex-col gap-3">
+              <ItemPrompt item={item} />
+              {!isChoice && (
+                <div className="flex justify-center">
+                  <AnswerBoxes
+                    item={item}
+                    draft={draft}
+                    outcome={closed?.outcome}
+                    onSelect={(box) => edit((current) => focusBox(current, box))}
+                  />
+                </div>
+              )}
+              {hint && (
+                <div ref={hintSpot}>
+                  <HintBubble key={hint.level} hint={hint} />
+                </div>
+              )}
+              {/* Last in the flow, so appearing on send cannot move anything above it. */}
+              {answered && <p className="text-center text-sm text-muted">{answered}</p>}
+            </div>
+          </main>
+        </div>
 
         <div className="relative shrink-0 border-t border-line bg-sunken pb-[env(safe-area-inset-bottom)] short-landscape:w-[22rem] short-landscape:border-t-0 short-landscape:border-l">
           {/* Floats over the item: always in view on a short screen, and takes up no space. */}
@@ -348,17 +397,9 @@ function ItemScreen({ item, profile, closed, onSubmit, onHint, onNext }: ItemScr
             {closed ? (
               <FeedbackCard
                 outcome={closed.outcome}
-                clipFirst={remediation?.isClip}
-                onNext={() =>
-                  remediation?.isClip
-                    ? setScene({ spec: remediation.spec, then: onNext })
-                    : onNext()
-                }
-                onShowWorked={() =>
-                  setScene({
-                    spec: workedSceneFor(item, closed.answer, closed.outcome.classification),
-                  })
-                }
+                turn={closed.turn}
+                onNext={goOn}
+                onShowWorked={showWorked}
               />
             ) : isChoice ? (
               <div className="flex h-full flex-col gap-2">
@@ -412,7 +453,8 @@ function ItemScreen({ item, profile, closed, onSubmit, onHint, onNext }: ItemScr
         <LazyScene
           modal
           spec={scene.spec}
-          title={sceneTitle(scene.spec, item.ref.skill)}
+          title={sceneTitle(scene.spec, scene.skill)}
+          doneLabel={scene.doneLabel}
           onView={(view) => logView(profile, scene.spec, view)}
           onDone={() => {
             setScene(null);

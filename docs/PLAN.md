@@ -68,17 +68,17 @@
   - ลื่นบน Android รุ่นล่างจริง 1 เครื่อง
 
 ## Phase 4: Learner model + rules director (5–7 พ.ย.)
-- [ ] BKT, mastery, สถานะ misconception, ความยาก, interleaving, ติด (SPEC §7) แบบ pure function + tests ตามตัวอย่างใน SPEC
-- [ ] `candidates.ts` (AI_DIRECTOR §3), `rules.ts`, `fixedPath.ts`, `NextTurn`, `pathStep` (AI_DIRECTOR §3.2), token resolver
-- [ ] `PathStrip` ใน `/learn/session` และ "เส้นทางของฉัน" บน `/learn` (SPEC §4)
-- [ ] `lib/sim/`: นักเรียนจำลอง
+- [x] BKT, mastery, สถานะ misconception, ความยาก, interleaving, ติด (SPEC §7) แบบ pure function + tests ตามตัวอย่างใน SPEC
+- [x] `candidates.ts` (AI_DIRECTOR §3), `rules.ts`, `fixedPath.ts`, `NextTurn`, `pathStep` (AI_DIRECTOR §3.2), token resolver
+- [x] `PathStrip` ใน `/learn/session` และ "เส้นทางของฉัน" บน `/learn` (SPEC §4)
+- [x] `lib/sim/`: นักเรียนจำลอง
   - `perfect`
   - `slipper(p)`
   - `buggy(Mxx, fixProb)`: ตอบตาม candidate ของ Mxx และหายจาก bug ด้วยความน่าจะเป็น fixProb หลังดู scene ของเรื่องนั้น
   - `random`
-- [ ] `npm run sim`: รัน 200 คน × 60 ข้อ ทั้ง adaptive และ fixed แล้วรายงาน items-to-mastery, % bug resolved, จำนวน illegal transition และเทียบจำนวนข้อต่อ skill กับตารางเวลาใน RESEARCH §3.1
-- [ ] **tests (deterministic seeds):**
-  - buggy เจอ probe ภายใน 1 ข้อหลังโดนจับได้
+- [x] `npm run sim`: รัน 200 คน × 60 ข้อ ทั้ง adaptive และ fixed แล้วรายงาน items-to-mastery, % bug resolved, จำนวน illegal transition และเทียบจำนวนข้อต่อ skill กับตารางเวลาใน RESEARCH §3.1
+- [x] **tests (deterministic seeds):**
+  - buggy เจอ probe ภายใน 1 ข้อหลังโดนจับได้ (ยกเว้นครั้งที่ R7 ทำงาน เพราะ .97 ชนะ .90)
   - perfect ไม่เคยได้ remediation scene
   - ไม่มี advance ไป skill ที่ prereq ไม่ครบ (prereq ใน unit ที่ปิดถือว่าผ่าน)
   - มีการทบทวนเกิดขึ้นจริง
@@ -87,7 +87,7 @@
   - ผ่านครบทุก skill ที่เปิดแล้วยังมีข้อให้ทำ
   - นักเรียนจำลองสองคนที่ตอบต่างกันได้เส้นทางต่างกัน และได้ตัวเลขคนละชุด
   - ทุก `note` ไม่เกิน 40 code units และไม่มีตัวเลข
-- [ ] `/dev/director`: เลือก scenario แล้วดู candidates และการตัดสินใจ
+- [x] `/dev/director`: เลือก scenario แล้วดู candidates และการตัดสินใจ
 - **Acceptance:** `npm run check` ผ่าน · `npm run sim` มี illegal transition = 0 · เห็นขั้นใหม่พร้อมเหตุผลบนจอ 360px โดยไม่มี layout shift
 - ⚠️ ผล sim ใช้ทดสอบระบบเท่านั้น ห้ามใช้เป็นหลักฐานในแบบเสนอ
 

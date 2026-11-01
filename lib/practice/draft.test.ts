@@ -5,6 +5,7 @@ import type { Answer, Item, Level } from '@/lib/core/types';
 import { generate } from '@/lib/topics/matrix/generators';
 import { SKILLS, levelsOf, type SkillId } from '@/lib/topics/matrix/skills';
 import {
+  draftFromAnswer,
   emptyDraft,
   focusBox,
   moveActive,
@@ -271,4 +272,18 @@ describe('any key sequence', () => {
       }),
     );
   });
+});
+
+describe('draftFromAnswer', () => {
+  it.each(SKILLS.flatMap(({ id }) => levelsOf(id).map((level): [SkillId, Level] => [id, level])))(
+    '%s L%i: gives back an answer equal to the one sent',
+    (skill, difficulty) => {
+      for (let seed = 0; seed < 20; seed += 1) {
+        const item = generate({ skill, difficulty, seed });
+        const state = readiness(item, draftFromAnswer(item, item.correct));
+        expect(state.ready).toBe(true);
+        if (state.ready) expect(classify(item, state.answer)).toEqual({ type: 'correct' });
+      }
+    },
+  );
 });

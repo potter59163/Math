@@ -2,9 +2,11 @@
 
 import { Button, LinkButton } from '@/components/ui/Button';
 import { CheckIcon, LockIcon } from '@/components/ui/Icons';
+import { CONFIG } from '@/lib/config';
 import { th } from '@/lib/content/th';
 import { fillTokens } from '@/lib/core/tokens';
-import { mapOf, nextSkill, type SkillStatus, type UnitOnMap } from '@/lib/practice/path';
+import type { PathStep } from '@/lib/director/types';
+import { mapOf, nextSkill, type SkillStatus, type UnitOnMap } from '@/lib/learner/progress';
 import { profileStore } from '@/lib/practice/store';
 import { skillById, type SkillId } from '@/lib/topics/matrix/skills';
 import { LoadingScreen } from './LoadingScreen';
@@ -57,7 +59,26 @@ function UnitSection({ unit, passed, skills }: UnitOnMap) {
   );
 }
 
-/** The map (SPEC §4). The personal path joins it in Phase 4, once the director has steps to show. */
+/** The latest steps chosen for this student, newest first, each with its reason (SPEC §4). */
+function MyPath({ steps }: { steps: readonly PathStep[] }) {
+  const recent = steps.slice(-CONFIG.pathStepsOnMap).reverse();
+  if (recent.length === 0) return null;
+  return (
+    <section className="flex flex-col gap-2">
+      <h2 className="font-bold">{th.learn.myPath}</h2>
+      <ol className="flex flex-col gap-1 rounded-xl border border-line bg-surface p-3">
+        {recent.map(({ note, skill }, index) => (
+          <li key={steps.length - index} className={index === 0 ? '' : 'text-muted'}>
+            <p className="text-sm">{note}</p>
+            <p className="text-xs text-muted">{skillById(skill).nameTh}</p>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+/** The map (SPEC §4). */
 export function LearnMap() {
   const profile = useRequiredProfile();
   if (!profile) return <LoadingScreen />;
@@ -77,6 +98,7 @@ export function LearnMap() {
       </header>
 
       <main className="flex flex-1 flex-col gap-6 px-4 py-4">
+        <MyPath steps={profile.path} />
         {mapOf(profile).map((unit) => (
           <UnitSection key={unit.unit} {...unit} />
         ))}
@@ -87,9 +109,14 @@ export function LearnMap() {
 
       <footer className="sticky bottom-0 flex flex-col gap-1 border-t border-line bg-surface px-4 pt-3 pb-[max(env(safe-area-inset-bottom),0.75rem)]">
         {finished && <p className="text-center font-semibold text-good">{th.learn.allDone}</p>}
-        <LinkButton href={finished ? '/summary' : '/learn/session'} className="w-full">
-          {finished ? th.learn.seeSummary : th.learn.continue}
+        <LinkButton href="/learn/session" className="w-full">
+          {finished ? th.learn.keepPracticing : th.learn.continue}
         </LinkButton>
+        {finished && (
+          <LinkButton href="/summary" variant="quiet" size="md" className="w-full">
+            {th.learn.seeSummary}
+          </LinkButton>
+        )}
       </footer>
     </div>
   );

@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ALL_UNITS } from './path';
-import { issueItem } from './profile';
+import { startSession } from '@/lib/director/rules';
+import { ALL_UNITS } from '@/lib/learner/progress';
+import type { LocalStudent } from '@/lib/learner/types';
 import { PROFILE_VERSION, createProfileStore, type StorageLike } from './store';
-import type { LocalStudent } from './types';
 
 const ADA: LocalStudent = { id: 'ABC123-1', classCode: 'ABC123', seatNo: 1, units: [...ALL_UNITS] };
 const BEA: LocalStudent = { id: 'ABC123-2', classCode: 'ABC123', seatNo: 2, units: [...ALL_UNITS] };
@@ -112,7 +112,7 @@ describe('createProfileStore', () => {
     };
     const store = createProfileStore(blocked);
     expect(store.get()).toBeNull();
-    store.save(issueItem(store.open(ADA)));
+    store.save(startSession(store.open(ADA)));
     expect(store.get()?.current).toBeDefined();
   });
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { ALL_UNITS } from '@/lib/learner/progress';
 import { parseJoin, parseUnits } from './join';
-import { ALL_UNITS } from './path';
 
 describe('parseJoin', () => {
   const form = { code: 'abc123', seat: '12', nickname: '' };

@@ -28,50 +28,50 @@ const MULT = assemble('mult', 1, {
 
 describe('hint L1', () => {
   it('reminds the principle for the form of the item', () => {
-    expect(hintAt(MULT, 1, {})).toEqual({ level: 1, text: th.hintL1.mult });
+    expect(hintAt(MULT, 1, [])).toEqual({ level: 1, text: th.hintL1.mult });
   });
 
   it('exists for every form', () => {
     for (const [skill, difficulty] of COMBOS) {
       for (let seed = 0; seed < 50; seed += 1) {
         const item = generate({ skill, difficulty, seed });
-        expect(hintAt(item, 1, {}).text.length).toBeGreaterThan(0);
+        expect(hintAt(item, 1, []).text.length).toBeGreaterThan(0);
       }
     }
   });
 });
 
 describe('hint L2 (SPEC §9)', () => {
-  it('uses the hint of a misconception caught earlier, if this item can show it', () => {
-    const hint = hintAt(MULT, 2, { M09_MULT_ELEMENTWISE: 1 });
+  it('uses the hint of an open misconception, if this item can show it', () => {
+    const hint = hintAt(MULT, 2, ['M09_MULT_ELEMENTWISE']);
     expect(hint).toEqual({ level: 2, text: th.hints.M09_MULT_ELEMENTWISE });
   });
 
-  it('prefers the item target when two were caught', () => {
+  it('prefers the item target when two are open', () => {
     const probe = generate({ skill: 'mult', difficulty: 1, seed: 3, target: 'M10_MULT_ROW_ROW' });
-    const hint = hintAt(probe, 2, { M09_MULT_ELEMENTWISE: 1, M10_MULT_ROW_ROW: 1 });
+    const hint = hintAt(probe, 2, ['M09_MULT_ELEMENTWISE', 'M10_MULT_ROW_ROW']);
     expect(hint.text).toBe(th.hints.M10_MULT_ROW_ROW);
   });
 
   it('ignores a misconception this item cannot show', () => {
     // M05 is about subtracting; this item only adds.
     const add = generate({ skill: 'addsub', difficulty: 1, seed: 1 });
-    expect(hintAt(add, 2, { M05_SUB_REVERSED: 3 }).text).not.toBe(th.hints.M05_SUB_REVERSED);
+    expect(hintAt(add, 2, ['M05_SUB_REVERSED']).text).not.toBe(th.hints.M05_SUB_REVERSED);
   });
 
   it('otherwise points at the first step of the solution', () => {
     const step = workedSteps(MULT)[0];
-    expect(hintAt(MULT, 2, {}).text).toBe(fillTokens(th.worked[step.labelKey], step.params));
+    expect(hintAt(MULT, 2, []).text).toBe(fillTokens(th.worked[step.labelKey], step.params));
   });
 
   it('does not reveal the row count on a dim item', () => {
     const item = generate({ skill: 'dim', difficulty: 1, seed: 1 });
-    expect(hintAt(item, 2, {}).text).not.toMatch(/\d/);
+    expect(hintAt(item, 2, []).text).not.toMatch(/\d/);
   });
 
   it('says more than a bare cell label on an addition item', () => {
     const item = generate({ skill: 'addsub', difficulty: 1, seed: 1 });
-    expect(hintAt(item, 2, {}).text).not.toBe(
+    expect(hintAt(item, 2, []).text).not.toBe(
       fillTokens(th.worked.addsub_cell, { i: '1', j: '1' }),
     );
   });
@@ -80,7 +80,7 @@ describe('hint L2 (SPEC §9)', () => {
     for (const [skill, difficulty] of COMBOS) {
       for (let seed = 0; seed < 50; seed += 1) {
         const item = generate({ skill, difficulty, seed });
-        expect(hintAt(item, 2, {}).text).not.toMatch(/[{}]/);
+        expect(hintAt(item, 2, []).text).not.toMatch(/[{}]/);
       }
     }
   });
@@ -88,7 +88,7 @@ describe('hint L2 (SPEC §9)', () => {
 
 describe('hint L3 (SPEC §9)', () => {
   it('shows one cell of a matrix answer, using the documented form', () => {
-    const hint = hintAt(MULT, 3, {});
+    const hint = hintAt(MULT, 3, []);
     expect(hint.latex).toContain('2 \\cdot 1 + 1 \\cdot 2 = 4');
     expect(hint.text).toBe(fillTokens(th.worked.mult_cell, { i: '1', j: '1' }));
   });
@@ -133,7 +133,7 @@ describe('hint L3 (SPEC §9)', () => {
     for (const [skill, difficulty] of COMBOS) {
       for (let seed = 0; seed < 50; seed += 1) {
         const item = generate({ skill, difficulty, seed });
-        const hint = hintAt(item, 3, {});
+        const hint = hintAt(item, 3, []);
         expect(hint.text).not.toMatch(/[{}]/);
         expect(() => katex.renderToString(hint.latex ?? '', { throwOnError: true })).not.toThrow();
       }

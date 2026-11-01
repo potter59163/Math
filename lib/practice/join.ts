@@ -1,6 +1,6 @@
 import { parseNumber } from '@/lib/core/parse';
-import { ALL_UNITS } from './path';
-import type { LocalStudent, UnitId } from './types';
+import { ALL_UNITS } from '@/lib/learner/progress';
+import type { LocalStudent, UnitId } from '@/lib/learner/types';
 
 const CLASS_CODE = /^[A-Z0-9]{6}$/;
 const MAX_SEAT = 99;

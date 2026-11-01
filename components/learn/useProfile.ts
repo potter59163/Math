@@ -2,8 +2,8 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useSyncExternalStore } from 'react';
+import type { Profile } from '@/lib/director/types';
 import { profileStore } from '@/lib/practice/store';
-import type { Profile } from '@/lib/practice/types';
 
 const beforeHydration = () => undefined;
 
