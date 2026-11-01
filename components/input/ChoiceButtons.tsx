@@ -22,7 +22,7 @@ export function ChoiceButtons({ options, selected, onPick }: ChoiceButtonsProps)
             aria-pressed={isSelected}
             onClick={() => onPick(id)}
             className={`touch-manipulation rounded-xl border-2 px-3 text-lg font-semibold transition-colors select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
-              isSelected ? 'border-brand bg-brand-soft text-ink' : 'border-line bg-surface text-ink'
+              isSelected ? 'border-brand bg-brand-soft text-ink' : 'border-edge bg-surface text-ink'
             }`}
           >
             {th.choices[labelKey]}

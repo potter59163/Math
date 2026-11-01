@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { TrophyIcon } from '@/components/ui/Icons';
 import { LoadingScreen } from '@/components/learn/LoadingScreen';
 import { th } from '@/lib/content/th';
 import { fillTokens } from '@/lib/core/tokens';
@@ -23,8 +22,8 @@ function Row({ entry }: { entry: LeaderboardEntry }) {
   return (
     <li
       aria-current={isMe ? 'true' : undefined}
-      className={`flex min-h-14 items-center gap-3 rounded-2xl px-3 py-2 ${
-        isMe ? 'border-2 border-brand bg-brand-soft' : 'border border-line bg-surface'
+      className={`flex min-h-14 items-center gap-3 border-b border-line px-2 py-2 ${
+        isMe ? 'bg-marker-soft' : ''
       }`}
     >
       <span
@@ -38,7 +37,7 @@ function Row({ entry }: { entry: LeaderboardEntry }) {
       <Avatar avatar={avatar} />
       <span className="min-w-0 flex-1 truncate font-semibold">
         {displayName}
-        {isMe && <span className="ml-1 text-sm font-normal text-brand">({th.board.you})</span>}
+        {isMe && <span className="ml-1 text-sm font-normal text-muted">({th.board.you})</span>}
       </span>
       <span className="shrink-0 font-matrix text-sm font-bold text-xp tabular-nums">
         {fillTokens(th.board.xp, { xp: String(xp) })}
@@ -88,14 +87,14 @@ function Board() {
   const meIsBelow = me !== null && !entries.some(({ isMe }) => isMe);
   return (
     <div className="flex flex-col gap-3">
-      {hidden && <p className="rounded-2xl bg-sunken px-4 py-2 text-sm">{th.board.hidden}</p>}
+      {hidden && <p className="rounded-xl bg-sunken px-4 py-2 text-sm">{th.board.hidden}</p>}
       {entries.length === 0 ? (
         <div className="flex flex-col items-center gap-3 py-8 text-center">
           <Mascot mood="cheer" />
           <p>{th.board.empty}</p>
         </div>
       ) : (
-        <ol className="flex flex-col gap-2">
+        <ol className="flex flex-col">
           {entries.map((entry) => (
             <Row key={`${entry.rank}:${entry.displayName}:${entry.xp}`} entry={entry} />
           ))}
@@ -120,27 +119,22 @@ export function LeaderboardScreen() {
 
   return (
     <div className="mx-auto flex w-full max-w-lg flex-col">
-      <header className="flex items-center gap-3 px-4 pt-4">
-        <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-xp-soft text-xp">
-          <TrophyIcon className="size-7" />
-        </span>
-        <div className="min-w-0">
-          <h1 className="text-xl leading-tight font-bold">{th.board.title}</h1>
-          <p className="text-sm text-muted">{th.board.resets}</p>
-        </div>
+      <header className="px-5 pt-6">
+        <h1 className="text-3xl leading-snug font-semibold">
+          <span className="marker">{th.board.title}</span>
+        </h1>
+        <p className="text-sm text-muted">{th.board.resets}</p>
       </header>
-      <main className="px-4 py-4">
+      <main className="px-3 py-4">
         {mode === 'account' ? (
           <Board />
         ) : (
-          <div className="flex flex-col items-center gap-4 rounded-3xl border border-line bg-surface p-6 text-center">
-            <Mascot />
-            <p className="font-semibold">{th.board.guest}</p>
-            {configured && (
-              <div className="w-full">
-                <GoogleButton />
-              </div>
-            )}
+          <div className="flex flex-col gap-4 px-2">
+            <div className="flex items-center gap-3">
+              <Mascot className="size-14 shrink-0 -rotate-3" />
+              <p className="font-hand text-lg leading-snug">{th.board.guest}</p>
+            </div>
+            {configured && <GoogleButton />}
           </div>
         )}
       </main>

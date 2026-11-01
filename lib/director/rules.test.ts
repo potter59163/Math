@@ -418,7 +418,7 @@ describe('a pre-test through the director (SPEC §7.1)', () => {
     const opened = openItem(start);
     const { turn } = answerItem(opened.profile, opened.item, opened.item.correct);
     expect(turn.next).toMatchObject({ skill: 'index', target: 'M02_INDEX_SWAP' });
-    expect(turn.pathStep.note).toBe('ตอน pre-test อ่านแถวหลักสลับ');
+    expect(turn.pathStep.note).toBe('ตอนแบบทดสอบอ่านแถวหลักสลับ');
   });
 });
 

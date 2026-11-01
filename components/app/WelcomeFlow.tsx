@@ -1,9 +1,16 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useState, type ComponentType } from 'react';
 import { Button, LinkButton } from '@/components/ui/Button';
-import { CheckIcon } from '@/components/ui/Icons';
+import {
+  BagIcon,
+  BallIcon,
+  BowlIcon,
+  CheckIcon,
+  GamepadIcon,
+  MusicIcon,
+} from '@/components/ui/Icons';
 import { th } from '@/lib/content/th';
 import { fillTokens } from '@/lib/core/tokens';
 import type { ThemeId } from '@/lib/learner/types';
@@ -16,26 +23,52 @@ import { learner, useLearner } from './useLearner';
 
 type Step = 'name' | 'theme' | 'consent' | 'pretest';
 
+const THEME_ICON: Record<ThemeId, ComponentType<{ className?: string }>> = {
+  shop: BagIcon,
+  game: GamepadIcon,
+  sport: BallIcon,
+  music: MusicIcon,
+  food: BowlIcon,
+};
+
 export function ThemePicker({ value, onPick }: { value: ThemeId; onPick(theme: ThemeId): void }) {
   return (
     <div role="radiogroup" aria-label={th.settings.theme} className="flex flex-col gap-2">
-      {THEMES.map((theme) => (
-        <button
-          key={theme}
-          type="button"
-          role="radio"
-          aria-checked={theme === value}
-          onClick={() => onPick(theme)}
-          className={`flex min-h-14 items-center justify-between gap-2 rounded-2xl border-2 px-4 py-2 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
-            theme === value ? 'border-brand bg-brand-soft' : 'border-line bg-surface'
-          }`}
-        >
-          <span>
-            <span className="block font-bold">{th.themes[theme].name}</span>
-            <span className="block text-sm text-muted">{th.themes[theme].hint}</span>
-          </span>
-          {theme === value && <CheckIcon className="size-5 shrink-0 text-brand" />}
-        </button>
+      {THEMES.map((theme) => {
+        const Icon = THEME_ICON[theme];
+        return (
+          <button
+            key={theme}
+            type="button"
+            role="radio"
+            aria-checked={theme === value}
+            onClick={() => onPick(theme)}
+            className={`flex min-h-14 items-center gap-3 rounded-xl border-2 px-4 text-left font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+              theme === value ? 'border-ink bg-marker-soft' : 'border-edge bg-surface'
+            }`}
+          >
+            <Icon className="size-6 shrink-0" />
+            <span className="flex-1">{th.themes[theme].name}</span>
+            {theme === value && <CheckIcon className="size-5 shrink-0" />}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function Steps({ at }: { at: number }) {
+  return (
+    <div
+      role="img"
+      aria-label={fillTokens(th.welcome.step, { n: String(at), total: '3' })}
+      className="flex gap-1.5"
+    >
+      {[1, 2, 3].map((step) => (
+        <span
+          key={step}
+          className={`h-1.5 flex-1 rounded-full ${step <= at ? 'bg-ink' : 'bg-line'}`}
+        />
       ))}
     </div>
   );
@@ -87,21 +120,17 @@ export function WelcomeFlow() {
   };
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-5 px-4 py-6">
-      {!asGuest && shown !== 'pretest' && (
-        <p className="text-center text-sm font-semibold text-muted">
-          {fillTokens(th.welcome.step, { n: String(stepNumber), total: '3' })}
-        </p>
-      )}
-      <div className="flex justify-center">
-        <Mascot className="size-16" mood={shown === 'pretest' ? 'cheer' : 'happy'} />
-      </div>
+    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-6 px-5 py-6">
+      {!asGuest && shown !== 'pretest' && <Steps at={stepNumber} />}
 
       {shown === 'name' && (
-        <section className="flex flex-1 flex-col gap-4 motion-safe:animate-rise">
-          <h1 className="text-center text-2xl font-bold">{th.welcome.nameTitle}</h1>
+        <section className="flex flex-1 flex-col gap-5 motion-safe:animate-rise">
+          <div className="flex items-center gap-3">
+            <Mascot className="size-14 shrink-0 -rotate-3" />
+            <h1 className="text-2xl leading-snug font-semibold">{th.welcome.nameTitle}</h1>
+          </div>
           <div className="flex flex-col gap-1">
-            <label htmlFor={nameId} className="font-medium">
+            <label htmlFor={nameId} className="sr-only">
               {th.welcome.nameLabel}
             </label>
             {/* A name has letters in it and is not an answer, so the keypad rule does not apply. */}
@@ -112,7 +141,7 @@ export function WelcomeFlow() {
               aria-invalid={tooLong}
               aria-describedby={noteId}
               autoComplete="off"
-              className="h-12 rounded-xl border-2 border-edge bg-surface px-3 text-base outline-none focus:border-brand"
+              className="h-14 rounded-xl border-2 border-edge bg-surface px-4 font-hand text-lg text-brand outline-none focus:border-brand"
             />
             <p id={noteId} className={`text-sm ${tooLong ? 'text-warn' : 'text-muted'}`}>
               {tooLong
@@ -121,7 +150,7 @@ export function WelcomeFlow() {
             </p>
           </div>
           <div className="flex flex-col gap-2">
-            <h2 className="font-medium">{th.welcome.avatarTitle}</h2>
+            <h2 className="font-sans font-medium">{th.welcome.avatarTitle}</h2>
             <AvatarPicker value={avatar} label={th.welcome.avatarTitle} onPick={setAvatar} />
           </div>
           <Button
@@ -137,10 +166,10 @@ export function WelcomeFlow() {
       )}
 
       {shown === 'theme' && (
-        <section className="flex flex-1 flex-col gap-4 motion-safe:animate-rise">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold">{th.welcome.themeTitle}</h1>
-            <p className="text-muted">{th.welcome.themeHelp}</p>
+        <section className="flex flex-1 flex-col gap-5 motion-safe:animate-rise">
+          <div className="flex items-center gap-3">
+            <Mascot className="size-14 shrink-0 -rotate-3" />
+            <h1 className="text-2xl leading-snug font-semibold">{th.welcome.themeTitle}</h1>
           </div>
           <ThemePicker value={theme} onPick={setTheme} />
           <div className="mt-auto flex gap-2">
@@ -166,7 +195,7 @@ export function WelcomeFlow() {
 
       {shown === 'consent' && (
         <section className="flex flex-1 flex-col gap-4 motion-safe:animate-rise">
-          <h1 className="text-center text-2xl font-bold">{th.welcome.consentTitle}</h1>
+          <h1 className="text-2xl font-semibold">{th.welcome.consentTitle}</h1>
           <p>{th.welcome.consentIntro}</p>
           <ul className="flex flex-col gap-2">
             {th.welcome.consentItems.map((item) => (
@@ -176,7 +205,7 @@ export function WelcomeFlow() {
               </li>
             ))}
           </ul>
-          <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-2xl border-2 border-line bg-surface px-4 py-2 font-medium">
+          <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border-2 border-edge bg-surface px-4 py-2 font-medium">
             <input
               type="checkbox"
               checked={agreed}
@@ -186,7 +215,7 @@ export function WelcomeFlow() {
             {th.welcome.consentAgree}
           </label>
           {failed && (
-            <p role="alert" className="text-center text-sm text-warn">
+            <p role="alert" className="text-sm text-warn">
               {th.welcome.failed}
             </p>
           )}
@@ -210,10 +239,9 @@ export function WelcomeFlow() {
 
       {shown === 'pretest' && (
         <section className="flex flex-1 flex-col gap-4 motion-safe:animate-rise">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold">{th.welcome.pretestTitle}</h1>
-            <p className="text-muted">{th.welcome.pretestBody}</p>
-          </div>
+          <Mascot className="size-20 -rotate-3" mood="cheer" />
+          <h1 className="text-3xl leading-snug font-semibold">{th.welcome.pretestTitle}</h1>
+          <p className="text-muted">{th.welcome.pretestBody}</p>
           <div className="mt-auto flex flex-col gap-2">
             <LinkButton href="/test/pre" className="w-full">
               {th.welcome.pretestYes}

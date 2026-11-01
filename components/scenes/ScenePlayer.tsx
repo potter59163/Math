@@ -108,7 +108,7 @@ export function ScenePlayer({
     <LazyMotion features={domAnimation} strict>
       <div
         onKeyDown={onKeyDown}
-        className="mx-auto flex h-full w-full max-w-lg flex-col short-landscape:max-w-none short-landscape:flex-row"
+        className="board mx-auto flex h-full w-full max-w-lg flex-col short-landscape:max-w-none short-landscape:flex-row"
       >
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <header className="flex h-12 shrink-0 items-center gap-1 pr-1 pl-4">
@@ -140,11 +140,7 @@ export function ScenePlayer({
           {hasCaptions && (
             // Fits one line at 360px, and has room for a second if a fallback font runs wide.
             <div role="status" className="flex min-h-[3.4rem] items-center justify-center">
-              <p
-                data-caption
-                key={beat}
-                className="text-center font-medium motion-safe:animate-rise"
-              >
+              <p data-caption key={beat} className="text-center font-hand motion-safe:animate-rise">
                 {caption}
               </p>
             </div>
@@ -216,7 +212,7 @@ function SceneDialog({
         event.preventDefault();
         onSkip();
       }}
-      className="m-0 h-dvh max-h-none w-full max-w-none bg-canvas p-0 text-ink backdrop:bg-canvas open:block"
+      className="board m-0 h-dvh max-h-none w-full max-w-none p-0 backdrop:bg-black open:block"
     >
       {children}
     </dialog>

@@ -20,11 +20,9 @@ const SCHEMES: ColorScheme[] = ['system', 'light', 'dark'];
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="flex flex-col gap-2">
-      <h2 className="font-bold">{title}</h2>
-      <div className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-4">
-        {children}
-      </div>
+    <section className="flex flex-col gap-4 border-t border-line pt-5">
+      <h2 className="text-lg">{title}</h2>
+      {children}
     </section>
   );
 }
@@ -107,7 +105,7 @@ function AccountSection({ account }: { account: Account }) {
         </p>
       </div>
       <div className="flex flex-col gap-2">
-        <h3 className="font-medium">{th.settings.avatar}</h3>
+        <h3 className="font-sans font-medium">{th.settings.avatar}</h3>
         <AvatarPicker
           value={account.avatar}
           label={th.settings.avatar}
@@ -182,8 +180,10 @@ export function SettingsScreen() {
   if (!profile) return <LoadingScreen />;
 
   return (
-    <div className="mx-auto flex w-full max-w-lg flex-col gap-5 px-4 py-4">
-      <h1 className="text-xl font-bold">{th.settings.title}</h1>
+    <main className="mx-auto flex w-full max-w-lg flex-col gap-6 px-5 py-6">
+      <h1 className="text-3xl font-semibold">
+        <span className="marker">{th.settings.title}</span>
+      </h1>
 
       {mode === 'account' && account && <AccountSection account={account} />}
 
@@ -196,10 +196,7 @@ export function SettingsScreen() {
 
       <Section title={th.settings.learning}>
         <div className="flex flex-col gap-2">
-          <div>
-            <h3 className="font-medium">{th.settings.theme}</h3>
-            <p className="text-sm text-muted">{th.settings.themeHelp}</p>
-          </div>
+          <h3 className="font-sans font-medium">{th.settings.theme}</h3>
           <ThemePicker
             value={profile.student.theme ?? 'shop'}
             onPick={(theme: ThemeId) => learner.dispatch({ type: 'set_theme', theme })}
@@ -215,7 +212,7 @@ export function SettingsScreen() {
 
       <Section title={th.settings.display}>
         <div className="flex flex-col gap-2">
-          <h3 className="font-medium">{th.settings.colorScheme}</h3>
+          <h3 className="font-sans font-medium">{th.settings.colorScheme}</h3>
           <div
             role="radiogroup"
             aria-label={th.settings.colorScheme}
@@ -280,6 +277,6 @@ export function SettingsScreen() {
       </Section>
 
       {mode === 'account' && <DeleteAccount />}
-    </div>
+    </main>
   );
 }

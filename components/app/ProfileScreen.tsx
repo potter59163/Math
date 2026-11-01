@@ -18,10 +18,10 @@ import { skillById } from '@/lib/topics/matrix/skills';
 import { Avatar } from './Avatar';
 import { useLearner, useRequiredProfile } from './useLearner';
 
-function Tile({ icon, label, value }: { icon?: ReactNode; label: string; value: number }) {
+function Stat({ icon, label, value }: { icon?: ReactNode; label: string; value: number }) {
   return (
-    <div className="flex flex-col items-center gap-0.5 rounded-2xl border border-line bg-surface p-3 text-center">
-      <span className="flex items-center gap-1 font-matrix text-2xl font-bold tabular-nums">
+    <div className="flex flex-col">
+      <span className="flex items-center gap-1 font-matrix text-3xl leading-tight font-medium tabular-nums">
         {icon}
         {value}
       </span>
@@ -33,7 +33,7 @@ function Tile({ icon, label, value }: { icon?: ReactNode; label: string; value: 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-2">
-      <h2 className="font-bold">{title}</h2>
+      <h2 className="text-lg">{title}</h2>
       {children}
     </section>
   );
@@ -48,7 +48,7 @@ function WeekBars({ profile, now }: { profile: Profile; now: number }) {
   const days = lastDays(profile.activity, now, 7);
   const most = Math.max(CONFIG.dailyGoalItems, ...days.map(({ items }) => items));
   return (
-    <ol className="grid h-36 grid-cols-7 gap-2 rounded-2xl border border-line bg-surface p-3">
+    <ol className="grid h-32 grid-cols-7 gap-2">
       {days.map(({ day, items }) => {
         const name = th.profile.days[weekdayOf(day)];
         return (
@@ -57,11 +57,13 @@ function WeekBars({ profile, now }: { profile: Profile; now: number }) {
             aria-label={fillTokens(th.profile.weekLabel, { day: name, n: String(items) })}
             className="flex min-w-0 flex-col items-center justify-end gap-1"
           >
-            <span className="relative w-full flex-1 overflow-hidden rounded-lg bg-sunken">
-              <span
-                className="absolute inset-0 origin-bottom rounded-lg bg-brand"
-                style={{ transform: `scaleY(${items / most})` }}
-              />
+            <span className="flex w-full flex-1 items-end border-b-2 border-ink">
+              {items > 0 && (
+                <span
+                  className="block w-full rounded-t border-2 border-b-0 border-cta-line bg-cta"
+                  style={{ height: `${(items / most) * 100}%` }}
+                />
+              )}
             </span>
             <span className="text-xs text-muted">{name}</span>
           </li>
@@ -73,7 +75,7 @@ function WeekBars({ profile, now }: { profile: Profile; now: number }) {
 
 function Mastery({ profile }: { profile: Profile }) {
   return (
-    <ul className="flex flex-col gap-2 rounded-2xl border border-line bg-surface p-3">
+    <ul className="flex flex-col gap-2">
       {mapOf(profile)
         .flatMap(({ skills }) => skills)
         .map(({ id, status }) => {
@@ -88,10 +90,10 @@ function Mastery({ profile }: { profile: Profile }) {
                 aria-valuemax={100}
                 aria-valuenow={shown}
                 aria-label={skillById(id).nameTh}
-                className="h-2.5 min-w-0 flex-1 overflow-hidden rounded-full bg-sunken"
+                className="h-3 min-w-0 flex-1 overflow-hidden rounded-full border border-edge bg-surface"
               >
                 <span
-                  className={`block h-full origin-left rounded-full ${status === 'passed' ? 'bg-good' : 'bg-brand'}`}
+                  className={`block h-full origin-left ${status === 'passed' ? 'bg-good' : 'bg-brand'}`}
                   style={{ transform: `scaleX(${shown / 100})` }}
                 />
               </span>
@@ -130,10 +132,10 @@ function Tests({ itemsDone }: { itemsDone: number }) {
     const result = status?.[phase];
     const blocked = testBlock(phase, itemsDone);
     return (
-      <li className="flex min-h-11 items-center justify-between gap-2">
+      <li className="flex min-h-12 items-center justify-between gap-2 border-b border-line">
         <span className="font-medium">{label}</span>
         {result ? (
-          <span className="font-matrix text-sm font-semibold tabular-nums">
+          <span className="font-matrix text-sm font-medium tabular-nums">
             {fillTokens(th.profile.score, {
               score: String(result.score),
               total: String(result.total),
@@ -159,13 +161,13 @@ function Tests({ itemsDone }: { itemsDone: number }) {
 
   const gain = status?.pre && status.post ? status.post.score - status.pre.score : null;
   return (
-    <div className="rounded-2xl border border-line bg-surface p-3">
-      <ul className="flex flex-col gap-1">
+    <div>
+      <ul className="flex flex-col">
         {line('pre', th.profile.pre)}
         {line('post', th.profile.post)}
       </ul>
       {gain !== null && gain > 0 && (
-        <p className="mt-1 font-semibold text-good">
+        <p className="mt-2 font-semibold text-good">
           {fillTokens(th.profile.improved, { points: String(gain) })}
         </p>
       )}
@@ -187,40 +189,41 @@ export function ProfileScreen() {
   });
 
   return (
-    <div className="mx-auto flex w-full max-w-lg flex-col gap-5 px-4 py-4">
+    <main className="mx-auto flex w-full max-w-lg flex-col gap-7 px-5 py-6">
       <header className="flex items-center gap-3">
         <Avatar avatar={account?.avatar ?? 'bracket'} className="size-16 text-2xl" />
-        <div className="min-w-0">
-          <h1 className="truncate text-xl font-bold">
-            {account?.displayName ?? th.profile.guestName}
-          </h1>
-          <p className="text-sm text-muted">{th.profile.title}</p>
-        </div>
+        <h1 className="min-w-0 truncate text-3xl leading-tight font-semibold">
+          {account?.displayName ?? th.profile.guestName}
+        </h1>
       </header>
 
-      <div className="grid grid-cols-2 gap-2">
-        <Tile
-          icon={<BoltIcon className="size-5 text-xp" />}
+      <div className="grid grid-cols-2 gap-x-3 gap-y-4 rounded-xl border-2 border-ink bg-surface p-4 shadow-[0_3px_0_var(--ink)]">
+        <Stat
+          icon={<BoltIcon className="size-6 text-xp" />}
           label={th.profile.stats.xp}
           value={profile.xp}
         />
-        <Tile
-          icon={<FlameIcon className="size-5 text-flame" />}
+        <Stat
+          icon={<FlameIcon className="size-6 text-flame" />}
           label={th.profile.stats.streak}
           value={streakOf(profile.activity, now)}
         />
-        <Tile label={th.profile.stats.items} value={profile.itemsDone} />
-        <Tile label={th.profile.stats.bestCombo} value={profile.bestCombo} />
+        <Stat label={th.profile.stats.items} value={profile.itemsDone} />
+        <Stat label={th.profile.stats.bestCombo} value={profile.bestCombo} />
       </div>
 
       <Section title={th.profile.week}>
         <WeekBars profile={profile} now={now} />
       </Section>
 
-      <Section title={th.profile.badges}>
-        {badges.length === 0 ? (
-          <p className="text-sm text-muted">{th.profile.badgesNone}</p>
-        ) : (
+      {mode === 'account' && (
+        <Section title={th.profile.tests}>
+          <Tests itemsDone={profile.itemsDone} />
+        </Section>
+      )}
+
+      {badges.length > 0 && (
+        <Section title={th.profile.badges}>
           <ul className="flex flex-wrap gap-2">
             {badges.map((badge) => (
               <li
@@ -232,17 +235,11 @@ export function ProfileScreen() {
               </li>
             ))}
           </ul>
-        )}
-      </Section>
+        </Section>
+      )}
 
-      <Section title={th.profile.mastery}>
-        <Mastery profile={profile} />
-      </Section>
-
-      <Section title={th.profile.fixed}>
-        {fixed.length === 0 ? (
-          <p className="text-sm text-muted">{th.profile.fixedNone}</p>
-        ) : (
+      {(fixed.length > 0 || open.length > 0) && (
+        <Section title={th.profile.fixed}>
           <ul className="flex flex-col gap-1">
             {fixed.map(({ id, nameTh }) => (
               <li key={id} className="flex items-center gap-2">
@@ -251,21 +248,17 @@ export function ProfileScreen() {
               </li>
             ))}
           </ul>
-        )}
-        {open.length > 0 && (
-          <p className="text-sm text-muted">
-            {th.profile.open}: {open.map(({ id }) => th.misconceptionShort[id]).join(', ')}
-          </p>
-        )}
-      </Section>
+          {open.length > 0 && (
+            <p className="text-sm text-muted">
+              {th.profile.open}: {open.map(({ id }) => th.misconceptionShort[id]).join(', ')}
+            </p>
+          )}
+        </Section>
+      )}
 
-      <Section title={th.profile.tests}>
-        {mode === 'account' ? (
-          <Tests itemsDone={profile.itemsDone} />
-        ) : (
-          <p className="text-sm text-muted">{th.profile.guestTests}</p>
-        )}
+      <Section title={th.profile.mastery}>
+        <Mastery profile={profile} />
       </Section>
-    </div>
+    </main>
   );
 }

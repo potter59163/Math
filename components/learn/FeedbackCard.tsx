@@ -52,7 +52,7 @@ export function FeedbackCard({
   return (
     <section
       role="status"
-      className={`flex h-full flex-col gap-2 rounded-2xl p-3 motion-safe:animate-rise ${
+      className={`flex h-full flex-col gap-2 rounded-xl p-3 motion-safe:animate-rise ${
         isCorrect ? 'bg-good-soft' : 'bg-warn-soft'
       }`}
     >

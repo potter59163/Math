@@ -68,7 +68,7 @@ export function Keypad({ digitsOnly, sendReady, onKey, onSend }: KeypadProps) {
           disabled={digitsOnly && numberOnly}
           onMouseDown={keepFocus}
           onClick={() => onKey(key)}
-          className={`${KEY} border border-line bg-surface text-ink disabled:opacity-30`}
+          className={`${KEY} border border-line bg-surface text-ink shadow-[0_2px_0_var(--line)] disabled:opacity-30`}
         >
           {label}
         </button>
@@ -81,7 +81,9 @@ export function Keypad({ digitsOnly, sendReady, onKey, onSend }: KeypadProps) {
         onMouseDown={keepFocus}
         onClick={onSend}
         className={`${KEY} gap-1 text-base font-semibold ${
-          sendReady ? 'bg-brand text-on-brand' : 'bg-brand-soft text-muted'
+          sendReady
+            ? 'border-2 border-cta-line bg-cta text-on-cta shadow-[0_2px_0_var(--cta-line)]'
+            : 'border border-line bg-surface text-muted'
         }`}
       >
         <CheckIcon className="size-4" />

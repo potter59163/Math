@@ -167,6 +167,52 @@ export function GoogleIcon({ className = 'size-5' }: IconProps) {
   );
 }
 
+export function BagIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M6 8h12l1 12H5L6 8z" />
+      <path d="M9 8V6a3 3 0 0 1 6 0v2" />
+    </Icon>
+  );
+}
+
+export function GamepadIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M7 8h10a4 4 0 0 1 4 4v3a3 3 0 0 1-5.4 1.8L14.5 15h-5l-1.1 1.8A3 3 0 0 1 3 15v-3a4 4 0 0 1 4-4z" />
+      <path d="M8 10.5v3M6.5 12h3M15.5 11h.01M17.5 13h.01" />
+    </Icon>
+  );
+}
+
+export function BallIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 3v18M3 12h18M5.6 5.6c3.2 3.2 3.2 9.600 0 12.800M18.400 5.600c-3.200 3.200-3.200 9.600 0 12.800" />
+    </Icon>
+  );
+}
+
+export function MusicIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M9 18V5.5l11-2V16" />
+      <circle cx="6.5" cy="18" r="2.5" />
+      <circle cx="17.5" cy="16" r="2.5" />
+    </Icon>
+  );
+}
+
+export function BowlIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M3 11h18a9 9 0 0 1-6 8.5V21H9v-1.5A9 9 0 0 1 3 11z" />
+      <path d="M8.5 7.5c0-1.5 1.5-1.5 1.5-3M13.5 7.5c0-1.5 1.5-1.5 1.5-3" />
+    </Icon>
+  );
+}
+
 export function NoticeIcon(props: IconProps) {
   return (
     <Icon {...props}>

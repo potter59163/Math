@@ -4,22 +4,14 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useSyncExternalStore } from 'react';
 import { LinkButton } from '@/components/ui/Button';
-import { MatrixView } from '@/components/ui/MatrixView';
 import { CONFIG } from '@/lib/config';
 import { th } from '@/lib/content/th';
 import { cohortFromLink } from '@/lib/sync/types';
-import { matrix } from '@/lib/topics/matrix/ops';
-import { Mascot } from './Mascot';
+import { NotebookDemo } from './NotebookDemo';
 import { GoogleButton } from './SignInButtons';
 import { useLearner } from './useLearner';
 
-// Decoration only. Every number a student works with comes from the generators.
-const SAMPLE = matrix([
-  [2, 1],
-  [3, 4],
-]);
-
-const taglineLines = th.home.tagline.split(' ');
+const [taglineLead, taglineRest] = th.home.tagline.split(' ');
 
 const COHORT_KEY = 'math:cohort';
 
@@ -46,6 +38,7 @@ const noSubscribe = () => () => {};
 const loginFailed = () => new URLSearchParams(window.location.search).has('login');
 const notOnServer = () => false;
 
+/** The first screen says what the app is by showing it: a wrong answer and why it is wrong. */
 export function Landing() {
   const { phase, configured } = useLearner();
   const router = useRouter();
@@ -57,28 +50,20 @@ export function Landing() {
   }, [phase, router]);
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-5 px-4 py-6 md:justify-center">
-      <header className="flex flex-col items-center gap-3 text-center">
-        <div className="flex items-center gap-4">
-          <Mascot className="size-16 motion-safe:animate-float" />
-          <div className="text-xl">
-            <MatrixView value={SAMPLE} />
-          </div>
-        </div>
-        <h1 className="text-3xl leading-tight font-bold">{CONFIG.appName}</h1>
-        <p className="font-semibold text-brand">
-          {/* Two lines, because a browser left to wrap it breaks the last Thai word in the middle. */}
-          {taglineLines.map((line) => (
-            <span key={line} className="block">
-              {line}
-            </span>
-          ))}
-        </p>
+    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 pt-10 pb-3 md:grid md:max-w-5xl md:grid-cols-2 md:content-center md:items-center md:gap-x-20 md:px-8">
+      <header className="md:col-start-1">
+        <h1 className="text-6xl leading-tight font-semibold tracking-tight">
+          <span className="marker">{CONFIG.appName}</span>
+        </h1>
+        <p className="mt-2 font-display text-xl leading-snug">{taglineLead}</p>
+        <p className="text-muted">{taglineRest}</p>
       </header>
 
-      <div className="flex flex-col gap-2">
+      <NotebookDemo className="my-10 md:col-start-2 md:row-span-3 md:row-start-1 md:my-0" />
+
+      <div className="mt-auto flex flex-col gap-1 md:col-start-1 md:mt-8">
         {failed && (
-          <p role="alert" className="text-center text-sm text-warn">
+          <p role="alert" className="text-sm text-warn">
             {th.home.loginFailed}
           </p>
         )}
@@ -97,24 +82,13 @@ export function Landing() {
             >
               {th.home.tryFirst}
             </LinkButton>
-            <p className="text-center text-xs text-muted">{th.home.guestNote}</p>
           </>
         )}
       </div>
 
-      <p className="text-center text-muted">{th.home.description}</p>
-      <ul className="flex flex-col gap-2">
-        {th.home.features.map(({ title, body }) => (
-          <li key={title} className="rounded-2xl border border-line bg-surface px-4 py-3">
-            <p className="font-bold">{title}</p>
-            <p className="text-sm text-muted">{body}</p>
-          </li>
-        ))}
-      </ul>
-
       <Link
         href="/privacy"
-        className="mx-auto flex min-h-11 items-center px-2 text-sm text-muted underline"
+        className="mx-auto flex min-h-11 items-center px-2 text-xs text-muted underline md:col-start-1 md:mx-0"
       >
         {th.home.privacy}
       </Link>

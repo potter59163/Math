@@ -67,7 +67,7 @@ export function Place({ x, y, opacity = 1, start, length, children }: PlaceProps
 
 const NUMBER = 'font-matrix tabular-nums';
 
-/** Close enough for layout: Inter's tabular digits are about 0.62em, and a stacked fraction shrinks. */
+/** Close enough for layout: the number font's digits are about 0.62em, and a stacked fraction shrinks. */
 export function numberWidth(value: Rational, size: number): number {
   if (value.isInteger()) return signed(value.n).length * size * 0.62;
   const longest = Math.max(String(Math.abs(value.n)).length, String(value.d).length);

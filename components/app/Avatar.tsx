@@ -8,7 +8,7 @@ const AVATAR_LOOK: Record<AvatarId, { glyph: string; className: string }> = {
   pi: { glyph: 'π', className: 'bg-xp-soft text-xp' },
   delta: { glyph: 'Δ', className: 'bg-warn-soft text-warn' },
   theta: { glyph: 'θ', className: 'bg-sunken text-ink' },
-  infinity: { glyph: '∞', className: 'bg-brand text-on-brand' },
+  infinity: { glyph: '∞', className: 'bg-cta text-on-cta' },
 };
 
 interface AvatarProps {
@@ -46,7 +46,7 @@ export function AvatarPicker({ value, label, onPick }: AvatarPickerProps) {
           aria-checked={avatar === value}
           aria-label={th.avatars[avatar]}
           onClick={() => onPick(avatar)}
-          className={`flex aspect-square min-h-11 items-center justify-center rounded-2xl border-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+          className={`flex aspect-square min-h-11 items-center justify-center rounded-xl border-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
             avatar === value ? 'border-brand bg-brand-soft' : 'border-line bg-surface'
           }`}
         >

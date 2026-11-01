@@ -6,11 +6,13 @@ export const metadata: Metadata = { title: th.privacy.title };
 
 export default function PrivacyPage() {
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-4 px-4 py-6">
-      <h1 className="text-2xl font-bold">{th.privacy.title}</h1>
+    <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-5 px-5 py-8">
+      <h1 className="text-3xl font-semibold">
+        <span className="marker">{th.privacy.title}</span>
+      </h1>
       {th.privacy.sections.map(({ title, body }) => (
-        <section key={title} className="rounded-2xl border border-line bg-surface p-4">
-          <h2 className="font-bold">{title}</h2>
+        <section key={title} className="flex flex-col gap-1">
+          <h2 className="text-lg">{title}</h2>
           <p className="text-muted">{body}</p>
         </section>
       ))}

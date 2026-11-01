@@ -368,7 +368,7 @@ function ItemScreen({
       <div className="flex min-h-0 flex-1 flex-col short-landscape:flex-row">
         {/* In landscape the strip takes this column only: the answer slot needs its full height. */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-          <PathStrip steps={profile.path} note={stripNote(profile)} />
+          <PathStrip note={stripNote(profile)} />
           <main
             ref={scroller}
             className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-2"

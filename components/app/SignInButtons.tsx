@@ -14,7 +14,7 @@ const onServer = (): InAppBrowser | null => null;
 /** Google's own refusal page explains nothing, so a student inside LINE or Facebook sees this instead. */
 function OpenInBrowser({ browser }: { browser: InAppBrowser }) {
   return (
-    <div role="status" className="flex flex-col gap-2 rounded-2xl bg-warn-soft p-4">
+    <div role="status" className="flex flex-col gap-2 rounded-xl bg-warn-soft p-4">
       <p className="font-bold text-warn">{th.home.inApp.title}</p>
       <p>{th.home.inApp.body}</p>
       {browser === 'line' && (
@@ -35,7 +35,7 @@ export function GoogleButton({ label = th.home.signIn }: { label?: string }) {
   return (
     <div className="flex flex-col gap-1">
       <Button
-        variant="secondary"
+        variant="outline"
         className="w-full"
         aria-busy={state === 'going'}
         disabled={state === 'going'}

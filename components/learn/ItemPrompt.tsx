@@ -9,9 +9,9 @@ export function ItemPrompt({ item }: { item: MatrixItem }) {
   const matrices = givenMatrices(item.data);
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-lg font-semibold">
+      <h1 className="font-sans text-lg font-semibold">
         {fillTokens(th.prompts[item.prompt.key], item.prompt.params)}
-      </p>
+      </h1>
       {matrices.length > 0 && (
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-lg">
           {matrices.map(({ label, value }) => (

@@ -680,7 +680,7 @@ function CaptionCheck() {
       >
         {captions.map(([text]) => (
           <div key={text}>
-            <span data-caption className="font-medium">
+            <span data-caption className="font-hand">
               {text}
             </span>
           </div>

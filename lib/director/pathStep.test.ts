@@ -35,8 +35,8 @@ describe('path notes (AI_DIRECTOR §3.2)', () => {
     expect(noteFor('remediate', 'M09_MULT_ELEMENTWISE')).toBe(
       'พาดูคลิปนี้เพราะเมื่อกี้คูณทีละช่อง',
     );
-    expect(noteFor('pretest_probe', 'M20_INV2_RECIPE')).toBe('ตอน pre-test ขาดขั้นอินเวอร์ส');
-    expect(noteFor('review')).toBe('เรื่องนี้ผ่านมาสักพัก มาทบทวนกัน');
+    expect(noteFor('pretest_probe', 'M20_INV2_RECIPE')).toBe('ตอนแบบทดสอบขาดขั้นอินเวอร์ส');
+    expect(noteFor('review')).toBe('เรื่องนี้ผ่านมาสักพัก ขอทบทวนหน่อย');
   });
 
   it('gives the fixed path no reason (AI_DIRECTOR §3.1)', () => {

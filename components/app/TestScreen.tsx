@@ -177,7 +177,7 @@ function TestItem({
 function Result({ phase, result }: { phase: AssessmentPhase; result: AssessmentScore }) {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col items-center gap-4 px-4 py-10 text-center">
-      <Mascot className="size-20 motion-safe:animate-float" mood="cheer" />
+      <Mascot className="size-20 -rotate-3" mood="cheer" />
       <h1 className="text-2xl font-bold">{th.test.resultTitle}</h1>
       <p className="font-matrix text-3xl font-bold tabular-nums">
         {fillTokens(th.test.result, { score: String(result.score), total: String(result.total) })}
