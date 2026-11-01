@@ -1,5 +1,5 @@
 import { CONFIG } from '@/lib/config';
-import { fillStudentText } from '@/lib/director/tokens';
+import { fillStudentText, resolveTokens } from '@/lib/director/tokens';
 import type { PreparedAttempt } from '@/lib/director/rules';
 import type { FallbackReason } from '@/lib/director/types';
 import type { Decide } from '@/lib/server/sync';
@@ -59,6 +59,7 @@ export async function decideWithLlm(
       candidates,
       allowedTokens: input.allowedTokens,
       revealAllowed: true,
+      sizes: resolveTokens(item, answer, { revealAllowed: true }),
     });
     if (!checked.ok) return { tutor: { fallbackReason: checked.reason, latencyMs: latency() } };
 

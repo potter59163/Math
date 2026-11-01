@@ -1,3 +1,4 @@
+import { CONFIG } from '@/lib/config';
 import { th } from '@/lib/content/th';
 import { allowedTokens } from '@/lib/director/tokens';
 import type { PreparedAttempt } from '@/lib/director/rules';
@@ -10,7 +11,21 @@ import { skillById, SKILLS, type SkillId } from '@/lib/topics/matrix/skills';
 
 const MAX_SKILLS = 5;
 const RECENT_ATTEMPTS = 5;
-const MS_PER_SECOND = 1000;
+
+// A number the tutor is told is a number it copies into its words, and then it gets thrown away. So what
+// it reads about skills and levels has none: "det 2×2" is "det", det2 is det_small, and level 1 is ง่าย.
+const withoutSize = (name: string) => name.replace(/\s*\d+×\d+/, '');
+const SKILL_WORDS: Partial<Record<SkillId, string>> = {
+  det2: 'det_small',
+  det3: 'det_large',
+  inv2: 'inverse',
+};
+const skillWord = (id: SkillId) => SKILL_WORDS[id] ?? id;
+const LEVEL_WORDS = { 1: 'ง่าย', 2: 'กลาง', 3: 'ยาก' } as const;
+// The clip that draws the diagonals also serves a 2×2, where calling it Sarrus would be wrong.
+const sceneWord = (template: string) => (template === 'sarrus' ? 'det_diagonals' : template);
+const speedWord = (ms: number) =>
+  ms < CONFIG.llm.quickAnswerMs ? 'เร็ว' : ms > CONFIG.llm.slowAnswerMs ? 'ช้า' : 'ปกติ';
 
 function relevantSkills({ after, attempt }: PreparedAttempt): SkillId[] {
   const current = attempt.item.ref.skill;
@@ -32,6 +47,7 @@ export function buildDirectorInput(prepared: PreparedAttempt, timeMs: number, hi
   const { item, answer } = attempt;
   const { classification } = outcome;
   const { theme } = after.student;
+  const tokens = allowedTokens(item, answer, { revealAllowed: true });
   return {
     trigger: 'after_attempt',
     revealAllowed: true,
@@ -39,8 +55,10 @@ export function buildDirectorInput(prepared: PreparedAttempt, timeMs: number, hi
     // What this student said they like, so an example or a turn of phrase can lean towards it.
     interest: theme ? th.themes[theme].name : null,
     lastAttempt: {
-      skill: item.ref.skill,
-      level: item.ref.difficulty,
+      skill: skillWord(item.ref.skill),
+      level: LEVEL_WORDS[item.ref.difficulty],
+      // It never sees the question, and without this it talks about a B that the item does not have.
+      matrices: tokens.includes('bCell') || tokens.includes('dimsB') ? ['A', 'B'] : ['A'],
       result: classification.type,
       ...(classification.type === 'misconception' && {
         misconception: {
@@ -49,16 +67,16 @@ export function buildDirectorInput(prepared: PreparedAttempt, timeMs: number, hi
           ...(classification.variant && { variant: classification.variant }),
         },
       }),
-      timeSec: Math.round(timeMs / MS_PER_SECOND),
+      speed: speedWord(timeMs),
       hintLevel,
     },
     skills: relevantSkills(prepared).map((id) => {
       const state = skillStateOf(after, id);
       return {
-        id,
-        nameTh: skillById(id).nameTh,
+        id: skillWord(id),
+        nameTh: withoutSize(skillById(id).nameTh),
         mastery: Number(state.pKnown.toFixed(2)),
-        level: state.level,
+        level: LEVEL_WORDS[state.level],
         recentFirstTry: firstTries(prepared, id),
       };
     }),
@@ -70,15 +88,15 @@ export function buildDirectorInput(prepared: PreparedAttempt, timeMs: number, hi
     }),
     candidates: candidates.map(({ id, scene, next, ruleReason }) => ({
       id,
-      ...(scene && { scene: scene.template, beats: scene.beats }),
+      ...(scene && { scene: sceneWord(scene.template), beats: scene.beats }),
       next: {
-        skill: next.skill,
-        level: next.level,
+        skill: skillWord(next.skill),
+        level: LEVEL_WORDS[next.level],
         purpose: next.purpose,
         ...(next.target && { target: next.target }),
       },
       ruleReason,
     })),
-    allowedTokens: allowedTokens(item, answer, { revealAllowed: true }),
+    allowedTokens: tokens,
   };
 }

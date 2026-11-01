@@ -20,6 +20,9 @@ coverage/
 next-env.d.ts
 *.tsbuildinfo
 
+# what npm run eval:director writes
+eval-report.md
+
 # analysis outputs and research data (contain student records)
 analysis/out/
 exports/

@@ -27,8 +27,7 @@ export type FallbackReason =
   | 'schema_invalid'
   | 'choice_invalid'
   | 'digit_violation'
-  | 'token_violation'
-  | 'beat_invalid';
+  | 'token_violation';
 
 export type Condition = 'adaptive' | 'fixed';
 

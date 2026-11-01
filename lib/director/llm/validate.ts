@@ -1,9 +1,9 @@
 import { tokensIn } from '@/lib/core/tokens';
 import type { Candidate, FallbackReason } from '@/lib/director/types';
-import { REVEALING_TOKENS, type TokenName } from '@/lib/director/tokens';
-import { LlmDecision } from './schema';
+import { REVEALING_TOKENS, type TokenName, type TokenValues } from '@/lib/director/tokens';
+import { LlmDecision, MAX_NARRATION_LINES, MAX_NARRATION_UNITS, MAX_REASON_UNITS } from './schema';
 
-// AI_DIRECTOR §4.3. Anything that fails here is thrown away and the rules decide instead.
+// AI_DIRECTOR §4.3. A choice or message that fails here is thrown away and the rules decide instead.
 
 /** Arabic and Thai digits, and the superscripts that could say "k²" without a digit. */
 const DIGITS = /[0-9๐-๙⁰¹²³⁴-⁹₀-₉]/;
@@ -13,7 +13,7 @@ const DIGITS = /[0-9๐-๙⁰¹²³⁴-⁹₀-₉]/;
  * common enough in a tutor's sentence to be worth telling apart. A rare miss only means falling back.
  */
 const NUMBER_WORDS =
-  /หนึ่ง|สอง|สาม(?!ารถ)|สี่|(?<!ก)ห้า(?!ม)|หก(?!ล้ม)|เจ็ด|แปด|เก้า|สิบ|(?<!เรียบ)ร้อย|(?<!สัม)พัน(?!ธ)|ศูนย์/;
+  /(?<!นิด|ครู่|อย่าง|ส่วน|ครั้ง)หนึ่ง|สอง|สาม(?!ารถ|เหลี่ยม)|สี่(?!เหลี่ยม)|(?<!ก)ห้า(?!ม)|หก(?!ล้ม)|เจ็ด|แปด|เก้า|สิบ|(?<!เรียบ)ร้อย|(?<!สัม)พัน(?!ธ)|ศูนย์/;
 
 export function hasNumberInWords(text: string): boolean {
   return NUMBER_WORDS.test(text);
@@ -33,6 +33,23 @@ export interface ValidateInput {
   candidates: readonly Candidate[];
   allowedTokens: readonly TokenName[];
   revealAllowed: boolean;
+  /** This item's sizes as the engine has them. */
+  sizes?: Pick<TokenValues, 'dimsA' | 'dimsB'>;
+}
+
+const normalSize = (size: string) => size.replace(/\s/g, '').replace(/x/i, '×');
+
+/**
+ * A size is the one number the tutor keeps writing, as in "det 3×3". If it is this item's own size it is
+ * the engine's number already, so it becomes the token that shows it. Any other size is still refused.
+ */
+function sizesToTokens(text: string, sizes: ValidateInput['sizes'] = {}): string {
+  return text.replace(/\d+\s*[×x]\s*\d+/gi, (written) => {
+    const found = (['dimsA', 'dimsB'] as const).find(
+      (name) => sizes[name] && normalSize(sizes[name]) === normalSize(written),
+    );
+    return found ? `{{${found}}}` : written;
+  });
 }
 
 export type Validated =
@@ -51,6 +68,7 @@ export function validateDecision({
   candidates,
   allowedTokens,
   revealAllowed,
+  sizes,
 }: ValidateInput): Validated {
   let raw: unknown;
   try {
@@ -65,23 +83,40 @@ export function validateDecision({
   const chosen = candidates.find(({ id }) => id === decision.choice);
   if (!chosen) return { ok: false, reason: 'choice_invalid' };
 
-  const lines = decision.narration ?? [];
-  const texts = [decision.message, ...lines.map((line) => line.text)];
-  if (texts.some(hasNumber)) return { ok: false, reason: 'digit_violation' };
-
-  for (const line of texts) {
-    if (hasStrayBrace(line)) return { ok: false, reason: 'token_violation' };
-    for (const token of tokensIn(line)) {
+  const tokensAllowed = (line: string) =>
+    !hasStrayBrace(line) &&
+    tokensIn(line).every((token) => {
       const name = token as TokenName;
-      if (!allowedTokens.includes(name)) return { ok: false, reason: 'token_violation' };
-      if (!revealAllowed && REVEALING_TOKENS.includes(name)) {
-        return { ok: false, reason: 'token_violation' };
-      }
-    }
-  }
+      return allowedTokens.includes(name) && (revealAllowed || !REVEALING_TOKENS.includes(name));
+    });
 
+  const message = sizesToTokens(decision.message, sizes);
+  if (hasNumber(message)) return { ok: false, reason: 'digit_violation' };
+  if (!tokensAllowed(message)) return { ok: false, reason: 'token_violation' };
+
+  // Every clip has its own caption for every beat, so a line that fails costs only that line, and
+  // never reaches a student any more than a message that fails does.
   const beats = chosen.scene?.beats ?? [];
-  if (lines.some(({ beat }) => !beats.includes(beat))) return { ok: false, reason: 'beat_invalid' };
+  const narration = (decision.narration ?? [])
+    .map((line) => ({ ...line, text: sizesToTokens(line.text, sizes) }))
+    .filter(
+      ({ beat, text }) =>
+        beats.includes(beat) &&
+        text.length > 0 &&
+        text.length <= MAX_NARRATION_UNITS &&
+        !hasNumber(text) &&
+        tokensAllowed(text),
+    )
+    .slice(0, MAX_NARRATION_LINES);
 
-  return { ok: true, decision, chosen };
+  return {
+    ok: true,
+    chosen,
+    decision: {
+      ...decision,
+      message,
+      narration: narration.length > 0 ? narration : undefined,
+      reason: decision.reason.slice(0, MAX_REASON_UNITS),
+    },
+  };
 }

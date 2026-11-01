@@ -60,9 +60,17 @@ describe('the request to Claude', () => {
 
     expect(sentBody(network)).toMatchObject({
       model: 'claude-haiku-5-5',
-      system: 'be brief',
       messages: [{ role: 'user', content: '{"item":1}' }],
       output_config: { effort: 'low', format: { type: 'json_schema' } },
+    });
+  });
+
+  it('keeps the long prompt in the cache, and does not stop to think under a 4 s limit', async () => {
+    const network = answering(answer);
+    await createProvider(CONFIG).completeJson(ARGS);
+    expect(sentBody(network)).toMatchObject({
+      system: [{ type: 'text', text: 'be brief', cache_control: { type: 'ephemeral' } }],
+      thinking: { type: 'disabled' },
     });
   });
 
@@ -70,7 +78,7 @@ describe('the request to Claude', () => {
     const network = answering(answer);
     await createProvider(CONFIG).completeJson(ARGS);
     const body = sentBody(network);
-    for (const refused of ['temperature', 'top_p', 'top_k', 'thinking']) {
+    for (const refused of ['temperature', 'top_p', 'top_k']) {
       expect(body).not.toHaveProperty(refused);
     }
     expect((body.messages as { role: string }[]).at(-1)?.role).toBe('user');

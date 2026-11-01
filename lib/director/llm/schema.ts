@@ -12,16 +12,10 @@ export const MAX_NARRATION_LINES = 6;
 export const LlmDecision = z.strictObject({
   choice: z.string().regex(/^c[1-4]$/),
   message: z.string().min(1).max(MAX_MESSAGE_UNITS),
-  narration: z
-    .array(
-      z.strictObject({
-        beat: z.string(),
-        text: z.string().min(1).max(MAX_NARRATION_UNITS),
-      }),
-    )
-    .max(MAX_NARRATION_LINES)
-    .optional(),
-  reason: z.string().min(1).max(MAX_REASON_UNITS),
+  // Lines are checked one by one in validate.ts, because a bad one should cost only itself.
+  narration: z.array(z.strictObject({ beat: z.string(), text: z.string() })).optional(),
+  // Only the log reads this, so validate.ts trims it rather than refusing an answer over it.
+  reason: z.string().min(1),
 });
 
 export type LlmDecision = z.infer<typeof LlmDecision>;

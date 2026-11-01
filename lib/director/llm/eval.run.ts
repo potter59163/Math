@@ -7,7 +7,7 @@ import { generate } from '@/lib/topics/matrix/generators';
 import type { MatrixItem, MisconceptionId } from '@/lib/topics/matrix/types';
 import { llmConfig } from './config';
 import { decideWithLlm } from './decide';
-import { createProvider } from './providers';
+import { createProvider, type LlmProvider } from './providers';
 
 // AI_DIRECTOR §6: every scenario three times against the real provider. It costs real money, and so it
 // runs only by asking for it: LLM_PROVIDER=anthropic LLM_API_KEY=... npm run eval:director
@@ -63,7 +63,14 @@ const scenarios: Scenario[] = [
 it('director eval', async () => {
   const config = llmConfig();
   if (!config) throw new Error('Set LLM_PROVIDER=anthropic and LLM_API_KEY to run the eval.');
-  const provider = createProvider(config);
+  const real = createProvider(config);
+  let lastAnswer = '';
+  const provider: LlmProvider = {
+    completeJson: async (args) => {
+      lastAnswer = await real.completeJson(args);
+      return lastAnswer;
+    },
+  };
   const lines: string[] = [`# Director eval\n\nModel ${config.model}\n`];
   const latencies: number[] = [];
   let valid = 0;
@@ -73,6 +80,7 @@ it('director eval', async () => {
   for (const { name, item, answer } of scenarios) {
     lines.push(`## ${name}\n`);
     for (let round = 0; round < ROUNDS; round += 1) {
+      lastAnswer = '';
       const student = newProfile({ id: `eval-${round}`, units: [1, 2, 3, 4, 5], theme: 'game' });
       const prepared = prepareAttempt(student, {
         item,
@@ -102,6 +110,7 @@ it('director eval', async () => {
         const reason = decided?.tutor.fallbackReason ?? 'none';
         reasons.set(reason, (reasons.get(reason) ?? 0) + 1);
         lines.push(`- fell back: ${reason}`);
+        if (lastAnswer) lines.push(`  - ตอบมาว่า: ${lastAnswer}`);
       }
     }
     lines.push('');
@@ -111,7 +120,7 @@ it('director eval', async () => {
   const at = (share: number) => sorted[Math.floor((sorted.length - 1) * share)] ?? 0;
   const summary = [
     `Valid ${valid}/${total} (${((100 * valid) / total).toFixed(1)}%), target at least 95%`,
-    `Latency p50 ${at(0.5)} ms, p95 ${at(0.95)} ms, limit ${config.timeoutMs} ms`,
+    `Latency p50 ${at(0.5)} ms, p75 ${at(0.75)} ms, p90 ${at(0.9)} ms, p95 ${at(0.95)} ms, limit ${config.timeoutMs} ms`,
     `Fallbacks: ${[...reasons].map(([reason, count]) => `${reason} ${count}`).join(', ') || 'none'}`,
     '',
     'Give each message below a score from 1 to 5 for correctness and tone (AI_DIRECTOR §6).',

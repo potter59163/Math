@@ -74,20 +74,88 @@ describe('validateDecision (AI_DIRECTOR §4.3)', () => {
     ['a number in words', decision({ message: 'ได้สิบเอ็ดนะ' }), 'digit_violation'],
     ['a token not allowed', decision({ message: 'ได้ {{det}} นะ' }), 'token_violation'],
     ['a stray brace', decision({ message: 'ได้ {i} นะ' }), 'token_violation'],
-    [
-      'a beat not in the clip',
-      decision({ narration: [{ beat: 'nope', text: 'x' }] }),
-      'beat_invalid',
-    ],
   ])('refuses %s', (_name, text, reason) => {
     const result = check(text, candidates);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.reason).toBe(reason);
   });
 
-  it('refuses a digit in narration too', () => {
-    const result = check(decision({ narration: [{ beat, text: 'ได้ 5' }] }), candidates);
-    expect(result).toEqual({ ok: false, reason: 'digit_violation' });
+  describe('a line of narration that fails', () => {
+    const good = { beat, text: 'ดูแถว {{i}}' };
+    const kept = (narration: object[]) => {
+      const result = check(decision({ narration }), candidates);
+      expect(result.ok).toBe(true);
+      return result.ok ? result.decision.narration : null;
+    };
+
+    it.each([
+      ['a beat not in the clip', { beat: 'nope', text: 'ดูแถวนี้' }],
+      ['a digit', { beat, text: 'ได้ 5' }],
+      ['a number in words', { beat, text: 'อีกสองช่อง' }],
+      ['a token not allowed', { beat, text: 'ได้ {{det}}' }],
+      ['a stray brace', { beat, text: 'ได้ {i}' }],
+      ['too long', { beat, text: 'ก'.repeat(71) }],
+      ['nothing in it', { beat, text: '' }],
+    ])('with %s costs only that line, and never reaches a student', (_name, line) => {
+      expect(kept([good, line])).toEqual([good]);
+    });
+
+    it('leaves no narration at all when no line survives', () => {
+      expect(kept([{ beat, text: 'ได้ 5' }])).toBeUndefined();
+    });
+
+    it('is dropped when the chosen way has no clip to narrate', () => {
+      const noClip = candidates.map((candidate) => ({ ...candidate, scene: undefined }));
+      const result = check(decision({ narration: [good] }), noClip);
+      expect(result.ok && result.decision.narration).toBeUndefined();
+    });
+
+    it('stops at the most lines a clip can use', () => {
+      expect(kept(Array.from({ length: 9 }, () => good))).toHaveLength(6);
+    });
+
+    it('refuses a revealing token only while the item is open', () => {
+      const line = { beat, text: 'คือ {{correctCell}}' };
+      const open = check(decision({ narration: [line] }), candidates, false);
+      expect(open.ok && open.decision.narration).toBeUndefined();
+    });
+  });
+
+  describe('a size written out', () => {
+    const withSizes = (message: string) =>
+      validateDecision({
+        text: decision({ message }),
+        candidates,
+        allowedTokens: ['dimsA', 'dimsB'],
+        revealAllowed: true,
+        sizes: { dimsA: '3×3', dimsB: '2×4' },
+      });
+
+    it.each([
+      ['det 3×3 ถูกแล้วนะ', 'det {{dimsA}} ถูกแล้วนะ'],
+      ['det 3 × 3 ถูกแล้วนะ', 'det {{dimsA}} ถูกแล้วนะ'],
+      ['det 3x3 ถูกแล้วนะ', 'det {{dimsA}} ถูกแล้วนะ'],
+      ['B เป็น 2×4 นะ', 'B เป็น {{dimsB}} นะ'],
+    ])('%s becomes the token, so the number is the engine’s', (written, message) => {
+      const result = withSizes(written);
+      expect(result.ok && result.decision.message).toBe(message);
+    });
+
+    it('is still refused when it is not the size of this item', () => {
+      expect(withSizes('det 2×2 ถูกแล้วนะ')).toEqual({ ok: false, reason: 'digit_violation' });
+    });
+
+    it('is still refused when the engine gave no sizes', () => {
+      expect(check(decision({ message: 'det 3×3 นะ' }), candidates)).toEqual({
+        ok: false,
+        reason: 'digit_violation',
+      });
+    });
+  });
+
+  it('trims a reason too long, which only the log sees, rather than losing the answer', () => {
+    const result = check(decision({ reason: 'ก'.repeat(500) }), candidates);
+    expect(result.ok && result.decision.reason).toHaveLength(200);
   });
 
   it('refuses a token that gives the answer away while the item is open', () => {
@@ -107,15 +175,55 @@ describe('hasNumberInWords', () => {
       expect(hasNumberInWords(text)).toBe(true);
     },
   );
-  it.each(['สามารถทำได้', 'ห้ามลืม', 'เรียบร้อยแล้ว', 'ความสัมพันธ์', 'ก้าวหน้า', 'ลองอีกข้อนะ'])(
-    'leaves %s alone, which only looks like a number',
-    (text) => {
-      expect(hasNumberInWords(text)).toBe(false);
-    },
-  );
+  it.each([
+    'สามารถทำได้',
+    'ห้ามลืม',
+    'เรียบร้อยแล้ว',
+    'ความสัมพันธ์',
+    'ก้าวหน้า',
+    'ลองอีกข้อนะ',
+    'พลาดไปนิดหนึ่ง',
+    'รอสักครู่หนึ่ง',
+    'รูปสามเหลี่ยม',
+    'รูปสี่เหลี่ยม',
+  ])('leaves %s alone, which only looks like a number', (text) => {
+    expect(hasNumberInWords(text)).toBe(false);
+  });
 });
 
 describe('what the tutor is told', () => {
+  it('gives skills and levels no numbers, which the tutor would copy into its words', () => {
+    const item = generate({ skill: 'det2', difficulty: 1, seed: 7 });
+    const student = newProfile({ id: 'u', units: [1, 2, 3, 4, 5] });
+    const attempt = { item, answer: item.correct, hintLevel: 0 as const, timeMs: 1, at: AT };
+    const input = buildDirectorInput(prepareAttempt(student, attempt), 1, 0);
+    expect(input.lastAttempt).toMatchObject({ skill: 'det_small', level: 'ง่าย' });
+    const told = input.skills.flatMap(({ id, nameTh, level }) => [id, nameTh, level]);
+    const next = input.candidates.flatMap(({ next: { skill, level } }) => [skill, level]);
+    expect([...told, ...next].join()).not.toMatch(/[0-9]/);
+  });
+
+  it('says how fast in words, and which matrices the item has', () => {
+    const inputFor = (skill: 'dim' | 'mult', timeMs: number) => {
+      const item = generate({ skill, difficulty: 1, seed: 7 });
+      const student = newProfile({ id: 'u', units: [1, 2, 3, 4, 5] });
+      const attempt = { item, answer: item.correct, hintLevel: 0 as const, timeMs, at: AT };
+      return buildDirectorInput(prepareAttempt(student, attempt), timeMs, 0).lastAttempt;
+    };
+    expect(inputFor('dim', 5_000)).toMatchObject({ speed: 'เร็ว', matrices: ['A'] });
+    expect(inputFor('mult', 200_000)).toMatchObject({ speed: 'ช้า', matrices: ['A', 'B'] });
+  });
+
+  it('never calls the clip for a 2×2 by the name of the rule for a 3×3', () => {
+    const item = generate({ skill: 'det2', difficulty: 1, seed: 7, target: 'M12_DET2_FORMULA' });
+    const student = newProfile({ id: 'u', units: [1, 2, 3, 4, 5] });
+    const answer = misconceptionAnswer(item, 'M12_DET2_FORMULA')!;
+    const attempt = { item, answer, hintLevel: 0 as const, timeMs: 1, at: AT };
+    const input = buildDirectorInput(prepareAttempt(student, attempt), 1, 0);
+    expect(input.candidates[0].scene).toBe('det_diagonals');
+    expect(JSON.stringify(input)).not.toMatch(/sarrus/i);
+  });
+
   it('holds nothing that identifies the student', () => {
     const text = JSON.stringify(buildDirectorInput(prepared(), 41000, 0));
     expect(text).not.toContain('secret-user-id');
@@ -127,7 +235,7 @@ describe('what the tutor is told', () => {
     const input = buildDirectorInput(prepared(), 41000, 0);
     expect(input.trigger).toBe('after_attempt');
     expect(input.lastAttempt.result).toBe('misconception');
-    expect(input.lastAttempt.timeSec).toBe(41);
+    expect(input.lastAttempt.speed).toBe('ปกติ');
     expect(input.interest).toBe('เกม');
     expect(input.candidates[0].scene).toBe('row_col_dot');
     expect(input.skills.length).toBeLessThanOrEqual(5);

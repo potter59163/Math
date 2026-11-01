@@ -97,24 +97,26 @@ M01 ตอบมิติสลับกัน · M02 อ่านแถวห�
 
 ### 4.1 Input (`buildDirectorInput`)
 ส่งเฉพาะที่จำเป็น เลือก ≤ 5 skills (ปัจจุบัน + prereq + ที่เพิ่งเจอ) ไม่มีข้อมูลระบุตัวตน
+
+**สิ่งที่บอกเป็นคำแทนตัวเลข:** ตัวเลขที่ LLM เห็นคือตัวเลขที่มันจะลอก แล้วโดน `digit_violation` (วัดจาก eval จริง 1 พ.ย.) จึงบอกระดับเป็น ง่าย/กลาง/ยาก บอกเวลาเป็น เร็ว/ปกติ/ช้า ชื่อ skill ไม่มีขนาด (`det 2×2` → `det`, `det2` → `det_small`) และชื่อคลิป `sarrus` เป็น `det_diagonals` เพราะคลิปนี้ใช้กับ 2×2 ด้วย ส่วน `matrices` บอกว่าโจทย์มีเมทริกซ์อะไรบ้าง เพราะ LLM ไม่เห็นโจทย์ และจะพูดถึง B ในข้อที่มีแค่ A
 ```json
 {
   "trigger": "after_attempt",
   "revealAllowed": true,
-  "session": { "itemsDone": 12, "minutes": 9 },
-  "lastAttempt": { "skill": "mult", "level": 1, "result": "misconception",
+  "session": { "itemsDone": 12 },
+  "lastAttempt": { "skill": "mult", "level": "ง่าย", "matrices": ["A", "B"], "result": "misconception",
                    "misconception": { "id": "M09_MULT_ELEMENTWISE", "nameTh": "คูณทีละช่อง" },
-                   "timeSec": 41, "hintLevel": 0 },
-  "skills": [{ "id": "mult", "nameTh": "คูณเมทริกซ์", "mastery": 0.31, "level": 1, "recentFirstTry": "✓✗" }],
+                   "speed": "ปกติ", "hintLevel": 0 },
+  "skills": [{ "id": "mult", "nameTh": "คูณเมทริกซ์", "mastery": 0.31, "level": "ง่าย", "recentFirstTry": "✓✗" }],
   "misconceptions": [{ "id": "M09_MULT_ELEMENTWISE", "nameTh": "คูณทีละช่อง", "status": "suspected", "count": 1 }],
   "candidates": [
     { "id": "c1", "scene": "row_col_dot", "beats": ["compare","pick_row","pick_col","pair","multiply","sum","place"],
-      "next": { "skill": "mult", "level": 1, "purpose": "probe", "target": "M09_MULT_ELEMENTWISE" },
+      "next": { "skill": "mult", "level": "ง่าย", "purpose": "probe", "target": "M09_MULT_ELEMENTWISE" },
       "ruleReason": "เจอคูณทีละช่องครั้งแรก → อธิบายด้วย scene แล้วให้ข้อทดสอบ" },
-    { "id": "c2", "next": { "skill": "mult", "level": 1, "purpose": "probe", "target": "M09_MULT_ELEMENTWISE" },
+    { "id": "c2", "next": { "skill": "mult", "level": "ง่าย", "purpose": "probe", "target": "M09_MULT_ELEMENTWISE" },
       "ruleReason": "ให้ข้อทดสอบซ้ำโดยไม่อธิบาย" },
     { "id": "c3", "scene": "worked_solution",
-      "next": { "skill": "mult", "level": 1, "purpose": "probe", "target": "M09_MULT_ELEMENTWISE" },
+      "next": { "skill": "mult", "level": "ง่าย", "purpose": "probe", "target": "M09_MULT_ELEMENTWISE" },
       "ruleReason": "ดูวิธีทำทีละขั้นแล้วให้ข้อทดสอบ" }
   ],
   "allowedTokens": ["i","j","aCell","bCell","studentCell","correctCell","dimsA","dimsB"]
@@ -126,24 +128,21 @@ M01 ตอบมิติสลับกัน · M02 อ่านแถวห�
 export const LlmDecision = z.object({
   choice: z.string().regex(/^c[1-4]$/),
   message: z.string().min(1).max(160),              // ถึงนักเรียน
-  narration: z.array(z.object({
-    beat: z.string(),
-    text: z.string().min(1).max(70),
-  })).max(6).optional(),                             // เฉพาะ candidate ที่มี scene
-  reason: z.string().min(1).max(200),               // ถึงครู
+  narration: z.array(z.object({ beat: z.string(), text: z.string() })).optional(), // ตรวจทีละบรรทัดใน §4.3
+  reason: z.string().min(1),                        // เฉพาะ log ยาวเกินจะถูกตัดที่ 200
 }).strict();
 ```
 
-### 4.3 `validateDecision` (ไม่ผ่านข้อใดข้อหนึ่ง → fallback)
+### 4.3 `validateDecision` (`choice` หรือ `message` ไม่ผ่าน → fallback)
 1. parse JSON + Zod → `schema_invalid`
 2. `choice` อยู่ใน candidates → `choice_invalid`
-3. `message` และ `narration[].text` ห้ามมีตัวเลข อารบิก ไทย ตัวยก หรือคำอ่านตัวเลข → `digit_violation` (`reason` มีตัวเลขได้)
-4. token ทุกตัว `{{name}}` อยู่ใน `allowedTokens` · ถ้า `revealAllowed = false` ห้ามใช้ token ที่เฉลย → `token_violation`
-5. ห้ามมี `{` หรือ `}` ที่ไม่ใช่ token
-6. `narration[].beat` อยู่ใน beats ของ scene ที่เลือก และถ้า candidate ไม่มี scene ต้องไม่มี narration → `beat_invalid`
+3. ขนาดที่เขียนตรงกับขนาดของข้อนี้ (`3×3` เมื่อ `dimsA` เป็น `3×3`) จะกลายเป็น token เพราะเป็นตัวเลขของ engine อยู่แล้ว ขนาดอื่นยังถูกปฏิเสธในข้อถัดไป
+4. `message` ห้ามมีตัวเลข อารบิก ไทย ตัวยก หรือคำอ่านตัวเลข → `digit_violation` (`reason` มีตัวเลขได้)
+5. token ทุกตัว `{{name}}` อยู่ใน `allowedTokens` · ถ้า `revealAllowed = false` ห้ามใช้ token ที่เฉลย · ห้ามมี `{` หรือ `}` ที่ไม่ใช่ token → `token_violation`
+6. `narration` ตรวจทีละบรรทัดด้วยกฎเดียวกัน บวกกับ beat ต้องอยู่ใน scene ที่เลือก และยาวไม่เกิน 70 **บรรทัดที่ไม่ผ่านถูกทิ้งเฉพาะบรรทัดนั้น** เพราะคลิปมีคำบรรยายของมันทุก beat อยู่แล้ว และบรรทัดนั้นไม่ถึงนักเรียน เก็บไม่เกิน 6 บรรทัด
 7. ผ่าน → server แทนค่า token แล้วสร้าง `NextTurn`
 
-`fallback_reason` ที่เป็นไปได้: `disabled`, `timeout`, `rate_limited`, `provider_error`, `schema_invalid`, `choice_invalid`, `digit_violation`, `token_violation`, `beat_invalid`
+`fallback_reason` ที่เป็นไปได้: `disabled`, `timeout`, `rate_limited`, `provider_error`, `schema_invalid`, `choice_invalid`, `digit_violation`, `token_violation`
 
 ### 4.4 Tokens (server คำนวณจาก item + คำตอบ)
 | token | ความหมาย | เฉลย? |
@@ -177,15 +176,15 @@ export const LlmDecision = z.object({
 งานของคุณ: เลือกขั้นต่อไปที่ดีที่สุดสำหรับนักเรียนคนนี้จาก candidates ที่ระบบให้มา แล้วเขียนข้อความสั้นๆ ถึงนักเรียน
 
 กฎเด็ดขาด
-1. ห้ามคำนวณ และห้ามเขียนตัวเลขใดๆ เอง (รวมเลขไทย) ใน message และ narration
-   ถ้าต้องอ้างค่าหรือตำแหน่ง ให้ใช้ token ใน allowedTokens เท่านั้น เช่น {{i}}, {{aCell}}
+1. ห้ามคำนวณ และห้ามเขียนตัวเลขใดๆ เอง (รวมเลขไทย ขนาดอย่าง 2×2 และคำอ่านตัวเลข) ใน message และ narration
+   ถ้าต้องอ้างค่า ตำแหน่ง หรือขนาด ให้ใช้ token ใน allowedTokens เท่านั้น เช่น {{i}}, {{aCell}}, {{dimsA}}
 2. choice ต้องเป็น id ที่อยู่ใน candidates
 3. ถ้า revealAllowed เป็น false ห้ามใช้ token ที่เป็นคำตอบ
 4. message ยาวไม่เกิน 2 ประโยค ภาษาไทยเป็นกันเอง สุภาพ ไม่ลงท้ายครับ/ค่ะ ใช้ "นะ" "กัน" ได้ อีโมจิไม่เกิน 1 ตัว
 5. ถ้าผิด ให้ชี้ว่า "คลาดเคลื่อนตรงไหน" โดยอิงสิ่งที่นักเรียนทำจริง ห้ามตำหนิ ห้ามพูดว่าเก่งหรือไม่เก่ง
    ถ้าชม ให้ชมวิธีคิดหรือความพยายาม
-6. narration ใส่ได้เฉพาะ beats ของ scene ที่เลือก beat ละ 1 บรรทัดสั้น
-7. reason (สำหรับครู) อธิบายว่าเลือกเพราะอะไร โดยอ้างข้อมูลใน input
+6. narration ใส่ได้เฉพาะเมื่อ candidate ที่เลือกมี beats ไม่เกิน 3 บรรทัด เฉพาะ beats ที่สำคัญที่สุด
+7. reason (สำหรับบันทึก) ประโยคเดียวสั้นๆ
 8. ตอบเป็น JSON ตาม schema เท่านั้น ห้ามมีข้อความอื่น
 
 แนวการสอน
@@ -256,9 +255,12 @@ interface LlmProvider {
 ```
 - เลือกผ่าน env: `LLM_PROVIDER` (`none` | `anthropic`), `LLM_MODEL`, `LLM_API_KEY`, `LLM_TIMEOUT_MS`
 - ใช้ structured output (`output_config.format`) แต่ต้อง validate ด้วย Zod ทุกครั้ง schema ที่ส่งไปต้องผ่าน `zodOutputFormat` ของ SDK เพราะ API ปฏิเสธ `minLength`, `maxLength` และ `maxItems` ถ้าส่งตรงๆ ทุกการเรียกจะได้ 400 แล้วนักเรียนจะได้แค่ rules โดยไม่มีใครรู้
-- โมเดลรุ่นเร็วและถูก: `claude-haiku-5-5` ที่ effort `low` ไม่ส่ง `temperature` เพราะรุ่นนี้ปฏิเสธ
+- โมเดลรุ่นเร็วและถูก: `claude-haiku-5-5` ที่ effort `low` **ปิด thinking** ไม่ส่ง `temperature` เพราะรุ่นนี้ปฏิเสธ
+- **ปิด thinking เพราะวัดแล้ว:** เปิดไว้ output ราว 1,000 token และเกิน 4 วินาทีทุกข้อที่มีคลิป ปิดแล้วเหลือราว 300 token p50 ราว 1.6 วินาที ส่วน p95 ตั้งแต่ 2.1 วินาทีจนถึงเพดาน 4 วินาทีแล้วแต่รอบ
+- prompt อยู่ใน prompt cache เพราะเหมือนกันทุกครั้ง วัดแล้วคำตอบละราว $0.00013
+- **ผล eval ล่าสุด 2 รอบ:** ใช้ได้ 92–95% รอบล่าสุดที่พลาดเป็น timeout ทั้งหมด ซึ่ง rules รับต่อได้
 - คำขอแรกของ schema ใหม่ช้ากว่าปกติ เพราะ API ต้อง compile schema (แคชไว้ 24 ชั่วโมง) ครั้งนั้นอาจเกิน 4 วินาทีแล้ว fallback ซึ่งไม่เป็นไร
-- `provider_error` พิมพ์สาเหตุลง server log ทุกครั้ง
+- `provider_error` พิมพ์สาเหตุลง server log ทุกครั้ง และ `eval-report.md` เก็บข้อความที่ถูกทิ้งไว้ดูสาเหตุ
 - **rate limit:**
   - นักเรียน 40 คนตอบราวคนละ 1 ข้อต่อนาที ≈ 40 calls/นาที
   - เช็ค RPM/RPD ของ tier ที่ใช้ ถ้าไม่พอให้ fallback ทำงาน หรือปิด LLM ในวันนั้น

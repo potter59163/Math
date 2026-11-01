@@ -17,7 +17,14 @@ export const CONFIG = {
   dailyGoalItems: 10,
   postTestAfterItems: 10,
   hintL2CountsAsWrong: true,
-  llm: { timeoutMs: 4000, maxCandidates: 4, maxCallsPerMinutePerStudent: 20 },
+  llm: {
+    timeoutMs: 4000,
+    maxCandidates: 4,
+    maxCallsPerMinutePerStudent: 20,
+    // What the tutor is told in words, as "quick" or "slow", in place of a number it would copy.
+    quickAnswerMs: 20_000,
+    slowAnswerMs: 90_000,
+  },
   xp: { firstTry: 10, withL1Hint: 7, withDeepHint: 3, misconceptionResolved: 20 },
   // SCENES §1. A scene's length is the sum of its beats' declared times, not the wait for a tap.
   scenes: {

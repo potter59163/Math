@@ -38,9 +38,12 @@ export function createProvider({ apiKey, model }: LlmConfig): LlmProvider {
           {
             model,
             max_tokens: MAX_OUTPUT_TOKENS,
-            system,
+            // The same long prompt on every call, and a cached one costs a tenth to read.
+            system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],
             messages: [{ role: 'user', content: user }],
-            // A short choice under a hard clock: thinking at length costs more than it brings.
+            // Measured on real calls: thinking tripled the output and took answers with a clip past the
+            // 4 s limit, for a short choice among candidates the rules have already vetted.
+            thinking: { type: 'disabled' },
             output_config: { effort: 'low', format },
           },
           { signal },
