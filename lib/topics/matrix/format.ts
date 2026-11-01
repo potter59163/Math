@@ -1,3 +1,4 @@
+import type { Rational } from '@/lib/core/rational';
 import type { Dims, Matrix } from '@/lib/core/types';
 import type { MatrixData } from './types';
 
@@ -40,6 +41,16 @@ export function dimsLabel({ rows, cols }: Dims): string {
 /** Number for Thai copy, with a typographic minus. */
 export function signed(value: number): string {
   return String(value).replace('-', '−');
+}
+
+/** An exact number on one line, with a typographic minus: −3/2. */
+export function rationalText(value: Rational): string {
+  return value.toString().replace('-', '−');
+}
+
+/** A factor inside a product: negatives get brackets, as on paper. */
+export function factorText(value: Rational): string {
+  return value.sign() < 0 ? `(${rationalText(value)})` : rationalText(value);
 }
 
 const SUBSCRIPT_DIGITS = '₀₁₂₃₄₅₆₇₈₉';

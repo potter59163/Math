@@ -23,10 +23,13 @@ import {
   sceneLimitMs,
 } from '.';
 import { SCENE_COMBOS, caughtExample } from './catalog';
+import { cellLocatorScene } from './cellLocator';
 import { dimensionScene } from './dimensionMatch';
 import { gridScene } from './gridTransform';
 import { inverseScene } from './inverseRecipe';
 import { rowColDotScene } from './rowColDot';
+import { sarrusScene } from './sarrus';
+import { transposeScene } from './transposeFlip';
 import type { AnyScene, SceneSpec } from './types';
 
 const A = matrix([
@@ -39,6 +42,7 @@ const B = matrix([
 ]);
 
 const SEEDS = Array.from({ length: 40 }, (_, i) => i * 7919 + 1);
+const SEEDS_TO_SEARCH = Array.from({ length: 2000 }, (_, i) => i);
 
 const COMBOS = SCENE_COMBOS;
 const caughtScene = caughtExample;
@@ -399,6 +403,134 @@ describe('inverse_recipe on the documented example', () => {
   });
 });
 
+describe('cell_locator on the example of MISCONCEPTIONS §3 (M02)', () => {
+  const asked = matrix([
+    [5, 8, 1],
+    [2, 7, 4],
+    [9, 3, 6],
+  ]);
+
+  it('a₂₃ is 4, and reading it the other way round gives a₃₂ = 3', () => {
+    const { params, beats, captions } = cellLocatorScene({
+      A: asked,
+      i: 2,
+      j: 3,
+      showSwapped: true,
+      purpose: 'remediate',
+    });
+    expect(params.value.equals(Rational.of(4))).toBe(true);
+    expect(params.name).toBe('a₂₃');
+    expect(params.swapped?.value.equals(Rational.of(3))).toBe(true);
+    expect(params.swapped?.name).toBe('a₃₂');
+    expect(beats).toEqual(['row', 'col', 'hit', 'compare']);
+    expect(captions.row).toBe('แถวที่ 2 คือแนวนอน');
+    expect(captions.col).toBe('หลักที่ 3 คือแนวตั้ง');
+    expect(captions.compare).toContain('a₃₂');
+  });
+
+  it('has no compare beat when nothing is being compared', () => {
+    const { params, beats } = cellLocatorScene({ A: asked, i: 2, j: 3, purpose: 'concept' });
+    expect(beats).toEqual(['row', 'col', 'hit']);
+    expect(params.swapped).toBeUndefined();
+  });
+});
+
+describe('transpose_flip on the example of MISCONCEPTIONS §3 (M03)', () => {
+  const wide = matrix([
+    [1, 2, 3],
+    [4, 5, 6],
+  ]);
+
+  it('turns each row into a column: one beat per row', () => {
+    const { params, beats, captions } = transposeScene({ A: wide, purpose: 'concept' });
+    expect(params.transposed).toEqual(
+      matrix([
+        [1, 4],
+        [2, 5],
+        [3, 6],
+      ]),
+    );
+    expect(beats).toEqual(['setup', 'row_1', 'row_2', 'done']);
+    expect(captions.row_2).toBe('แถวที่ 2 กลายเป็นหลักที่ 2');
+  });
+
+  it.each([
+    ['ROT_CW', 'หมุน ≠ สะท้อนตามเส้นทแยง'],
+    ['ROT_CCW', 'หมุน ≠ สะท้อนตามเส้นทแยง'],
+    ['ANTI', 'เส้นทแยงรอง ≠ เส้นทแยงหลัก'],
+    ['FLIP_H', 'พลิก ≠ สะท้อนตามเส้นทแยง'],
+    ['FLIP_V', 'พลิก ≠ สะท้อนตามเส้นทแยง'],
+    ['SAME', 'ยังไม่ได้เปลี่ยนแถวเป็นหลัก'],
+  ] as const)('%s opens with what the student did', (variant, caption) => {
+    const student = matrix([
+      [4, 1],
+      [5, 2],
+      [6, 3],
+    ]);
+    const { params, beats, captions } = transposeScene({
+      A: wide,
+      variant,
+      student,
+      purpose: 'remediate',
+    });
+    expect(beats[0]).toBe('compare');
+    expect(captions.compare).toBe(caption);
+    expect(params.student).toEqual(student);
+  });
+});
+
+describe('sarrus on the examples of MISCONCEPTIONS §3', () => {
+  const big = matrix([
+    [2, 1, 3],
+    [0, -1, 4],
+    [1, 2, 1],
+  ]);
+
+  it('M13: det = (−2 + 4 + 0) − (−3 + 16 + 0) = −11', () => {
+    const { params, beats } = sarrusScene({ A: big, purpose: 'concept' });
+    expect(params.size).toBe(3);
+    expect(params.down.map(String)).toEqual(['-2', '4', '0']);
+    expect(params.up.map(String)).toEqual(['-3', '16', '0']);
+    expect(params.downSum.equals(Rational.of(2))).toBe(true);
+    expect(params.upSum.equals(Rational.of(13))).toBe(true);
+    expect(params.det.equals(Rational.of(-11))).toBe(true);
+    expect(beats).toEqual(['copy', 'down', 'up', 'result']);
+  });
+
+  it.each([
+    ['ALL_PLUS', 15, '−2 + 4 + 0 + (−3) + 16 + 0 = 15', 'เส้นขึ้นต้องลบ ไม่ใช่บวก'],
+    ['NO_ALT_SIGN', -19, '2·(−9) + 1·(−4) + 3·1 = −19', 'แถวแรกต้องสลับเครื่องหมาย + − +'],
+    ['TWO_DIAG', 1, '−2 − (−3) = 1', 'ต้องครบ 6 เส้น'],
+  ] as const)('M13 %s gives %i', (variant, value, expression, caption) => {
+    const { params, beats, captions } = sarrusScene({ A: big, variant, purpose: 'remediate' });
+    expect(params.wrong?.value.equals(Rational.of(value))).toBe(true);
+    expect(params.wrong?.expression).toBe(expression);
+    expect(captions.compare).toBe(caption);
+    expect(beats).toEqual(['copy', 'compare', 'down', 'up', 'result']);
+  });
+
+  it('M12: det = 2·4 − 1·3 = 5, with no column to copy', () => {
+    const { params, beats } = sarrusScene({ A, purpose: 'concept' });
+    expect(params.size).toBe(2);
+    expect(params.down.map(String)).toEqual(['8']);
+    expect(params.up.map(String)).toEqual(['3']);
+    expect(params.det.equals(Rational.of(5))).toBe(true);
+    expect(beats).toEqual(['down', 'up', 'result']);
+  });
+
+  it.each([
+    ['ADD', 11, '2·4 + 1·3 = 11'],
+    ['REVERSE', -5, '1·3 − 2·4 = −5'],
+    ['PAIRS_ROW', -10, '2·1 − 3·4 = −10'],
+    ['PAIRS_COL', 2, '2·3 − 1·4 = 2'],
+  ] as const)('M12 %s gives %i', (variant, value, expression) => {
+    const { params, beats } = sarrusScene({ A, variant, purpose: 'remediate' });
+    expect(params.wrong?.value.equals(Rational.of(value))).toBe(true);
+    expect(params.wrong?.expression).toBe(expression);
+    expect(beats).toEqual(['compare', 'down', 'up', 'result']);
+  });
+});
+
 describe('every ★ misconception has a scene with numbers from the generator', () => {
   const entries = CATALOG.map((entry) => entry.id);
 
@@ -580,21 +712,98 @@ describe('every ★ misconception has a scene with numbers from the generator', 
     expect(spec.captions.show).toBe('อินเวอร์สไม่ใช่การกลับเศษทีละตัว');
   });
 
-  it('falls back to worked_solution where the Tier B template does not exist yet', () => {
-    for (const combo of COMBOS.filter(({ id }) =>
-      [
-        'M02_INDEX_SWAP',
-        'M03_TRANSPOSE_WRONG',
-        'M12_DET2_FORMULA',
-        'M13_DET3_SIGN',
-        'M05_SUB_REVERSED',
-        'M15_DET_ADDITIVE',
-        'M07_SCALAR_PARTIAL',
-      ].includes(id),
-    )) {
-      const caught = caughtScene(combo, 17);
-      expect(caught?.spec.template).toBe('worked_solution');
+  it('plays the template the catalog names for each misconception (MISCONCEPTIONS §3)', () => {
+    const expected = {
+      M01_DIM_SWAP: 'dimension_match',
+      M02_INDEX_SWAP: 'cell_locator',
+      M03_TRANSPOSE_WRONG: 'transpose_flip',
+      M04_ADD_DIM_MISMATCH: 'dimension_match',
+      M05_SUB_REVERSED: 'worked_solution',
+      M07_SCALAR_PARTIAL: 'worked_solution',
+      M08_MULT_DIM_RULE: 'dimension_match',
+      M09_MULT_ELEMENTWISE: 'row_col_dot',
+      M10_MULT_ROW_ROW: 'row_col_dot',
+      M12_DET2_FORMULA: 'sarrus',
+      M13_DET3_SIGN: 'sarrus',
+      M14_DET_SCALAR_LINEAR: 'grid_transform',
+      M15_DET_ADDITIVE: 'worked_solution',
+      M18_INV_SINGULAR: 'grid_transform',
+      M19_INV_ZERO_ENTRY: 'grid_transform',
+      M20_INV2_RECIPE: 'inverse_recipe',
+      M21_INV_RECIPROCAL: 'inverse_recipe',
+    } as const;
+    for (const combo of COMBOS) {
+      if (combo.id === 'M11_MULT_COMMUTATIVE') continue;
+      expect(caughtScene(combo, 17)?.spec.template).toBe(expected[combo.id]);
     }
+  });
+
+  it('M02 points at the cell the student read, and that cell is what they answered', () => {
+    fc.assert(
+      fc.property(
+        fc.constantFrom<Level>(1, 2, 3),
+        fc.integer({ min: 0, max: 0xffffffff }),
+        (level, seed) => {
+          const caught = caughtScene({ id: 'M02_INDEX_SWAP', skill: 'index', level }, seed);
+          if (!caught || caught.spec.template !== 'cell_locator') throw new Error('wrong template');
+          if (caught.item.data.form !== 'index' || caught.answer.kind !== 'scalar') {
+            throw new Error('wrong form');
+          }
+          const { params, beats } = caught.spec;
+          const { A: asked, i, j } = caught.item.data;
+          expect(params.value.equals(asked[i - 1][j - 1])).toBe(true);
+          expect(params.swapped?.value.equals(caught.answer.value)).toBe(true);
+          expect(beats.at(-1)).toBe('compare');
+        },
+      ),
+    );
+  });
+
+  it('M03 builds the true transpose, and shows what the student typed beside it', () => {
+    fc.assert(
+      fc.property(
+        fc.constantFrom(...COMBOS.filter(({ id }) => id === 'M03_TRANSPOSE_WRONG')),
+        fc.integer({ min: 0, max: 0xffffffff }),
+        (combo, seed) => {
+          const caught = caughtScene(combo, seed);
+          if (!caught) return;
+          if (caught.spec.template !== 'transpose_flip') throw new Error('wrong template');
+          const { params, beats, compare } = caught.spec;
+          if (caught.item.correct.kind !== 'matrix' || caught.answer.kind !== 'matrix') {
+            throw new Error('wrong answer kind');
+          }
+          expect(equals(params.transposed, caught.item.correct.value)).toBe(true);
+          expect(equals(params.student!, caught.answer.value)).toBe(true);
+          expect(beats[0]).toBe('compare');
+          expect(compare?.variant).toBe(combo.variant);
+          expect(beats.filter((beat) => beat.startsWith('row_'))).toHaveLength(params.A.length);
+        },
+      ),
+    );
+  });
+
+  it('M12 and M13 work out det, and the wrong value is what the student typed', () => {
+    fc.assert(
+      fc.property(
+        fc.constantFrom(
+          ...COMBOS.filter(({ id }) => id === 'M12_DET2_FORMULA' || id === 'M13_DET3_SIGN'),
+        ),
+        fc.integer({ min: 0, max: 0xffffffff }),
+        (combo, seed) => {
+          const caught = caughtScene(combo, seed);
+          if (!caught) return;
+          if (caught.spec.template !== 'sarrus') throw new Error('wrong template');
+          const { params, compare } = caught.spec;
+          if (caught.item.correct.kind !== 'scalar' || caught.answer.kind !== 'scalar') {
+            throw new Error('wrong answer kind');
+          }
+          expect(params.det.equals(caught.item.correct.value)).toBe(true);
+          expect(params.wrong?.value.equals(caught.answer.value)).toBe(true);
+          expect(params.downSum.sub(params.upSum).equals(params.det)).toBe(true);
+          expect(compare?.variant).toBe(combo.variant);
+        },
+      ),
+    );
   });
 
   it('lights up every cell for M07 (MISCONCEPTIONS §3)', () => {
@@ -650,18 +859,18 @@ describe('every ★ skill has a concept scene', () => {
     }
   });
 
-  it('uses the template of SCENES §5.1, with worked_solution until Tier B exists', () => {
+  it('uses the template of SCENES §5.1', () => {
     const expected = {
       dim: 'dimension_match',
-      index: 'worked_solution',
-      transpose: 'worked_solution',
+      index: 'cell_locator',
+      transpose: 'transpose_flip',
       addsub: 'dimension_match',
       scalar: 'worked_solution',
       mult_defined: 'dimension_match',
       mult: 'row_col_dot',
       mult_noncomm: 'grid_transform',
-      det2: 'worked_solution',
-      det3: 'worked_solution',
+      det2: 'sarrus',
+      det3: 'sarrus',
       det_props: 'grid_transform',
       invertible: 'grid_transform',
       inv2: 'inverse_recipe',
@@ -757,6 +966,99 @@ describe('every ★ skill has a concept scene', () => {
   });
 });
 
+describe('concept examples can show what their scene is about', () => {
+  const live = (values: Rational[]) => values.filter((value) => !value.isZero()).length;
+  const seedArb = fc.integer({ min: 0, max: 0xffffffff });
+  const levels = fc.constantFrom<Level>(1, 2, 3);
+
+  it('mult: the highlighted pairs never all multiply to zero', () => {
+    fc.assert(
+      fc.property(seedArb, levels, (seed, level) => {
+        const spec = conceptScene('mult', { seed, level });
+        if (spec.template !== 'row_col_dot') throw new Error('wrong template');
+        expect(live(spec.params.terms.map(({ product }) => product))).toBeGreaterThan(0);
+      }),
+    );
+  });
+
+  it('index: asks for a cell off the diagonal, where (i, j) and (j, i) differ', () => {
+    fc.assert(
+      fc.property(seedArb, levels, (seed, level) => {
+        const spec = conceptScene('index', { seed, level });
+        if (spec.template !== 'cell_locator') throw new Error('wrong template');
+        expect(spec.params.i).not.toBe(spec.params.j);
+      }),
+    );
+  });
+
+  it('transpose: never a symmetric matrix, which would not change at all', () => {
+    fc.assert(
+      fc.property(seedArb, levels, (seed, level) => {
+        const spec = conceptScene('transpose', { seed, level });
+        if (spec.template !== 'transpose_flip') throw new Error('wrong template');
+        expect(equals(spec.params.A, spec.params.transposed)).toBe(false);
+      }),
+    );
+  });
+
+  it('det2: both lines have something to show', () => {
+    fc.assert(
+      fc.property(seedArb, fc.constantFrom<Level>(1, 2), (seed, level) => {
+        const spec = conceptScene('det2', { seed, level });
+        if (spec.template !== 'sarrus') throw new Error('wrong template');
+        expect(live([...spec.params.down, ...spec.params.up])).toBe(2);
+      }),
+    );
+  });
+
+  it('det3: at least three lines are not zero, with at least one each way', () => {
+    fc.assert(
+      fc.property(seedArb, levels, (seed, level) => {
+        const spec = conceptScene('det3', { seed, level });
+        if (spec.template !== 'sarrus') throw new Error('wrong template');
+        const { down, up } = spec.params;
+        expect(live(down)).toBeGreaterThan(0);
+        expect(live(up)).toBeGreaterThan(0);
+        expect(live(down) + live(up)).toBeGreaterThanOrEqual(3);
+      }),
+    );
+  });
+
+  it('det_props: k changes the size, so k² can be seen', () => {
+    fc.assert(
+      fc.property(seedArb, (seed) => {
+        const example = conceptExample('det_props', { seed });
+        if (example?.data.form !== 'det_scaled') throw new Error('wrong form');
+        expect(Math.abs(example.data.k)).toBeGreaterThanOrEqual(2);
+      }),
+    );
+  });
+
+  it.each([
+    [
+      'mult',
+      1,
+      ({ data }: ReturnType<typeof generate>) =>
+        data.form === 'mult' && data.A[0].every((cell, k) => cell.mul(data.B[k][0]).isZero()),
+    ],
+    [
+      'det_props',
+      1,
+      ({ data }: ReturnType<typeof generate>) =>
+        data.form === 'det_scaled' && Math.abs(data.k) === 1,
+    ],
+  ] as const)('%s really does pass over a weak draw', (skill, level, isWeak) => {
+    // The first draw for this seed is weak, so reaching a different one proves the filter ran.
+    const seed = SEEDS_TO_SEARCH.find((candidate) =>
+      isWeak(generate({ skill, difficulty: level, seed: exampleSeed(candidate, 0) })),
+    );
+    expect(seed).toBeDefined();
+    const example = conceptExample(skill, { seed: seed!, level })!;
+    expect(isWeak(example)).toBe(false);
+    expect(example.ref.seed).not.toBe(exampleSeed(seed!, 0));
+  });
+});
+
 describe('unit intros', () => {
   it.each([1, 2, 3, 4, 5] as const)('unit %i plays within 40 seconds', (unit) => {
     const spec = introScene(unit);
@@ -784,6 +1086,25 @@ describe('unit intros', () => {
     expect(spec.params.labels?.rows).toHaveLength(spec.params.first.rows);
     expect(spec.params.labels?.cols).toHaveLength(spec.params.first.cols);
     expect(spec.params.values).toHaveLength(spec.params.first.rows);
+  });
+
+  it('no intro can be the first item of its unit, whatever the seed (SPEC §4)', () => {
+    const givenIn = (spec: SceneSpec): Matrix[] => {
+      if (spec.template === 'grid_transform') return spec.params.shown.map(({ value }) => value);
+      if (spec.template === 'dimension_match')
+        return spec.params.values ? [spec.params.values] : [];
+      return [];
+    };
+    const firstSkill = { 1: 'dim', 4: 'det2', 5: 'invertible' } as const;
+    for (const unit of [1, 4, 5] as const) {
+      const shown = givenIn(introScene(unit));
+      expect(shown.length).toBeGreaterThan(0);
+      for (const seed of SEEDS_TO_SEARCH) {
+        const { data } = generate({ skill: firstSkill[unit], difficulty: 1, seed });
+        if (!('A' in data)) throw new Error('wrong form');
+        for (const value of shown) expect(equals(value, data.A)).toBe(false);
+      }
+    }
   });
 
   it('unit 3 multiplies quantity by price with the engine', () => {

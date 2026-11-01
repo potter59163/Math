@@ -354,7 +354,6 @@ function AnswerLab({ item }: { item: MatrixItem }) {
                 <p className="text-sm">
                   scene: {scene.template}
                   {scene.mode && ` (${scene.mode})`}
-                  {scene.fallback && ` → ${scene.fallback}`}
                 </p>
                 <button
                   type="button"

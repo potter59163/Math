@@ -2,12 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { deriveSeed } from '@/lib/core/prng';
 import { Rational } from '@/lib/core/rational';
 import type { Answer } from '@/lib/core/types';
-import { sceneDurationMs } from '@/lib/topics/matrix/scenes';
+import { det2, shape } from '@/lib/topics/matrix/ops';
+import { sceneDurationMs, type SceneSpec } from '@/lib/topics/matrix/scenes';
 import { SKILLS } from '@/lib/topics/matrix/skills';
 import type { MatrixItem } from '@/lib/topics/matrix/types';
 import { generate } from '@/lib/topics/matrix/generators';
 import { helpScene, leadClip, markClipSeen, remediationFor, workedSceneFor } from './clips';
-import { issueItem, newProfile, submitAttempt } from './profile';
+import { currentItem, issueItem, newProfile, submitAttempt } from './profile';
 import type { LocalStudent, Profile, UnitId } from './types';
 
 const student = (units: UnitId[] = [1, 2, 3, 4, 5]): LocalStudent => ({
@@ -128,6 +129,85 @@ describe('leadClip (SPEC §4)', () => {
     };
     expect(later('ABC123-7')).toBe(later('ABC123-7'));
     expect(later('ABC123-7')).not.toBe(later('ABC123-8'));
+  });
+});
+
+describe('a concept clip is never the item that follows it (SPEC §4)', () => {
+  const STUDENTS = Array.from({ length: 1500 }, (_, index) => `ABC123-${index}`);
+
+  /** True when the clip draws the same numbers the next item asks about. */
+  function sameNumbers(spec: SceneSpec, next: MatrixItem): boolean {
+    const { data } = next;
+    const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+    switch (spec.template) {
+      case 'cell_locator':
+        return (
+          data.form === 'index' &&
+          same([spec.params.A, spec.params.i, spec.params.j], [data.A, data.i, data.j])
+        );
+      case 'transpose_flip':
+        return data.form === 'transpose' && same(spec.params.A, data.A);
+      case 'sarrus':
+        return (data.form === 'det2' || data.form === 'det3') && same(spec.params.A, data.A);
+      case 'row_col_dot':
+        return (
+          data.form === 'mult' && same([spec.params.left, spec.params.right], [data.A, data.B])
+        );
+      case 'inverse_recipe':
+        return data.form === 'inv2' && same(spec.params.A, data.A);
+      case 'worked_solution':
+        return (
+          data.form === 'scalar' &&
+          same(spec.params.allCells?.A, data.A) &&
+          spec.params.allCells?.k === String(data.k).replace('-', '−')
+        );
+      case 'grid_transform': {
+        if (data.form === 'det_scaled') {
+          const [before, after] = spec.params.shown.map(({ value }) => value);
+          const k = after[1][1].div(before[1][1]);
+          return det2(before).equals(Rational.of(data.d)) && k.equals(Rational.of(data.k));
+        }
+        if (data.form === 'invertible') return same(spec.params.shown[0].value, data.A);
+        return false;
+      }
+      case 'dimension_match':
+        return data.form === 'addsub'
+          ? same(spec.params.first, shape(data.A)) && same(spec.params.second, shape(data.B))
+          : false;
+    }
+  }
+
+  it.each([
+    'index',
+    'transpose',
+    'scalar',
+    'mult',
+    'mult_noncomm',
+    'det3',
+    'det_props',
+    'inv2',
+  ] as const)('%s plays something other than the next item, for every student', (skill) => {
+    const position = SKILLS.findIndex(({ id }) => id === skill);
+    for (const id of STUDENTS) {
+      let profile = newProfile({ ...student(), id });
+      for (const earlier of SKILLS.slice(0, position)) {
+        profile = passSkill(markClipSeen(profile, earlier.id), earlier.id);
+      }
+      const clip = leadClip(profile);
+      expect(clip?.spec.purpose).toBe('concept');
+      const next = currentItem(issueItem(profile))!;
+      expect(next.ref.skill).toBe(skill);
+      // addsub compares only dims, and the same dims are fine, so it is not in this list.
+      expect(sameNumbers(clip!.spec, next)).toBe(false);
+    }
+  });
+
+  it('looks ahead without opening anything', () => {
+    const profile = passSkill(markClipSeen(newProfile(student()), 'dim'), 'dim');
+    const before = JSON.stringify(profile);
+    leadClip(profile);
+    expect(JSON.stringify(profile)).toBe(before);
+    expect(profile.counter).toBe(0);
   });
 });
 

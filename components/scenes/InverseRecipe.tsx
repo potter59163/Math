@@ -1,4 +1,5 @@
 import { th } from '@/lib/content/th';
+import { factorText, rationalText } from '@/lib/topics/matrix/format';
 import type { InverseBeat, SceneSpecOf } from '@/lib/topics/matrix/scenes/types';
 import {
   Fade,
@@ -9,7 +10,6 @@ import {
   SvgMatrix,
   SvgNumber,
   SvgText,
-  factorText,
   matrixBox,
 } from './svg';
 
@@ -175,7 +175,7 @@ export function InverseRecipe({ spec, beat }: Props) {
           size={15}
           className="fill-ink font-matrix tabular-nums"
         >
-          {`= ${factorText(ad)} − ${factorText(bc)} = ${det.toString().replace('-', '−')}`}
+          {`= ${factorText(ad)} − ${factorText(bc)} = ${rationalText(det)}`}
         </SvgText>
       </Fade>
 
@@ -202,7 +202,7 @@ export function InverseRecipe({ spec, beat }: Props) {
           size={14}
           className="fill-brand font-matrix font-semibold tabular-nums"
         >
-          {det.toString().replace('-', '−')}
+          {rationalText(det)}
         </SvgText>
         <SvgMatrix value={adjugate} box={working} x={adjX} y={yDivide} size={SIZE} />
         <SvgText x={equalsX} y={yDivide + working.height / 2} className="fill-muted font-matrix">

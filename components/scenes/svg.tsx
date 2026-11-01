@@ -227,12 +227,6 @@ export function SvgMatrix({
   );
 }
 
-/** A number in copy-style text: brackets a negative factor, as on paper. */
-export function factorText(value: Rational): string {
-  const text = value.toString().replace('-', '−');
-  return value.sign() < 0 ? `(${text})` : text;
-}
-
 /** Tints a stretch of the drawing behind its numbers; the fade is all that animates. */
 export function Highlight({
   x,

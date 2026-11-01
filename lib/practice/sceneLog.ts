@@ -1,4 +1,4 @@
-import type { ScenePurpose, TierATemplate } from '@/lib/topics/matrix/scenes';
+import type { ScenePurpose, TemplateId } from '@/lib/topics/matrix/scenes';
 import type { StorageLike } from './store';
 
 // `scene_view` has nowhere to go until /api/event in Phase 5, so views stay on this device, apart
@@ -8,7 +8,7 @@ import type { StorageLike } from './store';
 export interface SceneViewRecord {
   studentId: string;
   decisionId: null;
-  template: TierATemplate;
+  template: TemplateId;
   purpose: ScenePurpose;
   beatsTotal: number;
   beatsSeen: number;

@@ -10,6 +10,7 @@ import {
 import { SKILLS, skillById, type SkillId } from '@/lib/topics/matrix/skills';
 import type { MatrixItem, MisconceptionId } from '@/lib/topics/matrix/types';
 import { nextSkill } from './path';
+import { currentItem, issueItem } from './profile';
 import type { Profile } from './types';
 
 // Phase 3 stand-in for the rules director: which scene plays when. Phase 4 moves this into NextTurn
@@ -38,9 +39,14 @@ export function leadClip(profile: Profile): LeadClip | null {
   const { unit } = skillById(skill);
   const seenInUnit = SKILLS.some((other) => other.unit === unit && seen.includes(other.id));
   try {
-    const spec = seenInUnit
-      ? conceptScene(skill, { seed: exampleSeed(`${profile.student.id}:lead:${skill}`, 0) })
-      : introScene(unit);
+    if (!seenInUnit) return { skill, spec: introScene(unit) };
+    // SPEC §4: not the item about to open. issueItem is pure, so this only looks ahead.
+    const next = currentItem(issueItem(profile)) ?? undefined;
+    const spec = conceptScene(skill, {
+      seed: exampleSeed(`${profile.student.id}:lead:${skill}`, 0),
+      level: next?.ref.difficulty,
+      avoid: next,
+    });
     return { skill, spec };
   } catch {
     return null;

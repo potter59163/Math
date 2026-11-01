@@ -58,7 +58,7 @@
 - [x] intro ของ Unit 1–5 และ concept scene ทุก ★ skill (SCENES §5, §5.1) พร้อมกติกาคลิปนำ (SPEC §4)
   - การข้ามคลิปจาก pre-test รอ Phase 7
 - [x] `/dev/scenes` gallery
-- [ ] (ถ้ามีเวลา) Tier B: `cell_locator`, `transpose_flip`, `sarrus`
+- [x] (ถ้ามีเวลา) Tier B: `cell_locator`, `transpose_flip`, `sarrus`
 - [ ] เล่นคลิปบน Android รุ่นล่างจริง 1 เครื่อง (Potter ลองเอง)
 - **Acceptance:**
   - ทุก ★ misconception มี scene ที่เล่นด้วยตัวเลขจาก generator ได้

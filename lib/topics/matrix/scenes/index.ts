@@ -7,26 +7,30 @@ import { fillTokens } from '@/lib/core/tokens';
 import type { Answer, Level, Matrix } from '@/lib/core/types';
 import { generate } from '../generators';
 import { mat } from '../latex';
-import { sceneFor, type SceneRef, type SceneTemplate } from '../misconceptions';
-import { add, equals, matrix, mul, scalar, shape } from '../ops';
+import { sceneFor, type SceneRef } from '../misconceptions';
+import { add, equals, matrix, mul, sarrusLines, scalar, shape, transpose } from '../ops';
 import type { Skill, SkillId } from '../skills';
 import type { MatrixItem, MisconceptionId } from '../types';
+import { cellLocatorScene } from './cellLocator';
 import { dimensionScene } from './dimensionMatch';
 import { gridScene } from './gridTransform';
 import { inverseScene } from './inverseRecipe';
 import { rowColDotScene } from './rowColDot';
+import { sarrusScene } from './sarrus';
+import { transposeScene } from './transposeFlip';
 import type {
   AnyScene,
   CellIndex,
   InverseVariant,
   RowColVariant,
+  SarrusVariant,
   ScenePurpose,
   SceneSpec,
-  TierATemplate,
+  TransposeVariant,
 } from './types';
 import { workedScene, workedSceneOf } from './workedSolution';
 
-export type { SceneSpec, ScenePurpose, TierATemplate } from './types';
+export type { SceneSpec, ScenePurpose, TemplateId } from './types';
 
 export function sceneDurationMs(spec: AnyScene | SceneSpec): number {
   const { beats, beatMs } = spec as AnyScene;
@@ -43,19 +47,6 @@ export function sceneLimitMs(purpose: ScenePurpose): number {
  */
 export function exampleSeed(base: number | string, nth: number): number {
   return deriveSeed(`example:${base}`, nth);
-}
-
-const TIER_A: readonly SceneTemplate[] = [
-  'row_col_dot',
-  'dimension_match',
-  'grid_transform',
-  'inverse_recipe',
-  'worked_solution',
-] satisfies TierATemplate[];
-
-function playableTemplate(ref: SceneRef): TierATemplate {
-  if (TIER_A.includes(ref.template)) return ref.template as TierATemplate;
-  return ref.fallback ?? 'worked_solution';
 }
 
 function firstWrongCell(answer: Answer, correct: Answer): CellIndex {
@@ -143,6 +134,38 @@ function givesAway(example: MatrixItem, open: MatrixItem | undefined): boolean {
   return open.kind !== 'choice' && answersEqual(example.correct, open.correct);
 }
 
+const MIN_LIVE_SARRUS_LINES = 3;
+
+/**
+ * An example that cannot show what its scene is about, such as a row of zeros for pairing a row with
+ * a column. These are fair items, since a student can still work them, but they teach nothing.
+ */
+function cannotTeach({ data }: MatrixItem): boolean {
+  switch (data.form) {
+    // The scene works out the first cell.
+    case 'mult':
+      return data.A[0].every((cell, k) => cell.mul(data.B[k][0]).isZero());
+    case 'index':
+      return data.i === data.j;
+    case 'transpose':
+      return equals(data.A, transpose(data.A));
+    case 'det2': {
+      const [[a, b], [c, d]] = data.A;
+      return a.mul(d).isZero() || b.mul(c).isZero();
+    }
+    case 'det3': {
+      const { down, up } = sarrusLines(data.A);
+      const live = (lines: Rational[]) => lines.filter((line) => !line.isZero()).length;
+      return live(down) === 0 || live(up) === 0 || live(down) + live(up) < MIN_LIVE_SARRUS_LINES;
+    }
+    // k = ±1 leaves the area as it was, so k² has nothing to show.
+    case 'det_scaled':
+      return Math.abs(data.k) < 2;
+    default:
+      return false;
+  }
+}
+
 function conceptLevel(skill: SkillId, level: Level): Level {
   switch (skill) {
     // L3 of these has another form: 2A − 3B, and ABC. The concept is the same at L2.
@@ -186,9 +209,9 @@ export function conceptExample(
       seed: exampleSeed(seed, nth),
       target: CONCEPT_TARGET[skill],
     });
-    if (!givesAway(example, avoid)) return example;
+    if (!cannotTeach(example) && !givesAway(example, avoid)) return example;
   }
-  throw new Error(`conceptExample: no example of ${skill} avoids the open item`);
+  throw new Error(`conceptExample: no usable example of ${skill} from seed ${seed}`);
 }
 
 export function conceptScene(skill: SkillId, options: ConceptOptions): SceneSpec {
@@ -234,8 +257,14 @@ export function conceptScene(skill: SkillId, options: ConceptOptions): SceneSpec
       return gridScene({ mode: 'det_zero', M: data.A, purpose });
     case 'inv2':
       return inverseScene({ A: data.A, purpose });
+    case 'index':
+      return cellLocatorScene({ A: data.A, i: data.i, j: data.j, purpose });
+    case 'transpose':
+      return transposeScene({ A: data.A, purpose });
+    case 'det2':
+    case 'det3':
+      return sarrusScene({ A: data.A, purpose });
     default:
-      // `index`, `transpose`, `det2` and `det3` have Tier B templates; until then, worked_solution.
       return workedScene(example, purpose, { allCells: data.form === 'scalar' });
   }
 }
@@ -348,7 +377,41 @@ export function remediationScene(item: MatrixItem, answer: Answer, caught: Caugh
   const { data } = item;
   const ref = sceneFor(caught.id, { kind: item.kind, variant: caught.variant });
   const purpose = 'remediate';
-  switch (playableTemplate(ref)) {
+  switch (ref.template) {
+    case 'cell_locator': {
+      if (data.form !== 'index') throw new Error(`remediationScene: ${caught.id} on ${data.form}`);
+      return cellLocatorScene({
+        A: data.A,
+        i: data.i,
+        j: data.j,
+        showSwapped: true,
+        studentAnswer: answer,
+        purpose,
+      });
+    }
+    case 'transpose_flip': {
+      if (data.form !== 'transpose') {
+        throw new Error(`remediationScene: ${caught.id} on ${data.form}`);
+      }
+      return transposeScene({
+        A: data.A,
+        variant: caught.variant as TransposeVariant,
+        student: answer.kind === 'matrix' ? answer.value : undefined,
+        studentAnswer: answer,
+        purpose,
+      });
+    }
+    case 'sarrus': {
+      if (data.form !== 'det2' && data.form !== 'det3') {
+        throw new Error(`remediationScene: ${caught.id} on ${data.form}`);
+      }
+      return sarrusScene({
+        A: data.A,
+        variant: caught.variant as SarrusVariant,
+        studentAnswer: answer,
+        purpose,
+      });
+    }
     case 'row_col_dot': {
       const variant = ref.variant as RowColVariant;
       const cell = firstWrongCell(answer, item.correct);
@@ -420,9 +483,10 @@ const STRETCH = matrix([
   [2, 1],
   [0, 1],
 ]);
+// Holds a zero, which `invertible` L1 never does, so this intro can never be the item after it.
 const UNDOABLE = matrix([
-  [2, 1],
-  [1, 1],
+  [1, 2],
+  [0, 1],
 ]);
 
 /** The first clip a student sees in a unit, at most 40 seconds (SPEC §4, SCENES §5). */

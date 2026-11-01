@@ -68,7 +68,7 @@ Generator ต้องสุ่มใหม่ (seed ถัดไป) จนผ�
 - **candidate:** ค่าของ aⱼᵢ
 - **ใช้ได้เมื่อ:** aⱼᵢ มีอยู่ และ aⱼᵢ ≠ aᵢⱼ
 - **ตัวอย่าง:** A=[[5,8,1],[2,7,4],[9,3,6]] ถาม a₂₃ → ถูก 4 · candidate 3 (= a₃₂)
-- **scene:** `cell_locator` (Tier B, fallback `worked_solution`)
+- **scene:** `cell_locator`
 
 **M03_TRANSPOSE_WRONG ★ ทรานสโพสด้วยการหมุนหรือพลิก แทนการสะท้อนตามเส้นทแยงหลัก**
 - **skill:** `transpose` · **kind:** matrix
@@ -81,7 +81,7 @@ Generator ต้องสุ่มใหม่ (seed ถัดไป) จนผ�
   - ROT_CW: [[4,1],[5,2],[6,3]]
   - ROT_CCW: [[3,6],[2,5],[1,4]]
   - ANTI: [[6,3],[5,2],[4,1]]
-- **scene:** `transpose_flip` (Tier B, fallback `worked_solution`)
+- **scene:** `transpose_flip`
 - **hint:** "แถวที่ 1 กลายเป็นหลักที่ 1, แถวที่ 2 กลายเป็นหลักที่ 2…"
 
 ### Unit 2: บวก ลบ คูณสเกลาร์
@@ -183,7 +183,7 @@ Generator ต้องสุ่มใหม่ (seed ถัดไป) จนผ�
   - `PAIRS_COL`: ac − bd
 - **ใช้ได้เมื่อ:** bc ≠ 0 และ det ≠ 0 (ให้ทุก variant แยกกันได้)
 - **ตัวอย่าง:** A=[[2,1],[3,4]] → ถูก 5 · ADD 11 · REVERSE −5 · PAIRS_ROW −10 · PAIRS_COL 2
-- **scene:** `sarrus` (โหมด 2×2, Tier B, fallback `worked_solution`)
+- **scene:** `sarrus` (โหมด 2×2)
 - **hint:** "ทแยงลง (ad) ลบ ทแยงขึ้น (bc)"
 
 **M13_DET3_SIGN ★ det 3×3 เครื่องหมายผิด**
@@ -197,7 +197,7 @@ Generator ต้องสุ่มใหม่ (seed ถัดไป) จนผ�
   - เส้นขึ้น: ceg=−3, afh=16, bdi=0
   - ถูก (−2+4+0) − (−3+16+0) = **−11**
   - ALL_PLUS 15 · NO_ALT_SIGN −19 (minors −9, −4, 1) · TWO_DIAG 1
-- **scene:** `sarrus` (Tier B, fallback `worked_solution`)
+- **scene:** `sarrus` (โหมด 3×3)
 - **hint:** "3 เส้นลงเป็นบวก 3 เส้นขึ้นเป็นลบ"
 
 **M14_DET_SCALAR_LINEAR ★ คิดว่า det(kA) = k·det(A)**

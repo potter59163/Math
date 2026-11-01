@@ -619,6 +619,67 @@ export const th = {
         RECIPROCAL: 'อินเวอร์สไม่ใช่การกลับเศษทีละตัว',
       },
     },
+    cell: {
+      row: 'แถวที่ {{i}} คือแนวนอน',
+      col: 'หลักที่ {{j}} คือแนวตั้ง',
+      // TODO(review)
+      hit: 'จุดตัดคือ {{name}}',
+      // TODO(review)
+      compare: 'อันนี้คือ {{name}} ที่สลับเลขกัน',
+    },
+    transpose: {
+      // TODO(review)
+      setup: 'เส้นทแยงหลักคือแกนสะท้อน',
+      // TODO(review)
+      row: 'แถวที่ {{k}} กลายเป็นหลักที่ {{k}}',
+      // TODO(review)
+      done: 'ครบทุกแถวแล้ว ได้ Aᵀ',
+      compare: {
+        ROT_CW: 'หมุน ≠ สะท้อนตามเส้นทแยง',
+        ROT_CCW: 'หมุน ≠ สะท้อนตามเส้นทแยง',
+        // TODO(review)
+        ANTI: 'เส้นทแยงรอง ≠ เส้นทแยงหลัก',
+        // TODO(review)
+        FLIP_H: 'พลิก ≠ สะท้อนตามเส้นทแยง',
+        // TODO(review)
+        FLIP_V: 'พลิก ≠ สะท้อนตามเส้นทแยง',
+        // TODO(review)
+        SAME: 'ยังไม่ได้เปลี่ยนแถวเป็นหลัก',
+      },
+    },
+    sarrus: {
+      // TODO(review)
+      copy: 'คัด 2 หลักแรกมาต่อท้าย',
+      // TODO(review)
+      down3: '3 เส้นลงเป็นบวก',
+      // TODO(review)
+      up3: '3 เส้นขึ้นเป็นลบ',
+      // TODO(review)
+      down2: 'ทแยงลง (ad) เป็นบวก',
+      // TODO(review)
+      up2: 'ทแยงขึ้น (bc) เป็นลบ',
+      // TODO(review)
+      result: 'เส้นลง ลบ เส้นขึ้น',
+      // TODO(review)
+      downLabel: 'เส้นลง',
+      // TODO(review)
+      upLabel: 'เส้นขึ้น',
+      compare: {
+        // TODO(review)
+        ALL_PLUS: 'เส้นขึ้นต้องลบ ไม่ใช่บวก',
+        // TODO(review)
+        NO_ALT_SIGN: 'แถวแรกต้องสลับเครื่องหมาย + − +',
+        TWO_DIAG: 'ต้องครบ 6 เส้น',
+        // TODO(review)
+        ADD: 'ที่ทำมา: บวกสองเส้น แต่ต้องลบกัน',
+        // TODO(review)
+        REVERSE: 'ที่ทำมา: เอาเส้นขึ้นตั้ง ต้องเอาเส้นลงตั้ง',
+        // TODO(review)
+        PAIRS_ROW: 'ที่ทำมา: คูณตามแถว ต้องคูณตามแนวทแยง',
+        // TODO(review)
+        PAIRS_COL: 'ที่ทำมา: คูณตามหลัก ต้องคูณตามแนวทแยง',
+      },
+    },
     // Real-life unit intros (SCENES §5).
     intro: {
       shops: {

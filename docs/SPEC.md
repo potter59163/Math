@@ -285,7 +285,7 @@ resolved ──เจออีก──▶ active (relapse)
 ## 10. Scenes
 ดู SCENES.md
 - **Tier A (ต้องมี):** `row_col_dot`, `dimension_match`, `grid_transform`, `inverse_recipe`, `worked_solution`
-- **Tier B:** `cell_locator`, `transpose_flip`, `sarrus` (ถ้ายังไม่มี ให้ fallback เป็น `worked_solution`)
+- **Tier B:** `cell_locator`, `transpose_flip`, `sarrus`
 - **คลิปนำและปุ่ม "ไม่เข้าใจ":** ใช้ template เหล่านี้ตามตารางใน SCENES §5.1 ไม่มีการสร้างวิดีโอตอน runtime
 
 ---

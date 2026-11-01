@@ -1,3 +1,4 @@
+import { factorText, rationalText } from '@/lib/topics/matrix/format';
 import type { RowColBeat, SceneSpecOf } from '@/lib/topics/matrix/scenes/types';
 import {
   Fade,
@@ -7,7 +8,6 @@ import {
   SvgBracket,
   SvgNumber,
   SvgText,
-  factorText,
   matrixBox,
 } from './svg';
 
@@ -81,7 +81,7 @@ export function RowColDot({ spec, beat }: Props) {
 
   const wrongText =
     wrong &&
-    `${wrong.terms.map(({ a, b }) => `${factorText(a)}×${factorText(b)}`).join(' + ')} = ${factorText(wrong.value)}`;
+    `${wrong.terms.map(({ a, b }) => `${factorText(a)}×${factorText(b)}`).join(' + ')} = ${rationalText(wrong.value)}`;
   const wrongSize = wrongText ? Math.min(15, (width - 24) / (wrongText.length * 0.56)) : 15;
   const wrongWidth = wrongText ? wrongText.length * wrongSize * 0.56 : 0;
 

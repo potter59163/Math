@@ -1,8 +1,10 @@
 import { LazyMotion, domAnimation } from 'motion/react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
+import { matrix } from '@/lib/topics/matrix/ops';
 import { conceptScene, introScene, type SceneSpec } from '@/lib/topics/matrix/scenes';
 import { SCENE_COMBOS, caughtExample } from '@/lib/topics/matrix/scenes/catalog';
+import { rowColDotScene } from '@/lib/topics/matrix/scenes/rowColDot';
 import { SKILLS } from '@/lib/topics/matrix/skills';
 import type { AnyScene } from '@/lib/topics/matrix/scenes/types';
 import { SceneStage } from './SceneStage';
@@ -50,7 +52,7 @@ describe('SceneStage', () => {
 
   it('draws only numbers the engine put in the spec', () => {
     for (const spec of specs) {
-      if (spec.template === 'worked_solution' || spec.template === 'dimension_match') continue;
+      if (['worked_solution', 'dimension_match', 'cell_locator'].includes(spec.template)) continue;
       const known = new Set([...JSON.stringify(spec.params).matchAll(/\d+/g)].map(([n]) => n));
       for (const beat of spec.beats) {
         for (const number of numbersIn(frame(spec, beat))) {
@@ -79,6 +81,24 @@ describe('SceneStage', () => {
         }
       }
     }
+  });
+
+  it('brackets a negative factor but not a negative sum: 1×(−3) = −3', () => {
+    const spec = rowColDotScene({
+      left: matrix([
+        [1, 0],
+        [0, 1],
+      ]),
+      right: matrix([
+        [-3, 0],
+        [0, 1],
+      ]),
+      variant: 'elementwise',
+      purpose: 'remediate',
+    });
+    const markup = frame(spec, 'compare');
+    expect(markup).toContain('1×(−3) = −3');
+    expect(markup).not.toContain('= (−3)');
   });
 
   it('keeps the same drawing size from beat to beat, so nothing rescales', () => {

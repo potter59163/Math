@@ -139,12 +139,57 @@ export interface WorkedSolutionParams {
   allCells?: { k: string; A: Matrix; result: Matrix };
 }
 
+export type CellBeat = 'row' | 'col' | 'hit' | 'compare';
+
+export interface CellLocatorParams {
+  A: Matrix;
+  /** 1-based, as the item asks for aᵢⱼ. */
+  i: number;
+  j: number;
+  name: string;
+  value: Rational;
+  /** aⱼᵢ, the cell M02 reads instead. */
+  swapped?: { name: string; value: Rational };
+}
+
+export type TransposeBeat = 'compare' | 'setup' | `row_${number}` | 'done';
+
+export type TransposeVariant = 'ROT_CW' | 'ROT_CCW' | 'ANTI' | 'FLIP_H' | 'FLIP_V' | 'SAME';
+
+export interface TransposeFlipParams {
+  A: Matrix;
+  transposed: Matrix;
+  variant?: TransposeVariant;
+  student?: Matrix;
+}
+
+export type SarrusBeat = 'copy' | 'compare' | 'down' | 'up' | 'result';
+
+export type SarrusVariant =
+  'ALL_PLUS' | 'NO_ALT_SIGN' | 'TWO_DIAG' | 'ADD' | 'REVERSE' | 'PAIRS_ROW' | 'PAIRS_COL';
+
+export interface SarrusParams {
+  A: Matrix;
+  size: 2 | 3;
+  /** Products along the lines. Each index starts one column further right. */
+  down: Rational[];
+  up: Rational[];
+  downSum: Rational;
+  upSum: Rational;
+  det: Rational;
+  /** What the wrong formula computes on these numbers, already written out. */
+  wrong?: { variant: SarrusVariant; value: Rational; expression: string };
+}
+
 export interface BeatsByTemplate {
   row_col_dot: RowColBeat;
   dimension_match: DimensionBeat;
   grid_transform: GridBeat;
   inverse_recipe: InverseBeat;
   worked_solution: WorkedBeat;
+  cell_locator: CellBeat;
+  transpose_flip: TransposeBeat;
+  sarrus: SarrusBeat;
 }
 
 export interface ParamsByTemplate {
@@ -153,11 +198,14 @@ export interface ParamsByTemplate {
   grid_transform: GridTransformParams;
   inverse_recipe: InverseRecipeParams;
   worked_solution: WorkedSolutionParams;
+  cell_locator: CellLocatorParams;
+  transpose_flip: TransposeFlipParams;
+  sarrus: SarrusParams;
 }
 
-export type TierATemplate = keyof BeatsByTemplate;
+export type TemplateId = keyof BeatsByTemplate;
 
-export interface SceneSpecOf<T extends TierATemplate> {
+export interface SceneSpecOf<T extends TemplateId> {
   template: T;
   params: ParamsByTemplate[T];
   beats: BeatsByTemplate[T][];
@@ -171,11 +219,11 @@ export interface SceneSpecOf<T extends TierATemplate> {
   purpose: ScenePurpose;
 }
 
-export type SceneSpec = { [T in TierATemplate]: SceneSpecOf<T> }[TierATemplate];
+export type SceneSpec = { [T in TemplateId]: SceneSpecOf<T> }[TemplateId];
 
 /** A spec with its beats as plain strings, for code that treats every template alike. */
 export interface AnyScene {
-  template: TierATemplate;
+  template: TemplateId;
   beats: readonly string[];
   captions: Partial<Record<string, string>>;
   beatMs: Partial<Record<string, number>>;

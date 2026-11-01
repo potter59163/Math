@@ -54,8 +54,6 @@ export interface SceneRef {
   template: SceneTemplate;
   mode?: string;
   variant?: string;
-  /** Used until this Tier B template exists. */
-  fallback?: 'worked_solution';
 }
 
 interface SceneContext {
@@ -172,7 +170,7 @@ export const CATALOG: MisconceptionEntry[] = [
   entry({
     id: 'M02_INDEX_SWAP',
     hintKey: 'M02_INDEX_SWAP',
-    scene: { template: 'cell_locator', fallback: 'worked_solution' },
+    scene: { template: 'cell_locator' },
     probes: [{ skill: 'index', levels: [1, 2, 3] }],
     variants: [
       on('index', {
@@ -187,7 +185,7 @@ export const CATALOG: MisconceptionEntry[] = [
   entry({
     id: 'M03_TRANSPOSE_WRONG',
     hintKey: 'M03_TRANSPOSE_WRONG',
-    scene: { template: 'transpose_flip', fallback: 'worked_solution' },
+    scene: { template: 'transpose_flip' },
     probes: [
       {
         skill: 'transpose',
@@ -416,7 +414,7 @@ export const CATALOG: MisconceptionEntry[] = [
   entry({
     id: 'M12_DET2_FORMULA',
     hintKey: 'M12_DET2_FORMULA',
-    scene: { template: 'sarrus', mode: '2x2', fallback: 'worked_solution' },
+    scene: { template: 'sarrus', mode: '2x2' },
     probes: [{ skill: 'det2', levels: [1, 2] }],
     variants: [
       on('det2', {
@@ -444,7 +442,7 @@ export const CATALOG: MisconceptionEntry[] = [
   entry({
     id: 'M13_DET3_SIGN',
     hintKey: 'M13_DET3_SIGN',
-    scene: { template: 'sarrus', mode: '3x3', fallback: 'worked_solution' },
+    scene: { template: 'sarrus', mode: '3x3' },
     probes: [{ skill: 'det3', levels: [1, 2, 3] }],
     variants: [
       on('det3', {

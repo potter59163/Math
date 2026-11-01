@@ -18,16 +18,21 @@ import {
   type SceneSpec,
 } from '@/lib/topics/matrix/scenes';
 import { SCENE_COMBOS, caughtExample } from '@/lib/topics/matrix/scenes/catalog';
+import { cellLocatorScene } from '@/lib/topics/matrix/scenes/cellLocator';
 import { dimensionScene } from '@/lib/topics/matrix/scenes/dimensionMatch';
 import { gridScene } from '@/lib/topics/matrix/scenes/gridTransform';
 import { inverseScene } from '@/lib/topics/matrix/scenes/inverseRecipe';
 import { rowColDotScene } from '@/lib/topics/matrix/scenes/rowColDot';
+import { sarrusScene } from '@/lib/topics/matrix/scenes/sarrus';
+import { transposeScene } from '@/lib/topics/matrix/scenes/transposeFlip';
 import type {
   AnyScene,
   DimensionOp,
   GridMode,
   InverseVariant,
   RowColVariant,
+  SarrusVariant,
+  TemplateId,
 } from '@/lib/topics/matrix/scenes/types';
 import { generate } from '@/lib/topics/matrix/generators';
 import { CATALOG } from '@/lib/topics/matrix/misconceptions';
@@ -42,7 +47,7 @@ const BUTTON =
   'min-h-11 rounded-md border border-neutral-400 px-3 font-medium hover:bg-neutral-100 dark:border-neutral-600 dark:hover:bg-neutral-800';
 
 type Kind = 'caught' | 'concept' | 'intro' | 'reveal' | 'custom';
-type CustomTemplate = 'row_col_dot' | 'dimension_match' | 'grid_transform' | 'inverse_recipe';
+type CustomTemplate = Exclude<TemplateId, 'worked_solution'>;
 
 export interface LabQuery {
   kind?: Kind;
@@ -71,6 +76,7 @@ interface LabState {
   dimensionOp: DimensionOp;
   rowColVariant: '' | RowColVariant;
   inverseVariant: '' | InverseVariant;
+  sarrusVariant: '' | SarrusVariant;
   k: number;
   n: number;
   first: string;
@@ -116,8 +122,25 @@ function build(state: LabState): SceneSpec {
     case 'custom':
       break;
   }
-  const purpose = state.rowColVariant || state.inverseVariant ? 'remediate' : 'concept';
+  const purpose =
+    state.rowColVariant || state.inverseVariant || state.sarrusVariant ? 'remediate' : 'concept';
   switch (state.template) {
+    case 'cell_locator':
+      return cellLocatorScene({
+        A: parseMatrix(state.first),
+        i: state.k,
+        j: state.n,
+        showSwapped: true,
+        purpose,
+      });
+    case 'transpose_flip':
+      return transposeScene({ A: parseMatrix(state.first), purpose });
+    case 'sarrus':
+      return sarrusScene({
+        A: parseMatrix(state.first),
+        variant: state.sarrusVariant || undefined,
+        purpose,
+      });
     case 'row_col_dot':
       return rowColDotScene({
         left: parseMatrix(state.first),
@@ -181,6 +204,7 @@ export function SceneLab({ query }: { query: LabQuery }) {
     dimensionOp: 'mult',
     rowColVariant: '',
     inverseVariant: '',
+    sarrusVariant: '',
     k: 2,
     n: 2,
     first: '2 1; 3 4',
@@ -420,8 +444,49 @@ function CustomFields({
           <option value="dimension_match">dimension_match</option>
           <option value="grid_transform">grid_transform</option>
           <option value="inverse_recipe">inverse_recipe</option>
+          <option value="cell_locator">cell_locator</option>
+          <option value="transpose_flip">transpose_flip</option>
+          <option value="sarrus">sarrus</option>
         </select>
       </Field>
+      {state.template === 'cell_locator' && (
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Row i">
+            <input
+              className={FIELD}
+              value={state.k}
+              onChange={(event) => set('k', Number(event.target.value) || 1)}
+            />
+          </Field>
+          <Field label="Column j">
+            <input
+              className={FIELD}
+              value={state.n}
+              onChange={(event) => set('n', Number(event.target.value) || 1)}
+            />
+          </Field>
+        </div>
+      )}
+      {state.template === 'sarrus' && (
+        <Field label="Compare">
+          <select
+            className={FIELD}
+            value={state.sarrusVariant}
+            onChange={(event) =>
+              set('sarrusVariant', event.target.value as LabState['sarrusVariant'])
+            }
+          >
+            <option value="">none</option>
+            <option value="ADD">ADD (2×2)</option>
+            <option value="REVERSE">REVERSE (2×2)</option>
+            <option value="PAIRS_ROW">PAIRS_ROW (2×2)</option>
+            <option value="PAIRS_COL">PAIRS_COL (2×2)</option>
+            <option value="ALL_PLUS">ALL_PLUS (3×3)</option>
+            <option value="NO_ALT_SIGN">NO_ALT_SIGN (3×3)</option>
+            <option value="TWO_DIAG">TWO_DIAG (3×3)</option>
+          </select>
+        </Field>
+      )}
       {state.template === 'row_col_dot' && (
         <Field label="Compare">
           <select
