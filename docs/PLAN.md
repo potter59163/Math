@@ -99,8 +99,8 @@
 - [x] `/api/sync`: action เดียวกันทั้งสองฝั่ง คิวในเครื่อง ส่งซ้ำได้ ทำงานต่อเมื่อเน็ตหลุด
 - [x] แท็บบทเรียน อันดับ โปรไฟล์ ตั้งค่า, ลบบัญชี, ธีมสว่างและมืด
 - [x] Export CSV (`npm run export`)
-- [ ] Potter สมัคร MongoDB Atlas, Google OAuth, Vercel ตาม `docs/SETUP.md` แล้ว deploy (`sin1`)
-- [ ] ลองบน URL จริงด้วยบัญชี Google จริงและมือถือจริง 2 เครื่องพร้อมกัน
+- [x] Potter สมัคร MongoDB Atlas, Google OAuth, Vercel ตาม `docs/SETUP.md` แล้ว deploy (`sin1`): https://kidma.vercel.app
+- [ ] ลองบน URL จริงด้วยบัญชี Google จริงและมือถือจริง 2 เครื่องพร้อมกัน (1 พ.ย.: ลองเครื่องเดียวแล้ว ล็อกอิน ตอบ 9 ข้อ ลบบัญชีผ่าน ยังไม่ได้ลอง 2 เครื่องพร้อมกัน)
 - **Acceptance:**
   - นักเรียน 2 เครื่องใช้งานบน URL จริงพร้อมกันได้
   - test ยืนยันว่านักเรียนอ่านข้อมูลคนอื่นไม่ได้
@@ -112,7 +112,8 @@
 - [x] เรียก Claude ผ่าน Anthropic SDK (`LLM_PROVIDER=none|anthropic`), prompt ตาม AI_DIRECTOR §4.6–4.7, Zod schema, `validateDecision`, timeout, fallback, rate limit ต่อคน
 - [x] TutorBubble cross-fade, narration ทับ caption, ข้อความของระบบกฎเมื่อไม่มี LLM
 - [x] scenarios 20 ชุด + `npm run eval:director` → `eval-report.md`
-- [ ] Potter ใส่ API key แล้วรัน eval กับ LLM จริง
+- [x] Potter ใส่ API key แล้วรัน eval กับ LLM จริง (1 พ.ย.: ใช้ได้ 92–95% ใน 2 รอบล่าสุด บนเว็บจริง 9 จาก 9 ข้อ ใช้เวลา 1.3–2.4 วินาที)
+- [ ] ครูคณิตอ่านข้อความใน `eval-report.md` ระบบตรวจตัวเลขได้ แต่ตรวจไม่ได้ว่าคำอธิบายถูกต้องหรือภาษาดีไหม
 - **Acceptance:**
   - valid ≥ 95%
   - ไม่มีตัวเลขในข้อความถึงนักเรียน
