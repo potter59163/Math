@@ -15,8 +15,6 @@ import { VOICE_TAKES, takeHash } from './voice.take';
 const SEEDS = [1, 20261113, 7919];
 const THEMES: ThemeId[] = ['shop', 'game', 'sport', 'music', 'food'];
 const UNITS = [1, 2, 3, 4, 5] as const;
-/** Worked solutions read as text for now: the credits ran out before them (docs/DECISIONS.md). */
-const RECORDED_TAKES = VOICE_TAKES.filter((take) => take !== 'worked');
 
 const scenes = [
   ...SEEDS.flatMap((seed) => SCENE_COMBOS.map((combo) => caughtExample(combo, seed)?.spec)),
@@ -74,11 +72,11 @@ describe('the voice of the clips', () => {
 
   it('was recorded from the lines as they are now', () => {
     const takes = recorded.takes as Partial<Record<VoiceTake, string>>;
-    for (const take of RECORDED_TAKES) expect(takes[take]).toBe(takeHash(take));
+    for (const take of VOICE_TAKES) expect(takes[take]).toBe(takeHash(take));
   });
 
   it('has every file it points to, of a length a person could say', () => {
-    for (const take of RECORDED_TAKES) {
+    for (const take of VOICE_TAKES) {
       for (const line of Object.keys(th.voice[take])) {
         const file = recordedLine(`${take}.${line}` as VoiceId);
         expect(file, `${take}.${line}`).toBeDefined();

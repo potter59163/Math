@@ -11,7 +11,8 @@
     "cross": "448bad5ed47a",
     "sum": "53909c116aa1",
     "undo": "0b93847c07b0",
-    "recipe": "a797c5ed8a1f"
+    "recipe": "a797c5ed8a1f",
+    "worked": "7cc28157dd1f"
   },
   "lines": {
     "table.intro_blocks": {
@@ -673,6 +674,70 @@
     "recipe.try_done": {
       "src": "/voice/recipe/try_done-a797c5ed8a1f.mp3",
       "ms": 3500
+    },
+    "worked.scale": {
+      "src": "/voice/worked/scale-7cc28157dd1f.mp3",
+      "ms": 1384
+    },
+    "worked.abc_first": {
+      "src": "/voice/worked/abc_first-7cc28157dd1f.mp3",
+      "ms": 1202
+    },
+    "worked.abc_second": {
+      "src": "/voice/worked/abc_second-7cc28157dd1f.mp3",
+      "ms": 1672
+    },
+    "worked.noncomm_example": {
+      "src": "/voice/worked/noncomm_example-7cc28157dd1f.mp3",
+      "ms": 1463
+    },
+    "worked.noncomm_example_swapped": {
+      "src": "/voice/worked/noncomm_example_swapped-7cc28157dd1f.mp3",
+      "ms": 1202
+    },
+    "worked.noncomm_ab": {
+      "src": "/voice/worked/noncomm_ab-7cc28157dd1f.mp3",
+      "ms": 1202
+    },
+    "worked.noncomm_ba": {
+      "src": "/voice/worked/noncomm_ba-7cc28157dd1f.mp3",
+      "ms": 1228
+    },
+    "worked.noncomm_same": {
+      "src": "/voice/worked/noncomm_same-7cc28157dd1f.mp3",
+      "ms": 3056
+    },
+    "worked.det_scaled_rule": {
+      "src": "/voice/worked/det_scaled_rule-7cc28157dd1f.mp3",
+      "ms": 3239
+    },
+    "worked.det_scaled_value": {
+      "src": "/voice/worked/det_scaled_value-7cc28157dd1f.mp3",
+      "ms": 1097
+    },
+    "worked.det_product_rule": {
+      "src": "/voice/worked/det_product_rule-7cc28157dd1f.mp3",
+      "ms": 3030
+    },
+    "worked.det_transpose_rule": {
+      "src": "/voice/worked/det_transpose_rule-7cc28157dd1f.mp3",
+      "ms": 1829
+    },
+    "worked.det_inverse_rule": {
+      "src": "/voice/worked/det_inverse_rule-7cc28157dd1f.mp3",
+      "ms": 2482
+    },
+    "worked.invertible_det": {
+      "src": "/voice/worked/invertible_det-7cc28157dd1f.mp3",
+      "ms": 993
+    },
+    "worked.invertible_has": {
+      "src": "/voice/worked/invertible_has-7cc28157dd1f.mp3",
+      "ms": 2534
+    },
+    "worked.invertible_none": {
+      "src": "/voice/worked/invertible_none-7cc28157dd1f.mp3",
+      "ms": 2429
     }
   }
 }
