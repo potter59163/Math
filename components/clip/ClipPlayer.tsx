@@ -410,7 +410,8 @@ export function ClipPlayer<Beat extends string>({
           </div>
 
           <div
-            className={`flex min-h-0 flex-col gap-1 px-4 pt-1 pb-[max(0.75rem,env(safe-area-inset-bottom))] short-landscape:w-64 short-landscape:flex-none short-landscape:justify-center ${aspect ? 'flex-1' : 'shrink-0'}`}
+            // Keeps its full height on a short phone, and the picture is what gets smaller.
+            className={`flex flex-col gap-1 px-4 pt-1 pb-[max(0.75rem,env(safe-area-inset-bottom))] short-landscape:w-64 short-landscape:flex-none short-landscape:justify-center ${aspect ? 'flex-[1_0_auto]' : 'shrink-0'}`}
           >
             {aspect && (
               <div
