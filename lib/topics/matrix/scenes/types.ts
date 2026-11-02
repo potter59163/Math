@@ -1,5 +1,6 @@
 import type { Rational } from '@/lib/core/rational';
 import type { Answer, Dims, Matrix } from '@/lib/core/types';
+import type { VoiceId } from './voice';
 
 // SceneSpec of docs/SCENES.md §2. Every number a template draws is worked out here by the engine, so
 // a template only places what it is given. Rationals print as "-3/2" in JSON, so a spec can be logged.
@@ -23,10 +24,22 @@ export type RowColBeat =
   | 'pick_row'
   | 'pick_col'
   | 'pair'
+  | 'only_first'
   | 'multiply'
   | 'sum'
   | 'place'
-  | 'fill_rest';
+  | 'try_row'
+  | 'try_col'
+  | 'try_done'
+  | 'fill_rest'
+  | 'end';
+
+/** The bill a row and a column make, when their numbers can be counted (SCENES §3.1). */
+export interface RowColStory {
+  who: string;
+  labels: { qty: string; price: string; result: string };
+  items: readonly string[];
+}
 
 /** What the wrong method did at this cell: the cells it read and the value it reached. */
 export interface WrongWork {
@@ -47,9 +60,29 @@ export interface RowColDotParams {
   /** Row of `left` paired with column of `right` at `cell`. */
   terms: PairTerm[];
   wrong?: WrongWork;
+  /** What the student answered, marked as the clip goes. */
+  student?: Matrix;
+  story?: RowColStory;
+  /** Another cell, for the student to find the row and column of. */
+  tryCell?: CellIndex;
+  tryTerms?: PairTerm[];
 }
 
-export type DimensionBeat = 'blocks' | 'count_rows' | 'count_cols' | 'check' | 'result';
+export type DimensionBeat =
+  'compare' | 'blocks' | 'count_rows' | 'count_cols' | 'check' | 'result' | 'try' | 'try_done';
+
+/** A quick question that closes a clip about a mistake: tapping the right one moves on. */
+export interface TryChoice {
+  options: string[];
+  right: number;
+}
+
+export interface DimensionTry extends TryChoice {
+  first: Dims;
+  second?: Dims;
+  names?: { first: string; second: string };
+  values?: Matrix;
+}
 
 export type DimensionOp = 'single' | 'add' | 'mult';
 
@@ -66,11 +99,13 @@ export interface DimensionMatchParams {
   /** Null when it cannot be computed. */
   result: Dims | null;
   student?: Dims | 'undefined';
+  try?: DimensionTry;
 }
 
 export type GridMode = 'det_area' | 'det_zero' | 'scale_k' | 'compose' | 'undo';
 
 export type GridBeat =
+  | 'compare'
   | 'unit'
   | 'apply'
   | 'area'
@@ -82,7 +117,9 @@ export type GridBeat =
   | 'second'
   | 'differ'
   | 'undo'
-  | 'back';
+  | 'back'
+  | 'try'
+  | 'try_done';
 
 export interface GridBounds {
   minX: number;
@@ -101,9 +138,13 @@ export interface GridTransformParams {
   frames: Partial<Record<GridBeat, Matrix[]>>;
   /** Holds every corner of every frame, in grid units. */
   bounds: GridBounds;
+  /** Words written over the picture on a beat, such as how many times the area grew. */
+  marks: Partial<Record<GridBeat, string>>;
+  try?: TryChoice;
 }
 
-export type InverseBeat = 'show' | 'swap' | 'negate' | 'det' | 'divide' | 'check';
+export type InverseBeat =
+  'show' | 'swap' | 'negate' | 'det' | 'divide' | 'check' | 'try' | 'try_done';
 
 export type InverseVariant =
   'NO_SWAP' | 'NO_NEGATE' | 'NO_DIVIDE' | 'TIMES_DET' | 'TRANSPOSED' | 'RECIPROCAL';
@@ -122,6 +163,7 @@ export interface InverseRecipeParams {
   identity: Matrix;
   variant?: InverseVariant;
   student?: Matrix;
+  try?: TryChoice;
 }
 
 export type WorkedBeat = `step_${number}`;
@@ -137,7 +179,7 @@ export interface WorkedSolutionParams {
   steps: WorkedSceneStep[];
 }
 
-export type CellBeat = 'row' | 'col' | 'hit' | 'compare';
+export type CellBeat = 'compare' | 'row' | 'col' | 'hit' | 'try' | 'try_done';
 
 export interface CellLocatorParams {
   A: Matrix;
@@ -146,11 +188,11 @@ export interface CellLocatorParams {
   j: number;
   name: string;
   value: Rational;
-  /** aⱼᵢ, the cell M02 reads instead. */
+  /** aⱼᵢ, the cell M02 reads instead, and the one the student then has to find. */
   swapped?: { name: string; value: Rational };
 }
 
-export type TransposeBeat = 'compare' | 'setup' | `row_${number}` | 'done';
+export type TransposeBeat = 'compare' | 'setup' | `row_${number}` | 'try' | 'done';
 
 export type TransposeVariant = 'ROT_CW' | 'ROT_CCW' | 'ANTI' | 'FLIP_H' | 'FLIP_V' | 'SAME';
 
@@ -161,7 +203,7 @@ export interface TransposeFlipParams {
   student?: Matrix;
 }
 
-export type SarrusBeat = 'copy' | 'compare' | 'down' | 'up' | 'result';
+export type SarrusBeat = 'copy' | 'compare' | 'down' | 'try' | 'up' | 'result';
 
 export type SarrusVariant =
   'ALL_PLUS' | 'NO_ALT_SIGN' | 'TWO_DIAG' | 'ADD' | 'REVERSE' | 'PAIRS_ROW' | 'PAIRS_COL';
@@ -177,11 +219,13 @@ export interface SarrusParams {
   det: Rational;
   /** What the wrong formula computes on these numbers, already written out. */
   wrong?: { variant: SarrusVariant; value: Rational; expression: string };
+  try?: TryChoice;
 }
 
 export type CellByCellOp = 'add' | 'sub' | 'scalar';
 
-export type CellByCellBeat = 'compare' | 'setup' | `cell_${number}` | 'rest' | 'done' | 'also';
+export type CellByCellBeat =
+  'compare' | 'setup' | `cell_${number}` | 'try' | 'try_done' | 'rest' | 'done' | 'also';
 
 export interface CellWork {
   /** 1-based, like the rest of the matrix copy. */
@@ -207,9 +251,11 @@ export interface CellByCellParams {
   student?: Matrix;
   variant?: string;
   also?: { k: Rational; result: Matrix };
+  /** About the second cell of `work`. */
+  try?: TryChoice;
 }
 
-export type DetSumBeat = 'compare' | 'add_first' | 'det_of_sum' | 'differ';
+export type DetSumBeat = 'compare' | 'try' | 'add_first' | 'det_of_sum' | 'differ';
 
 export interface DetSumParams {
   A: Matrix;
@@ -219,6 +265,7 @@ export interface DetSumParams {
   rightLine: string;
   detSum: Rational;
   wrong: Rational;
+  try?: TryChoice;
 }
 
 export interface BeatsByTemplate {
@@ -255,12 +302,23 @@ export interface SceneSpecOf<T extends TemplateId> {
   beats: BeatsByTemplate[T][];
   /** Filled in Thai, one line each at 360px. Worked steps carry their own text instead. */
   captions: Partial<Record<BeatsByTemplate[T], string>>;
-  /** Declared length of each beat. Their sum is the scene's length (SCENES §1). */
+  /** Length of each beat, at least its recorded line. Their sum is the scene's length (SCENES §1). */
   beatMs: Partial<Record<BeatsByTemplate[T], number>>;
+  /** What is said on each beat. */
+  voice: Partial<Record<BeatsByTemplate[T], VoiceId>>;
+  /** Beats that wait for the student to tap, which do not count towards the scene's length. */
+  waits?: BeatsByTemplate[T][];
+  /** What a wrong tap on a waiting beat gets. */
+  hints?: Partial<Record<BeatsByTemplate[T], ClipHint>>;
   compare?: { studentAnswer: Answer; variant?: string };
   /** The beat a compare scene points at, marked on the progress dots. */
   flagged?: BeatsByTemplate[T];
   purpose: ScenePurpose;
+}
+
+export interface ClipHint {
+  caption: string;
+  voice: VoiceId;
 }
 
 export type SceneSpec = { [T in TemplateId]: SceneSpecOf<T> }[TemplateId];
@@ -271,6 +329,9 @@ export interface AnyScene {
   beats: readonly string[];
   captions: Partial<Record<string, string>>;
   beatMs: Partial<Record<string, number>>;
+  voice: Partial<Record<string, VoiceId>>;
+  waits?: readonly string[];
+  hints?: Partial<Record<string, ClipHint>>;
   flagged?: string;
   purpose: ScenePurpose;
 }

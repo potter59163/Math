@@ -60,10 +60,12 @@
 - [x] `/dev/scenes` gallery
 - [x] (ถ้ามีเวลา) Tier B: `cell_locator`, `transpose_flip`, `sarrus`
 - [x] เล่นคลิปบน Android รุ่นล่างจริง 1 เครื่อง (Potter ลองเอง)
+- [x] คลิปทุกแบบเล่นเองพร้อมเสียงพากย์ และคลิปแก้ความเข้าใจผิดมีจังหวะให้แตะตอบ (2 พ.ย.) ทุกคลิปอยู่ที่ `/preview/clip`
+- [ ] Potter ฟังเสียงทุกคลิป และลองบน iPhone กับ Android จริงอีกครั้ง
 - **Acceptance:**
   - ทุก ★ misconception มี scene ที่เล่นด้วยตัวเลขจาก generator ได้
-  - scene แก้ความเข้าใจผิด ≤ 25 วิ
-  - concept scene ≤ 20 วิ
+  - scene แก้ความเข้าใจผิด ≤ 30 วิ
+  - concept scene ≤ 22 วิ
   - caption ไม่ล้นที่ 360px
   - ลื่นบน Android รุ่นล่างจริง 1 เครื่อง
 
@@ -165,7 +167,7 @@
 ---
 
 ## ลำดับการตัด (ถ้าช้า ตัดจากบนลงล่าง)
-1. เสียงพากย์ และคลิป hook
+1. คลิป hook
 2. `/demo/split`
 3. Tier B scenes (ใช้ `worked_solution` แทน)
 4. `ab_split`
@@ -185,7 +187,6 @@
 ## หลังส่งงาน (ก่อน 14 ม.ค. ถ้าผ่านรอบคัดเลือก)
 - แชท "ถามคิว" (AI_DIRECTOR §8)
 - Tier B scenes ที่เหลือ
-- เสียงพากย์
 - skill `props`
 - Unit 6
 - เตรียมเดโมสด: โหมด offline + `DEMO_MODE`

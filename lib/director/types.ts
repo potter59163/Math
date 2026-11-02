@@ -61,7 +61,7 @@ export type SceneRequest =
       avoid?: MatrixItemRef;
       purpose: 'concept' | 'request';
     }
-  | { kind: 'remediate'; ref: MatrixItemRef; answer: StoredAnswer; caught: Caught }
+  | { kind: 'remediate'; ref: MatrixItemRef; answer: StoredAnswer; caught: Caught; theme?: ThemeId }
   | { kind: 'reveal'; ref: MatrixItemRef };
 
 export interface ChosenScene {

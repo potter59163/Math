@@ -15,9 +15,9 @@ import { cellByCellScene } from './cellByCell';
 import { cellLocatorScene } from './cellLocator';
 import { detSumScene } from './detSum';
 import { dimensionScene } from './dimensionMatch';
-import { gridScene } from './gridTransform';
+import { gridScene, type GridMistake } from './gridTransform';
 import { inverseScene } from './inverseRecipe';
-import { rowColDotScene } from './rowColDot';
+import { billOf, rowColDotScene } from './rowColDot';
 import { sarrusScene } from './sarrus';
 import { DOCUMENTED_NUMBERS, introNumbers } from './stories';
 import { transposeScene } from './transposeFlip';
@@ -35,9 +35,13 @@ import { workedScene } from './workedSolution';
 
 export type { SceneSpec, ScenePurpose, TemplateId } from './types';
 
+/** A beat that waits for the student's tap takes as long as they take, so it does not count. */
 export function sceneDurationMs(spec: AnyScene | SceneSpec): number {
-  const { beats, beatMs } = spec as AnyScene;
-  return beats.reduce((total, beat) => total + (beatMs[beat] ?? 0), 0);
+  const { beats, beatMs, waits } = spec as AnyScene;
+  return beats.reduce(
+    (total, beat) => total + (waits?.includes(beat) ? 0 : (beatMs[beat] ?? 0)),
+    0,
+  );
 }
 
 export function sceneLimitMs(purpose: ScenePurpose): number {
@@ -301,13 +305,24 @@ function invertibleMatrix(item: MatrixItem, id: MisconceptionId): { M: Matrix; e
   return { M: sibling.data.A, example: true };
 }
 
+const GRID_MISTAKES: Partial<Record<MisconceptionId, GridMistake>> = {
+  M11_MULT_COMMUTATIVE: 'M11',
+  M14_DET_SCALAR_LINEAR: 'M14',
+  M18_INV_SINGULAR: 'M18',
+  M19_INV_ZERO_ENTRY: 'M19',
+};
+
 function gridRemediation(
   item: MatrixItem,
   answer: Answer,
   { id }: Caught,
   ref: SceneRef,
 ): SceneSpec {
-  const shared = { purpose: 'remediate' as const, studentAnswer: answer };
+  const shared = {
+    purpose: 'remediate' as const,
+    studentAnswer: answer,
+    mistake: GRID_MISTAKES[id],
+  };
   const { data } = item;
   switch (ref.mode) {
     case 'compose':
@@ -380,7 +395,12 @@ function dimensionRemediation(item: MatrixItem, answer: Answer, caught: Caught):
  * The scene for a caught misconception, compare mode where the template has one (SCENES §3). The item
  * is closed, so it plays the student's own numbers. Only forms with no 2×2 to draw use an example.
  */
-export function remediationScene(item: MatrixItem, answer: Answer, caught: Caught): SceneSpec {
+export function remediationScene(
+  item: MatrixItem,
+  answer: Answer,
+  caught: Caught,
+  theme: ThemeId = 'shop',
+): SceneSpec {
   const { data } = item;
   const ref = sceneFor(caught.id, { kind: item.kind, variant: caught.variant });
   const purpose = 'remediate';
@@ -422,6 +442,7 @@ export function remediationScene(item: MatrixItem, answer: Answer, caught: Caugh
     case 'row_col_dot': {
       const variant = ref.variant as RowColVariant;
       const cell = firstWrongCell(answer, item.correct);
+      const student = answer.kind === 'matrix' ? answer.value : undefined;
       if (data.form === 'noncomm_find_ba') {
         return rowColDotScene({
           left: data.B,
@@ -429,16 +450,21 @@ export function remediationScene(item: MatrixItem, answer: Answer, caught: Caugh
           names: { left: 'B', right: 'A', result: 'BA' },
           cell,
           variant,
+          student,
           studentAnswer: answer,
           purpose,
         });
       }
       if (data.form !== 'mult') throw new Error(`remediationScene: ${caught.id} on ${data.form}`);
+      const bill =
+        variant === 'elementwise' && student ? billOf(data.A, data.B, student, theme) : null;
       return rowColDotScene({
         left: data.A,
         right: data.B,
-        cell,
+        cell: bill?.cell ?? cell,
         variant,
+        student,
+        story: bill?.story,
         studentAnswer: answer,
         purpose,
       });
@@ -550,6 +576,11 @@ export function introScene(
         left: numbers.quantities,
         right: numbers.prices,
         names: { left: story.u3.left, right: story.u3.right, result: story.u3.result },
+        story: {
+          who: story.labels.rows[0],
+          labels: { qty: story.u3.left, price: story.u3.right, result: story.u3.result },
+          items: story.labels.cols,
+        },
         purpose,
         captions: {
           setup: story.u3.setup,

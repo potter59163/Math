@@ -3,15 +3,21 @@ import type { Rational } from '@/lib/core/rational';
 import type { Answer, Matrix } from '@/lib/core/types';
 import { factorText as f, rationalText } from '../format';
 import { det, minor, sarrusLines, sum } from '../ops';
+import { choiceOf } from './tryChoice';
 import type { SarrusBeat, SarrusParams, SarrusVariant, ScenePurpose, SceneSpecOf } from './types';
+import { timedBeats, type VoiceId } from './voice';
 
 const BEAT_MS: Record<SarrusBeat, number> = {
   copy: 2000,
   compare: 3000,
   down: 3000,
+  try: 1000,
   up: 3000,
   result: 3000,
 };
+
+const PLUS = '+';
+const MINUS = '−';
 
 /** The products along each line: one line each way on a 2×2, three on a 3×3 (Sarrus). */
 function linesOf(A: Matrix): { down: Rational[]; up: Rational[] } {
@@ -82,9 +88,19 @@ export function sarrusScene({
     ...(isBig ? (['copy'] as const) : []),
     ...(variant ? (['compare'] as const) : []),
     'down',
+    // Before the lines going up are drawn, a student who got them wrong says which sign they carry.
+    ...(variant ? (['try'] as const) : []),
     'up',
     'result',
   ];
+  const voice: Partial<Record<SarrusBeat, VoiceId>> = {
+    copy: 'cross.copy',
+    ...(variant && { compare: `cross.compare_${variant}` as const }),
+    down: isBig ? 'cross.down3' : 'cross.down2',
+    try: 'cross.try',
+    up: isBig ? 'cross.up3' : 'cross.up2',
+    result: 'cross.result',
+  };
   return {
     template: 'sarrus',
     params: {
@@ -96,16 +112,22 @@ export function sarrusScene({
       upSum: sum(up),
       det: det(A),
       ...(variant && { wrong: wrongWork(variant, A, down, up) }),
+      ...(variant && { try: choiceOf(MINUS, [PLUS], A[0][0].n + A[1][1].n) }),
     },
     beats,
     captions: {
       ...(isBig && { copy: copy.copy }),
-      ...(variant && { compare: copy.compare[variant] }),
+      ...(variant && { compare: copy.compare[variant], try: copy.try }),
       down: isBig ? copy.down3 : copy.down2,
       up: isBig ? copy.up3 : copy.up2,
       result: copy.result,
     },
-    beatMs: BEAT_MS,
+    beatMs: timedBeats(BEAT_MS, voice),
+    voice,
+    ...(variant && {
+      waits: ['try'] as SarrusBeat[],
+      hints: { try: { caption: copy.hint, voice: 'cross.hint' as const } },
+    }),
     ...(studentAnswer && { compare: { studentAnswer, variant } }),
     purpose,
   };

@@ -4,6 +4,7 @@ import { fillTokens } from '@/lib/core/tokens';
 import type { Answer, Matrix } from '@/lib/core/types';
 import { rationalText } from '../format';
 import { add, scalar, sub } from '../ops';
+import { choiceOf } from './tryChoice';
 import type {
   CellByCellBeat,
   CellByCellOp,
@@ -11,7 +12,9 @@ import type {
   CellWork,
   ScenePurpose,
   SceneSpecOf,
+  TryChoice,
 } from './types';
+import { timedBeats, type VoiceId } from './voice';
 
 const COMPARE_MS = 3000;
 const SETUP_MS = 2000;
@@ -19,6 +22,7 @@ const CELL_MS = 3000;
 const REST_MS = 2500;
 const DONE_MS = 1500;
 const ALSO_MS = 3500;
+const TRY_MS = 1000;
 
 /** Two cells worked out in full show the idea, and the rest fill in at once. */
 const CELLS_IN_FULL = 2;
@@ -74,6 +78,24 @@ function resultOf(op: CellByCellOp, left: Matrix, right?: Matrix, k?: Rational):
   }
 }
 
+/** The right way to write this cell against what this mistake would write. Null when they read alike. */
+function questionFor(
+  op: CellByCellOp,
+  { a, b }: CellWork,
+  k: Rational | undefined,
+  variant: string | undefined,
+): TryChoice | null {
+  const salt = a.n + (b?.n ?? 0);
+  if (op === 'sub' && b && !a.equals(b)) {
+    return choiceOf(`${rationalText(a)} − ${term(b)}`, [`${rationalText(b)} − ${term(a)}`], salt);
+  }
+  if (op === 'scalar' && k) {
+    const wrong = variant === 'ADD' ? `${term(k)} + ${term(a)}` : rationalText(a);
+    return choiceOf(`${term(k)} × ${term(a)}`, [wrong], salt);
+  }
+  return null;
+}
+
 const DEFAULT_NAMES = { left: 'A', right: 'B', result: 'คำตอบ' };
 
 /** SCENES §3.6: the same position in each, one cell at a time, for add, subtract and scale. */
@@ -102,22 +124,48 @@ export function cellByCellScene({
     })),
   );
   const isFocus = ({ i, j }: CellWork) => focus?.[0] === i && focus?.[1] === j;
-  const work = [...inOrder.filter(isFocus), ...inOrder.filter((cell) => !isFocus(cell))];
+  const ordered = [...inOrder.filter(isFocus), ...inOrder.filter((cell) => !isFocus(cell))];
+  const comparing = variant !== undefined;
+
+  // The student works out the second cell, so a cell that could not ask anything stays out of that place.
+  const askable = comparing
+    ? ordered.slice(1).find((cell) => questionFor(op, cell, k, variant) !== null)
+    : undefined;
+  const work = askable
+    ? [ordered[0], askable, ...ordered.slice(1).filter((cell) => cell !== askable)]
+    : ordered;
+  const question = askable ? questionFor(op, askable, k, variant) : null;
+
   const inFull = work.slice(0, CELLS_IN_FULL);
   const cellBeats = inFull.map((_, index): CellByCellBeat => `cell_${index + 1}`);
   const hasRest = work.length > inFull.length;
-  const comparing = variant !== undefined;
 
   const beats: CellByCellBeat[] = [
     ...(comparing ? (['compare'] as const) : []),
     'setup',
-    ...cellBeats,
+    ...(question ? [cellBeats[0], 'try' as const, 'try_done' as const] : cellBeats),
     ...(hasRest ? (['rest'] as const) : []),
     'done',
     ...(also ? (['also'] as const) : []),
   ];
 
   const place = (cell: CellWork) => ({ i: String(cell.i), j: String(cell.j) });
+  const setupVoice: Record<CellByCellOp, VoiceId> = {
+    add: purpose === 'intro' ? 'sheet.intro_setup' : 'sheet.setup_add',
+    sub: 'sheet.setup_sub',
+    scalar: 'sheet.setup_scalar',
+  };
+  const voice: Partial<Record<CellByCellBeat, VoiceId>> = {
+    ...(comparing && { compare: `sheet.compare_${variant as keyof typeof copy.compare}` as const }),
+    setup: setupVoice[op],
+    cell_1: 'sheet.cell_1',
+    cell_2: 'sheet.cell_2',
+    rest: 'sheet.rest',
+    done: 'sheet.done',
+    also: 'sheet.also',
+    try: 'sheet.try',
+    try_done: 'sheet.try_done',
+  };
 
   return {
     template: 'cell_by_cell',
@@ -133,6 +181,7 @@ export function cellByCellScene({
       ...(student && { student }),
       ...(variant && { variant }),
       ...(also && { also: { k: also.k, result: scalar(also.k, left) } }),
+      ...(question && { try: question }),
     },
     beats,
     captions: {
@@ -144,19 +193,35 @@ export function cellByCellScene({
           fillTokens(copy.cell, { ...place(cell), expression: cell.expression }),
         ]),
       ),
+      ...(question && { try: copy.try, try_done: copy.try_done }),
       ...(hasRest && { rest: copy.rest }),
       done: copy.done,
       ...(also && { also: also.caption }),
       ...captions,
     },
-    beatMs: {
-      compare: COMPARE_MS,
-      setup: SETUP_MS,
-      ...Object.fromEntries(cellBeats.map((beat) => [beat, CELL_MS])),
-      rest: REST_MS,
-      done: DONE_MS,
-      also: ALSO_MS,
-    },
+    beatMs: timedBeats(
+      {
+        compare: COMPARE_MS,
+        setup: SETUP_MS,
+        ...Object.fromEntries(cellBeats.map((beat) => [beat, CELL_MS])),
+        try: TRY_MS,
+        try_done: CELL_MS,
+        rest: REST_MS,
+        done: DONE_MS,
+        also: ALSO_MS,
+      },
+      voice,
+    ),
+    voice,
+    ...(question && {
+      waits: ['try'] as CellByCellBeat[],
+      hints: {
+        try: {
+          caption: op === 'sub' ? copy.hint_sub : copy.hint_scalar,
+          voice: op === 'sub' ? ('sheet.hint_sub' as const) : ('sheet.hint_scalar' as const),
+        },
+      },
+    }),
     ...(comparing && { flagged: 'compare' as const }),
     ...(studentAnswer && { compare: { studentAnswer, variant } }),
     purpose,

@@ -34,6 +34,7 @@ export function buildScene(request: SceneRequest): SceneSpec {
         regenerate(request.ref),
         restoreAnswer(request.answer),
         request.caught,
+        request.theme,
       );
     case 'reveal':
       return revealScene(regenerate(request.ref));

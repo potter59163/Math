@@ -6,13 +6,14 @@ export type ColorScheme = 'system' | 'light' | 'dark';
 export interface DeviceSettings {
   scheme: ColorScheme;
   reduceMotion: boolean;
-  voice: boolean;
+  /** The recorded voice of the clips. */
+  sound: boolean;
 }
 
 export const DEFAULT_SETTINGS: DeviceSettings = {
   scheme: 'system',
   reduceMotion: false,
-  voice: false,
+  sound: true,
 };
 
 const KEY = 'math:settings';
@@ -63,16 +64,3 @@ export const deviceSettings = {
     };
   },
 };
-
-/** The device's own Thai voice, where it has one. Without one this does nothing, and captions remain. */
-export function speakThai(text: string): void {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = 'th-TH';
-  window.speechSynthesis.cancel();
-  window.speechSynthesis.speak(utterance);
-}
-
-export function stopSpeaking(): void {
-  if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel();
-}

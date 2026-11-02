@@ -3,19 +3,21 @@
 animation ที่ใช้ตัวเลขของนักเรียนเอง ทุกค่ามาจาก engine เท่านั้น ส่วน AI หรือ rules เป็นแค่ผู้เลือก template, ลำดับ beat และ caption
 
 ## 1. หลักออกแบบ (Mayer, Multimedia Learning)
-- **Segmenting:** แบ่งเป็น beat สั้นๆ ละ ≤ 4 วินาที แล้วรอให้นักเรียนแตะเพื่อไปต่อ นักเรียนคุมจังหวะเอง
-- **Signaling:** ไฮไลต์เฉพาะสิ่งที่ต้องดู ส่วนอื่นจางลง
+- **Segmenting:** แบ่งเป็น beat สั้นๆ ละ ≤ 5.5 วินาที คลิปเล่นเองเหมือนวิดีโอ นักเรียนหยุด ย้อน หรือข้ามได้ แตะซ้ายคือย้อน แตะขวาคือไปต่อ แตะกลางคือหยุด
+- **Signaling:** ไฮไลต์เฉพาะสิ่งที่ต้องดู ส่วนอื่นจางลง สีเหลืองคือแถว สีน้ำเงินคือหลัก สีแดงคือที่ผิด
 - **Coherence:** ไม่ใส่ของตกแต่งที่ไม่เกี่ยว
-- **Caption:** สั้น ไม่เกิน 1 บรรทัดบนจอ 360px (MVP ยังไม่มีเสียง เสียงพากย์เป็น stretch)
+- **Caption:** สั้น ไม่เกิน 2 บรรทัดบนจอ 360px มีเลขของนักเรียนได้
+- **เสียงพากย์:** ทุก beat มีเสียงที่อัดไว้ นักเรียนทุกคนได้ยินเหมือนกัน จึงไม่พูดตัวเลขและชื่อสินค้า ตัวเลขอยู่บนจอ (`th.voice`, `lib/topics/matrix/scenes/voice.ts`) เปลี่ยนบรรทัดไหนต้องอัดกลุ่มนั้นใหม่ด้วย `npm run voice`
 - **Personalization:**
   - ใช้ตัวเลขจากข้อที่นักเรียนเพิ่งทำ
   - โหมด compare วาง "ที่ทำมา" คู่กับ "ที่ถูก"
+- **ลองทำ:** คลิปแก้ความเข้าใจผิดมีจังหวะให้นักเรียนแตะตอบ 1 ครั้ง นาฬิกาหยุดรอ แตะผิดได้ยินคำใบ้แล้วลองใหม่ได้
 - **ความยาว:**
-  - scene แก้ความเข้าใจผิด ≤ 25 วินาที
+  - scene แก้ความเข้าใจผิด ≤ 30 วินาที
   - intro ของ unit ≤ 40 วินาที
-  - concept scene ≤ 20 วินาที
+  - concept scene ≤ 22 วินาที
   - จบ scene แล้วเจอโจทย์ทันที
-  - นับจากผลรวมเวลาต่อ beat ที่ template ประกาศไว้ (แอนิเมชันกับเวลาค้างให้อ่าน) ไม่นับเวลารอแตะ ส่วน `duration_ms` ใน `scene_views` เก็บเวลาจริงรวมเวลารอแตะ
+  - นับจากผลรวมเวลาต่อ beat (`beatMs` ซึ่งไม่สั้นกว่าเสียงของ beat นั้น) ไม่นับ beat ที่รอแตะ ส่วน `duration_ms` ใน `scene_views` เก็บเวลาจริงรวมเวลารอแตะ
 
 ## 2. Types
 ```ts
@@ -28,16 +30,21 @@ interface SceneSpec<T extends TemplateId = TemplateId> {
   params: TemplateParams[T];                      // มาจาก engine: matrices, cell, mode, variant
   beats: BeatId<T>[];                             // ลำดับที่จะเล่น (ค่าเริ่มต้นมาจาก template)
   captions: Partial<Record<BeatId<T>, string>>;   // ข้อความไทยที่แทนค่า token แล้ว
-  beatMs: Partial<Record<BeatId<T>, number>>;     // เวลาที่ประกาศของแต่ละ beat (≤ 4 วินาที)
+  beatMs: Partial<Record<BeatId<T>, number>>;     // เวลาของแต่ละ beat ไม่สั้นกว่าเสียงของมัน (≤ 5.5 วินาที)
+  voice: Partial<Record<BeatId<T>, VoiceId>>;     // เสียงของแต่ละ beat เช่น 'bill.pick_row'
+  waits?: BeatId<T>[];                            // beat ที่หยุดรอนักเรียนแตะ
+  hints?: Partial<Record<BeatId<T>, { caption: string; voice: VoiceId }>>; // เมื่อแตะผิด
   compare?: { studentAnswer: Answer; variant?: string };
   flagged?: BeatId<T>;                            // beat ที่ compare ชี้ เห็นบน progress dots
   purpose: 'intro' | 'concept' | 'remediate' | 'request' | 'reveal';
 }
 ```
 - template component ต้องเป็น pure ต่อ `SceneSpec` (render เหมือนเดิมทุกครั้ง)
-- เปลี่ยน beat ด้วยแตะหรือปุ่ม "ต่อไป"
-- `ScenePlayer` มีปุ่ม เล่นซ้ำ (เริ่มใหม่จาก beat แรก) / ข้าม และ progress dots แล้วส่ง `scene_view` event (beats_seen, replays, skipped, duration)
-- `prefers-reduced-motion`: แสดงภาพนิ่งของแต่ละ beat แทนการเคลื่อนไหว
+- beat เปลี่ยนเองเมื่อครบเวลาและพูดจบ ยกเว้น beat ใน `waits` กับ beat สุดท้าย
+- `ScenePlayer` ใช้ `ClipPlayer` มีแถบความคืบหน้า ปุ่มลำโพง ปุ่มย้อน หยุด ไปต่อ ข้าม และเล่นซ้ำ (เริ่มใหม่จาก beat แรก) แล้วส่ง `scene_view` event (beats_seen, replays, skipped, duration)
+- โทรศัพท์ยอมให้มีเสียงหลังการแตะเท่านั้น `VoiceUnlock` จึงเล่นความเงียบตอนแตะครั้งแรกของหน้า ถ้ายังไม่เคยแตะเลยจะมีปุ่มเล่นบนคลิป
+- `prefers-reduced-motion`: แสดงภาพนิ่งของแต่ละ beat และไม่เปลี่ยน beat เอง แต่ยังมีเสียง
+- `/preview/clip` รวมทุกคลิปไว้ให้ดูและฟังโดยไม่ต้องตอบผิด
 
 ## 3. Tier A (ต้องมีก่อนทดลอง)
 
@@ -227,4 +234,3 @@ interface SceneSpec<T extends TemplateId = TemplateId> {
 
 ## 7. Stretch
 - **คลิป hook ต่อ unit:** อัดจาก `/dev/scenes` โหมด presentation หรือทำด้วย Manim ล่วงหน้า (ไม่สร้างตอน runtime)
-- **เสียงพากย์ไทย:** มีตัวเลือกในตั้งค่า อ่าน caption ด้วย Web Speech API `th-TH` ของเครื่อง ปิดเป็นค่าเริ่มต้น เพราะคุณภาพต่างกันแต่ละเครื่องและยังไม่มีใครฟังตรวจ

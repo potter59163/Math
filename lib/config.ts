@@ -28,8 +28,10 @@ export const CONFIG = {
   xp: { firstTry: 10, withL1Hint: 7, withDeepHint: 3, misconceptionResolved: 20 },
   // SCENES §1. A scene's length is the sum of its beats' declared times, not the wait for a tap.
   scenes: {
-    maxBeatMs: 4000,
-    limitMs: { intro: 40000, concept: 20000, request: 20000, remediate: 25000, reveal: 25000 },
+    // A spoken line sets the pace now, and the longest of them takes just over 5 seconds.
+    maxBeatMs: 5700,
+    // Without the time a student takes to tap. See docs/DECISIONS.md: a clip with a voice runs longer.
+    limitMs: { intro: 40000, concept: 22000, request: 22000, remediate: 30000, reveal: 30000 },
   },
   generatorVersion: 2,
 } as const;

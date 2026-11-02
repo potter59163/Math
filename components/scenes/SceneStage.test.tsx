@@ -20,6 +20,8 @@ function frame(spec: SceneSpec, beat: string, still = true): string {
   );
 }
 
+const LARGEST_INDEX = 3;
+
 /** The text the student reads in a frame, with each number split out. */
 const numbersIn = (markup: string): string[] =>
   [...markup.replace(/<[^>]*>/g, ' ').matchAll(/\d+/g)].map(([digits]) => digits);
@@ -56,8 +58,8 @@ describe('SceneStage', () => {
       const known = new Set([...JSON.stringify(spec.params).matchAll(/\d+/g)].map(([n]) => n));
       for (const beat of spec.beats) {
         for (const number of numbersIn(frame(spec, beat))) {
-          // The numerator of 1/det is the recipe itself, not a value.
-          if (number !== '1') expect(known).toContain(number);
+          // The numerator of 1/det is the recipe itself, and row and column numbers are not values.
+          if (Number(number) > LARGEST_INDEX) expect(known).toContain(number);
         }
       }
     }

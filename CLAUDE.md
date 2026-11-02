@@ -37,6 +37,7 @@ Next.js (App Router) + TypeScript strict + Tailwind · `motion` (Framer Motion) 
 - `TEST_MONGODB_URI=mongodb://127.0.0.1:27099 npm test`: also runs `lib/server/store.test.ts` on a real MongoDB, which is skipped without it (`docs/SETUP.md`). Run it after touching the store.
 - `npm run sim`: simulated-learner report (Phase 4+)
 - `npm run eval:director`: LLM director eval (needs an LLM key, and costs real money)
+- `npm run voice`: records changed lines of `th.voice` (needs `ELEVENLABS_API_KEY`, and spends credits)
 - `npm run export -- <cohort>`: research CSVs into `exports/` (needs `MONGODB_URI`)
 - `python analysis/analyze.py <export-dir>`: research report (Phase 9)
 
@@ -58,7 +59,7 @@ lib/server/     db · auth · authStore · google · store · sync · account ·
 lib/practice/   draft · keyboard · hints · feedback · rewards
 lib/content/th.ts   Thai copy: prompts, feedback, hints, captions
 lib/sim/        simulated learners (tests + `npm run sim`, which runs through vitest)
-components/     app/ (screens) · input/ (MatrixInput, Keypad) · scenes/ · learn/ · ui/
+components/     app/ (screens) · input/ (MatrixInput, Keypad) · clip/ (player, voice, drawing kit) · scenes/ · learn/ · ui/
 analysis/       analyze.py, requirements.txt
 scripts/        export-data.mjs
 ```

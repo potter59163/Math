@@ -4,12 +4,23 @@ import { fillTokens } from '@/lib/core/tokens';
 import type { Answer, Matrix } from '@/lib/core/types';
 import { rationalText } from '../format';
 import { add, det2 } from '../ops';
-import type { ScenePurpose, SceneSpecOf } from './types';
+import { choiceOf } from './tryChoice';
+import type { DetSumBeat, ScenePurpose, SceneSpecOf } from './types';
+import { timedBeats, type VoiceId } from './voice';
 
 const COMPARE_MS = 4000;
+const TRY_MS = 1000;
 const ADD_MS = 3000;
 const DET_MS = 3500;
 const DIFFER_MS = 3000;
+
+const VOICE: Partial<Record<DetSumBeat, VoiceId>> = {
+  compare: 'sum.compare',
+  try: 'sum.try',
+  add_first: 'sum.add_first',
+  det_of_sum: 'sum.det_of_sum',
+  differ: 'sum.differ',
+};
 
 export interface DetSumInput {
   A: Matrix;
@@ -43,10 +54,12 @@ export function detSumScene({ A, B, studentAnswer, purpose }: DetSumInput): Scen
       rightLine: `${term(a)} × ${term(d)} − ${term(b)} × ${term(c)} = ${rationalText(detSum)}`,
       detSum,
       wrong,
+      try: choiceOf(copy.addFirst, [copy.detFirst], a.n + d.n),
     },
-    beats: ['compare', 'add_first', 'det_of_sum', 'differ'],
+    beats: ['compare', 'try', 'add_first', 'det_of_sum', 'differ'],
     captions: {
       compare: copy.compare,
+      try: copy.try,
       add_first: copy.add_first,
       det_of_sum: copy.det_of_sum,
       differ: fillTokens(copy.differ, {
@@ -54,12 +67,19 @@ export function detSumScene({ A, B, studentAnswer, purpose }: DetSumInput): Scen
         wrong: rationalText(wrong),
       }),
     },
-    beatMs: {
-      compare: COMPARE_MS,
-      add_first: ADD_MS,
-      det_of_sum: DET_MS,
-      differ: DIFFER_MS,
-    },
+    beatMs: timedBeats(
+      {
+        compare: COMPARE_MS,
+        try: TRY_MS,
+        add_first: ADD_MS,
+        det_of_sum: DET_MS,
+        differ: DIFFER_MS,
+      },
+      VOICE,
+    ),
+    voice: VOICE,
+    waits: ['try'],
+    hints: { try: { caption: copy.hint, voice: 'sum.hint' } },
     flagged: 'compare',
     ...(studentAnswer && { compare: { studentAnswer } }),
     purpose,

@@ -194,6 +194,7 @@ function misconceptionRule(
     ref: item.ref,
     answer: storeAnswer(answer),
     caught: { id, variant },
+    ...(profile.student.theme && { theme: profile.student.theme }),
   });
 
   return [

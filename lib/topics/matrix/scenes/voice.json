@@ -1,0 +1,678 @@
+{
+  "takes": {
+    "table": "f2ff6cc4baf7",
+    "cell": "94a50761470f",
+    "flip": "d7a54e8b453e",
+    "sheet": "fba9b0ae8ed9",
+    "fit": "ff080714277d",
+    "bill": "0623b91c6983",
+    "order": "81720cd96d0c",
+    "area": "a9aa5bc9d79b",
+    "cross": "448bad5ed47a",
+    "sum": "53909c116aa1",
+    "undo": "0b93847c07b0",
+    "recipe": "a797c5ed8a1f"
+  },
+  "lines": {
+    "table.intro_blocks": {
+      "src": "/voice/table/intro_blocks-f2ff6cc4baf7.mp3",
+      "ms": 3030
+    },
+    "table.blocks": {
+      "src": "/voice/table/blocks-f2ff6cc4baf7.mp3",
+      "ms": 2090
+    },
+    "table.compare": {
+      "src": "/voice/table/compare-f2ff6cc4baf7.mp3",
+      "ms": 3631
+    },
+    "table.count_rows": {
+      "src": "/voice/table/count_rows-f2ff6cc4baf7.mp3",
+      "ms": 2560
+    },
+    "table.count_cols": {
+      "src": "/voice/table/count_cols-f2ff6cc4baf7.mp3",
+      "ms": 2926
+    },
+    "table.intro_result": {
+      "src": "/voice/table/intro_result-f2ff6cc4baf7.mp3",
+      "ms": 4310
+    },
+    "table.result": {
+      "src": "/voice/table/result-f2ff6cc4baf7.mp3",
+      "ms": 2873
+    },
+    "table.try": {
+      "src": "/voice/table/try-f2ff6cc4baf7.mp3",
+      "ms": 2011
+    },
+    "table.hint": {
+      "src": "/voice/table/hint-f2ff6cc4baf7.mp3",
+      "ms": 1907
+    },
+    "table.try_done": {
+      "src": "/voice/table/try_done-f2ff6cc4baf7.mp3",
+      "ms": 2482
+    },
+    "cell.compare": {
+      "src": "/voice/cell/compare-94a50761470f.mp3",
+      "ms": 2900
+    },
+    "cell.row": {
+      "src": "/voice/cell/row-94a50761470f.mp3",
+      "ms": 2717
+    },
+    "cell.col": {
+      "src": "/voice/cell/col-94a50761470f.mp3",
+      "ms": 2717
+    },
+    "cell.hit": {
+      "src": "/voice/cell/hit-94a50761470f.mp3",
+      "ms": 2534
+    },
+    "cell.try": {
+      "src": "/voice/cell/try-94a50761470f.mp3",
+      "ms": 3344
+    },
+    "cell.hint": {
+      "src": "/voice/cell/hint-94a50761470f.mp3",
+      "ms": 2978
+    },
+    "cell.try_done": {
+      "src": "/voice/cell/try_done-94a50761470f.mp3",
+      "ms": 3082
+    },
+    "flip.compare_turn": {
+      "src": "/voice/flip/compare_turn-d7a54e8b453e.mp3",
+      "ms": 3944
+    },
+    "flip.compare_anti": {
+      "src": "/voice/flip/compare_anti-d7a54e8b453e.mp3",
+      "ms": 3788
+    },
+    "flip.compare_mirror": {
+      "src": "/voice/flip/compare_mirror-d7a54e8b453e.mp3",
+      "ms": 3396
+    },
+    "flip.compare_same": {
+      "src": "/voice/flip/compare_same-d7a54e8b453e.mp3",
+      "ms": 2273
+    },
+    "flip.setup": {
+      "src": "/voice/flip/setup-d7a54e8b453e.mp3",
+      "ms": 2116
+    },
+    "flip.row_1": {
+      "src": "/voice/flip/row_1-d7a54e8b453e.mp3",
+      "ms": 1985
+    },
+    "flip.row_2": {
+      "src": "/voice/flip/row_2-d7a54e8b453e.mp3",
+      "ms": 2351
+    },
+    "flip.row_3": {
+      "src": "/voice/flip/row_3-d7a54e8b453e.mp3",
+      "ms": 2299
+    },
+    "flip.done": {
+      "src": "/voice/flip/done-d7a54e8b453e.mp3",
+      "ms": 2351
+    },
+    "flip.try": {
+      "src": "/voice/flip/try-d7a54e8b453e.mp3",
+      "ms": 3422
+    },
+    "flip.hint": {
+      "src": "/voice/flip/hint-d7a54e8b453e.mp3",
+      "ms": 2456
+    },
+    "sheet.intro_setup": {
+      "src": "/voice/sheet/intro_setup-fba9b0ae8ed9.mp3",
+      "ms": 3527
+    },
+    "sheet.setup_add": {
+      "src": "/voice/sheet/setup_add-fba9b0ae8ed9.mp3",
+      "ms": 3082
+    },
+    "sheet.setup_sub": {
+      "src": "/voice/sheet/setup_sub-fba9b0ae8ed9.mp3",
+      "ms": 5198
+    },
+    "sheet.setup_scalar": {
+      "src": "/voice/sheet/setup_scalar-fba9b0ae8ed9.mp3",
+      "ms": 3030
+    },
+    "sheet.cell_1": {
+      "src": "/voice/sheet/cell_1-fba9b0ae8ed9.mp3",
+      "ms": 1123
+    },
+    "sheet.cell_2": {
+      "src": "/voice/sheet/cell_2-fba9b0ae8ed9.mp3",
+      "ms": 2325
+    },
+    "sheet.rest": {
+      "src": "/voice/sheet/rest-fba9b0ae8ed9.mp3",
+      "ms": 1646
+    },
+    "sheet.done": {
+      "src": "/voice/sheet/done-fba9b0ae8ed9.mp3",
+      "ms": 1176
+    },
+    "sheet.also": {
+      "src": "/voice/sheet/also-fba9b0ae8ed9.mp3",
+      "ms": 3527
+    },
+    "sheet.compare_REVERSED": {
+      "src": "/voice/sheet/compare_REVERSED-fba9b0ae8ed9.mp3",
+      "ms": 4258
+    },
+    "sheet.compare_FIRST_ROW": {
+      "src": "/voice/sheet/compare_FIRST_ROW-fba9b0ae8ed9.mp3",
+      "ms": 3736
+    },
+    "sheet.compare_DIAGONAL": {
+      "src": "/voice/sheet/compare_DIAGONAL-fba9b0ae8ed9.mp3",
+      "ms": 3866
+    },
+    "sheet.compare_ADD": {
+      "src": "/voice/sheet/compare_ADD-fba9b0ae8ed9.mp3",
+      "ms": 3788
+    },
+    "sheet.try": {
+      "src": "/voice/sheet/try-fba9b0ae8ed9.mp3",
+      "ms": 2717
+    },
+    "sheet.hint_sub": {
+      "src": "/voice/sheet/hint_sub-fba9b0ae8ed9.mp3",
+      "ms": 1776
+    },
+    "sheet.hint_scalar": {
+      "src": "/voice/sheet/hint_scalar-fba9b0ae8ed9.mp3",
+      "ms": 2247
+    },
+    "sheet.try_done": {
+      "src": "/voice/sheet/try_done-fba9b0ae8ed9.mp3",
+      "ms": 2168
+    },
+    "fit.blocks": {
+      "src": "/voice/fit/blocks-ff080714277d.mp3",
+      "ms": 1907
+    },
+    "fit.add_check": {
+      "src": "/voice/fit/add_check-ff080714277d.mp3",
+      "ms": 3396
+    },
+    "fit.add_ok": {
+      "src": "/voice/fit/add_ok-ff080714277d.mp3",
+      "ms": 3944
+    },
+    "fit.add_no": {
+      "src": "/voice/fit/add_no-ff080714277d.mp3",
+      "ms": 4624
+    },
+    "fit.mult_check": {
+      "src": "/voice/fit/mult_check-ff080714277d.mp3",
+      "ms": 3056
+    },
+    "fit.mult_ok": {
+      "src": "/voice/fit/mult_ok-ff080714277d.mp3",
+      "ms": 2664
+    },
+    "fit.mult_no": {
+      "src": "/voice/fit/mult_no-ff080714277d.mp3",
+      "ms": 2847
+    },
+    "fit.compare_add": {
+      "src": "/voice/fit/compare_add-ff080714277d.mp3",
+      "ms": 3265
+    },
+    "fit.compare_SAME_DIMS": {
+      "src": "/voice/fit/compare_SAME_DIMS-ff080714277d.mp3",
+      "ms": 4624
+    },
+    "fit.compare_RESULT_INNER": {
+      "src": "/voice/fit/compare_RESULT_INNER-ff080714277d.mp3",
+      "ms": 4441
+    },
+    "fit.compare_RESULT_FIRST": {
+      "src": "/voice/fit/compare_RESULT_FIRST-ff080714277d.mp3",
+      "ms": 4310
+    },
+    "fit.compare_RESULT_SWAPPED": {
+      "src": "/voice/fit/compare_RESULT_SWAPPED-ff080714277d.mp3",
+      "ms": 2220
+    },
+    "fit.compare_RESULT_OUTER": {
+      "src": "/voice/fit/compare_RESULT_OUTER-ff080714277d.mp3",
+      "ms": 2612
+    },
+    "fit.try_add": {
+      "src": "/voice/fit/try_add-ff080714277d.mp3",
+      "ms": 2247
+    },
+    "fit.try_can": {
+      "src": "/voice/fit/try_can-ff080714277d.mp3",
+      "ms": 2534
+    },
+    "fit.try_dims": {
+      "src": "/voice/fit/try_dims-ff080714277d.mp3",
+      "ms": 3187
+    },
+    "fit.hint_add": {
+      "src": "/voice/fit/hint_add-ff080714277d.mp3",
+      "ms": 2064
+    },
+    "fit.hint_can": {
+      "src": "/voice/fit/hint_can-ff080714277d.mp3",
+      "ms": 1515
+    },
+    "fit.hint_dims": {
+      "src": "/voice/fit/hint_dims-ff080714277d.mp3",
+      "ms": 1228
+    },
+    "fit.done_add": {
+      "src": "/voice/fit/done_add-ff080714277d.mp3",
+      "ms": 2612
+    },
+    "fit.done_mult": {
+      "src": "/voice/fit/done_mult-ff080714277d.mp3",
+      "ms": 3866
+    },
+    "bill.intro_setup": {
+      "src": "/voice/bill/intro_setup-0623b91c6983.mp3",
+      "ms": 3265
+    },
+    "bill.setup": {
+      "src": "/voice/bill/setup-0623b91c6983.mp3",
+      "ms": 1672
+    },
+    "bill.story_pick_row": {
+      "src": "/voice/bill/story_pick_row-0623b91c6983.mp3",
+      "ms": 2612
+    },
+    "bill.story_pick_col": {
+      "src": "/voice/bill/story_pick_col-0623b91c6983.mp3",
+      "ms": 2847
+    },
+    "bill.pair": {
+      "src": "/voice/bill/pair-0623b91c6983.mp3",
+      "ms": 1933
+    },
+    "bill.story_multiply": {
+      "src": "/voice/bill/story_multiply-0623b91c6983.mp3",
+      "ms": 1985
+    },
+    "bill.story_sum": {
+      "src": "/voice/bill/story_sum-0623b91c6983.mp3",
+      "ms": 2220
+    },
+    "bill.story_place": {
+      "src": "/voice/bill/story_place-0623b91c6983.mp3",
+      "ms": 2377
+    },
+    "bill.story_fill": {
+      "src": "/voice/bill/story_fill-0623b91c6983.mp3",
+      "ms": 3370
+    },
+    "bill.pick_row": {
+      "src": "/voice/bill/pick_row-0623b91c6983.mp3",
+      "ms": 2325
+    },
+    "bill.pick_col": {
+      "src": "/voice/bill/pick_col-0623b91c6983.mp3",
+      "ms": 2168
+    },
+    "bill.multiply": {
+      "src": "/voice/bill/multiply-0623b91c6983.mp3",
+      "ms": 2900
+    },
+    "bill.sum": {
+      "src": "/voice/bill/sum-0623b91c6983.mp3",
+      "ms": 1097
+    },
+    "bill.place": {
+      "src": "/voice/bill/place-0623b91c6983.mp3",
+      "ms": 1672
+    },
+    "bill.fill_rest": {
+      "src": "/voice/bill/fill_rest-0623b91c6983.mp3",
+      "ms": 3161
+    },
+    "bill.compare_elementwise": {
+      "src": "/voice/bill/compare_elementwise-0623b91c6983.mp3",
+      "ms": 3082
+    },
+    "bill.compare_row_row": {
+      "src": "/voice/bill/compare_row_row-0623b91c6983.mp3",
+      "ms": 4467
+    },
+    "bill.compare_col_col": {
+      "src": "/voice/bill/compare_col_col-0623b91c6983.mp3",
+      "ms": 4336
+    },
+    "bill.compare_reversed": {
+      "src": "/voice/bill/compare_reversed-0623b91c6983.mp3",
+      "ms": 3291
+    },
+    "bill.only_first": {
+      "src": "/voice/bill/only_first-0623b91c6983.mp3",
+      "ms": 3605
+    },
+    "bill.all_lines": {
+      "src": "/voice/bill/all_lines-0623b91c6983.mp3",
+      "ms": 2873
+    },
+    "bill.try_row": {
+      "src": "/voice/bill/try_row-0623b91c6983.mp3",
+      "ms": 4075
+    },
+    "bill.try_col": {
+      "src": "/voice/bill/try_col-0623b91c6983.mp3",
+      "ms": 1881
+    },
+    "bill.hint_row": {
+      "src": "/voice/bill/hint_row-0623b91c6983.mp3",
+      "ms": 2664
+    },
+    "bill.hint_col": {
+      "src": "/voice/bill/hint_col-0623b91c6983.mp3",
+      "ms": 3004
+    },
+    "bill.try_done": {
+      "src": "/voice/bill/try_done-0623b91c6983.mp3",
+      "ms": 2482
+    },
+    "bill.end": {
+      "src": "/voice/bill/end-0623b91c6983.mp3",
+      "ms": 2743
+    },
+    "bill.end_plain": {
+      "src": "/voice/bill/end_plain-0623b91c6983.mp3",
+      "ms": 3866
+    },
+    "order.compare": {
+      "src": "/voice/order/compare-81720cd96d0c.mp3",
+      "ms": 3004
+    },
+    "order.unit": {
+      "src": "/voice/order/unit-81720cd96d0c.mp3",
+      "ms": 2403
+    },
+    "order.first": {
+      "src": "/voice/order/first-81720cd96d0c.mp3",
+      "ms": 2795
+    },
+    "order.second": {
+      "src": "/voice/order/second-81720cd96d0c.mp3",
+      "ms": 1228
+    },
+    "order.differ": {
+      "src": "/voice/order/differ-81720cd96d0c.mp3",
+      "ms": 4336
+    },
+    "order.try": {
+      "src": "/voice/order/try-81720cd96d0c.mp3",
+      "ms": 3109
+    },
+    "order.hint": {
+      "src": "/voice/order/hint-81720cd96d0c.mp3",
+      "ms": 2664
+    },
+    "order.try_done": {
+      "src": "/voice/order/try_done-81720cd96d0c.mp3",
+      "ms": 3422
+    },
+    "area.intro_unit": {
+      "src": "/voice/area/intro_unit-a9aa5bc9d79b.mp3",
+      "ms": 4624
+    },
+    "area.unit": {
+      "src": "/voice/area/unit-a9aa5bc9d79b.mp3",
+      "ms": 1855
+    },
+    "area.apply": {
+      "src": "/voice/area/apply-a9aa5bc9d79b.mp3",
+      "ms": 3030
+    },
+    "area.area": {
+      "src": "/voice/area/area-a9aa5bc9d79b.mp3",
+      "ms": 3657
+    },
+    "area.flip": {
+      "src": "/voice/area/flip-a9aa5bc9d79b.mp3",
+      "ms": 2717
+    },
+    "area.compare_scale": {
+      "src": "/voice/area/compare_scale-a9aa5bc9d79b.mp3",
+      "ms": 2900
+    },
+    "area.scale_start": {
+      "src": "/voice/area/scale_start-a9aa5bc9d79b.mp3",
+      "ms": 2011
+    },
+    "area.scale": {
+      "src": "/voice/area/scale-a9aa5bc9d79b.mp3",
+      "ms": 3814
+    },
+    "area.scale_area": {
+      "src": "/voice/area/scale_area-a9aa5bc9d79b.mp3",
+      "ms": 3161
+    },
+    "area.cube": {
+      "src": "/voice/area/cube-a9aa5bc9d79b.mp3",
+      "ms": 4153
+    },
+    "area.try": {
+      "src": "/voice/area/try-a9aa5bc9d79b.mp3",
+      "ms": 2638
+    },
+    "area.hint": {
+      "src": "/voice/area/hint-a9aa5bc9d79b.mp3",
+      "ms": 3213
+    },
+    "area.try_done": {
+      "src": "/voice/area/try_done-a9aa5bc9d79b.mp3",
+      "ms": 2534
+    },
+    "cross.copy": {
+      "src": "/voice/cross/copy-448bad5ed47a.mp3",
+      "ms": 3683
+    },
+    "cross.down2": {
+      "src": "/voice/cross/down2-448bad5ed47a.mp3",
+      "ms": 2586
+    },
+    "cross.up2": {
+      "src": "/voice/cross/up2-448bad5ed47a.mp3",
+      "ms": 2299
+    },
+    "cross.down3": {
+      "src": "/voice/cross/down3-448bad5ed47a.mp3",
+      "ms": 2090
+    },
+    "cross.up3": {
+      "src": "/voice/cross/up3-448bad5ed47a.mp3",
+      "ms": 2168
+    },
+    "cross.result": {
+      "src": "/voice/cross/result-448bad5ed47a.mp3",
+      "ms": 2926
+    },
+    "cross.compare_ADD": {
+      "src": "/voice/cross/compare_ADD-448bad5ed47a.mp3",
+      "ms": 3579
+    },
+    "cross.compare_REVERSE": {
+      "src": "/voice/cross/compare_REVERSE-448bad5ed47a.mp3",
+      "ms": 4362
+    },
+    "cross.compare_PAIRS_ROW": {
+      "src": "/voice/cross/compare_PAIRS_ROW-448bad5ed47a.mp3",
+      "ms": 4075
+    },
+    "cross.compare_PAIRS_COL": {
+      "src": "/voice/cross/compare_PAIRS_COL-448bad5ed47a.mp3",
+      "ms": 4153
+    },
+    "cross.compare_ALL_PLUS": {
+      "src": "/voice/cross/compare_ALL_PLUS-448bad5ed47a.mp3",
+      "ms": 4075
+    },
+    "cross.compare_NO_ALT_SIGN": {
+      "src": "/voice/cross/compare_NO_ALT_SIGN-448bad5ed47a.mp3",
+      "ms": 3579
+    },
+    "cross.compare_TWO_DIAG": {
+      "src": "/voice/cross/compare_TWO_DIAG-448bad5ed47a.mp3",
+      "ms": 3892
+    },
+    "cross.try": {
+      "src": "/voice/cross/try-448bad5ed47a.mp3",
+      "ms": 2534
+    },
+    "cross.hint": {
+      "src": "/voice/cross/hint-448bad5ed47a.mp3",
+      "ms": 2351
+    },
+    "sum.compare": {
+      "src": "/voice/sum/compare-53909c116aa1.mp3",
+      "ms": 3344
+    },
+    "sum.try": {
+      "src": "/voice/sum/try-53909c116aa1.mp3",
+      "ms": 2038
+    },
+    "sum.hint": {
+      "src": "/voice/sum/hint-53909c116aa1.mp3",
+      "ms": 1724
+    },
+    "sum.add_first": {
+      "src": "/voice/sum/add_first-53909c116aa1.mp3",
+      "ms": 1724
+    },
+    "sum.det_of_sum": {
+      "src": "/voice/sum/det_of_sum-53909c116aa1.mp3",
+      "ms": 1698
+    },
+    "sum.differ": {
+      "src": "/voice/sum/differ-53909c116aa1.mp3",
+      "ms": 3030
+    },
+    "undo.intro_unit": {
+      "src": "/voice/undo/intro_unit-0b93847c07b0.mp3",
+      "ms": 1593
+    },
+    "undo.unit": {
+      "src": "/voice/undo/unit-0b93847c07b0.mp3",
+      "ms": 1750
+    },
+    "undo.flatten": {
+      "src": "/voice/undo/flatten-0b93847c07b0.mp3",
+      "ms": 2247
+    },
+    "undo.cant_undo": {
+      "src": "/voice/undo/cant_undo-0b93847c07b0.mp3",
+      "ms": 3997
+    },
+    "undo.apply": {
+      "src": "/voice/undo/apply-0b93847c07b0.mp3",
+      "ms": 1254
+    },
+    "undo.undo": {
+      "src": "/voice/undo/undo-0b93847c07b0.mp3",
+      "ms": 1672
+    },
+    "undo.back": {
+      "src": "/voice/undo/back-0b93847c07b0.mp3",
+      "ms": 2456
+    },
+    "undo.compare_M18": {
+      "src": "/voice/undo/compare_M18-0b93847c07b0.mp3",
+      "ms": 3422
+    },
+    "undo.compare_M19": {
+      "src": "/voice/undo/compare_M19-0b93847c07b0.mp3",
+      "ms": 2900
+    },
+    "undo.zero_entry": {
+      "src": "/voice/undo/zero_entry-0b93847c07b0.mp3",
+      "ms": 3318
+    },
+    "undo.try_M18": {
+      "src": "/voice/undo/try_M18-0b93847c07b0.mp3",
+      "ms": 3135
+    },
+    "undo.try_M19": {
+      "src": "/voice/undo/try_M19-0b93847c07b0.mp3",
+      "ms": 3605
+    },
+    "undo.hint_M18": {
+      "src": "/voice/undo/hint_M18-0b93847c07b0.mp3",
+      "ms": 2273
+    },
+    "undo.hint_M19": {
+      "src": "/voice/undo/hint_M19-0b93847c07b0.mp3",
+      "ms": 2482
+    },
+    "undo.done": {
+      "src": "/voice/undo/done-0b93847c07b0.mp3",
+      "ms": 2116
+    },
+    "recipe.show": {
+      "src": "/voice/recipe/show-a797c5ed8a1f.mp3",
+      "ms": 4389
+    },
+    "recipe.swap": {
+      "src": "/voice/recipe/swap-a797c5ed8a1f.mp3",
+      "ms": 3239
+    },
+    "recipe.negate": {
+      "src": "/voice/recipe/negate-a797c5ed8a1f.mp3",
+      "ms": 3840
+    },
+    "recipe.det": {
+      "src": "/voice/recipe/det-a797c5ed8a1f.mp3",
+      "ms": 1567
+    },
+    "recipe.divide": {
+      "src": "/voice/recipe/divide-a797c5ed8a1f.mp3",
+      "ms": 2273
+    },
+    "recipe.compare_NO_SWAP": {
+      "src": "/voice/recipe/compare_NO_SWAP-a797c5ed8a1f.mp3",
+      "ms": 3631
+    },
+    "recipe.compare_NO_NEGATE": {
+      "src": "/voice/recipe/compare_NO_NEGATE-a797c5ed8a1f.mp3",
+      "ms": 2952
+    },
+    "recipe.compare_NO_DIVIDE": {
+      "src": "/voice/recipe/compare_NO_DIVIDE-a797c5ed8a1f.mp3",
+      "ms": 2586
+    },
+    "recipe.compare_TIMES_DET": {
+      "src": "/voice/recipe/compare_TIMES_DET-a797c5ed8a1f.mp3",
+      "ms": 3265
+    },
+    "recipe.compare_TRANSPOSED": {
+      "src": "/voice/recipe/compare_TRANSPOSED-a797c5ed8a1f.mp3",
+      "ms": 3239
+    },
+    "recipe.compare_RECIPROCAL": {
+      "src": "/voice/recipe/compare_RECIPROCAL-a797c5ed8a1f.mp3",
+      "ms": 2194
+    },
+    "recipe.try": {
+      "src": "/voice/recipe/try-a797c5ed8a1f.mp3",
+      "ms": 2743
+    },
+    "recipe.hint": {
+      "src": "/voice/recipe/hint-a797c5ed8a1f.mp3",
+      "ms": 1724
+    },
+    "recipe.try_done": {
+      "src": "/voice/recipe/try_done-a797c5ed8a1f.mp3",
+      "ms": 3500
+    }
+  }
+}

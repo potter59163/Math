@@ -203,10 +203,9 @@ export function SettingsScreen() {
           />
         </div>
         <Toggle
-          label={th.settings.voice}
-          help={th.settings.voiceHelp}
-          checked={settings.voice}
-          onChange={(voice) => deviceSettings.set({ voice })}
+          label={th.settings.sound}
+          checked={settings.sound}
+          onChange={(sound) => deviceSettings.set({ sound })}
         />
       </Section>
 

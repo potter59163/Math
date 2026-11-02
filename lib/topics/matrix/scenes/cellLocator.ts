@@ -3,8 +3,25 @@ import { fillTokens } from '@/lib/core/tokens';
 import type { Answer, Matrix } from '@/lib/core/types';
 import { subscript } from '../format';
 import type { CellBeat, ScenePurpose, SceneSpecOf } from './types';
+import { timedBeats, type VoiceId } from './voice';
 
-const BEAT_MS: Record<CellBeat, number> = { row: 1500, col: 1500, hit: 2000, compare: 3000 };
+const BEAT_MS: Record<CellBeat, number> = {
+  compare: 3000,
+  row: 1800,
+  col: 1800,
+  hit: 2000,
+  try: 1000,
+  try_done: 2000,
+};
+
+const VOICE: Partial<Record<CellBeat, VoiceId>> = {
+  compare: 'cell.compare',
+  row: 'cell.row',
+  col: 'cell.col',
+  hit: 'cell.hit',
+  try: 'cell.try',
+  try_done: 'cell.try_done',
+};
 
 const nameOf = (i: number, j: number) => `a${subscript(i)}${subscript(j)}`;
 
@@ -34,14 +51,23 @@ export function cellLocatorScene({
   return {
     template: 'cell_locator',
     params: { A, i, j, name, value: A[i - 1][j - 1], ...(swapped && { swapped }) },
-    beats: ['row', 'col', 'hit', ...(swapped ? (['compare'] as const) : [])],
+    beats: swapped ? ['compare', 'row', 'col', 'hit', 'try', 'try_done'] : ['row', 'col', 'hit'],
     captions: {
       row: fillTokens(copy.row, { i: String(i) }),
       col: fillTokens(copy.col, { j: String(j) }),
       hit: fillTokens(copy.hit, { name }),
-      ...(swapped && { compare: fillTokens(copy.compare, { name: swapped.name }) }),
+      ...(swapped && {
+        compare: fillTokens(copy.compare, { name: swapped.name }),
+        try: fillTokens(copy.try, { name: swapped.name }),
+        try_done: copy.try_done,
+      }),
     },
-    beatMs: BEAT_MS,
+    beatMs: timedBeats(BEAT_MS, VOICE),
+    voice: VOICE,
+    ...(swapped && {
+      waits: ['try'] as CellBeat[],
+      hints: { try: { caption: copy.hint, voice: 'cell.hint' as const } },
+    }),
     ...(studentAnswer && { compare: { studentAnswer } }),
     purpose,
   };

@@ -6,7 +6,7 @@ import type { Student, SkillState, UnitId } from '@/lib/learner/types';
 import { misconceptionAnswer } from '@/lib/sim/answers';
 import { generate } from '@/lib/topics/matrix/generators';
 import { det2, shape } from '@/lib/topics/matrix/ops';
-import { sceneDurationMs, type SceneSpec } from '@/lib/topics/matrix/scenes';
+import { sceneDurationMs, sceneLimitMs, type SceneSpec } from '@/lib/topics/matrix/scenes';
 import { SKILLS, type SkillId } from '@/lib/topics/matrix/skills';
 import type { MatrixItem } from '@/lib/topics/matrix/types';
 import { drawItem } from './items';
@@ -46,7 +46,7 @@ describe('leadClip (SPEC §4)', () => {
       expect(needsLeadClip(profile, id)).toBe(true);
       const spec = specOf(profile, id);
       seen.push([id, spec.purpose]);
-      expect(sceneDurationMs(spec)).toBeLessThanOrEqual(spec.purpose === 'intro' ? 40000 : 20000);
+      expect(sceneDurationMs(spec)).toBeLessThanOrEqual(sceneLimitMs(spec.purpose));
       profile = passSkill(profile, id);
     }
     expect(seen).toEqual([
@@ -185,7 +185,7 @@ describe('helpRequest (SPEC §4)', () => {
     const spec = buildScene(helpRequest(open, 0));
     expect(spec.purpose).toBe('request');
     expect(spec.template).toBe('row_col_dot');
-    expect(sceneDurationMs(spec)).toBeLessThanOrEqual(20000);
+    expect(sceneDurationMs(spec)).toBeLessThanOrEqual(sceneLimitMs('request'));
   });
 
   it('shows new numbers on each press', () => {

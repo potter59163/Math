@@ -13,13 +13,16 @@ import {
   Fragment,
   useCallback,
   useEffect,
+  useMemo,
   useReducer,
   useRef,
   useState,
   useSyncExternalStore,
   type MouseEvent,
   type ReactNode,
+  type RefObject,
 } from 'react';
+import type { SceneView } from '@/components/scenes/playerState';
 import { BeatClockContext } from '@/components/scenes/svg';
 import { Button } from '@/components/ui/Button';
 import {
@@ -34,12 +37,12 @@ import {
 import { deviceSettings } from '@/lib/client/settings';
 import { th } from '@/lib/content/th';
 import { fillTokens } from '@/lib/core/tokens';
+import { VOICE_TAIL_MS } from '@/lib/topics/matrix/scenes/voice';
 import { clipReducer, initialClip } from './clipState';
+import { ClipActionsContext } from './kit';
 import { clipVoice } from './voice';
 
 const DEFAULT_BEAT_MS = 3000;
-/** The breath after a line, before the clip moves on. */
-const VOICE_TAIL_MS = 450;
 /** How long a beat waits for a line that started late on a slow network, before moving on anyway. */
 const VOICE_HOLD_MS = 1500;
 /** Tapping the outer part of the picture steps back or on, and the middle pauses, as in a story. */
@@ -71,7 +74,10 @@ function Caption({ text }: { text: string }) {
   }
   parts.push(text.slice(last));
   return (
-    <p className="text-center font-hand text-lg leading-snug whitespace-pre-line motion-safe:animate-rise [@media(min-height:700px)]:text-xl">
+    <p
+      data-caption
+      className="text-center font-hand text-lg leading-snug whitespace-pre-line motion-safe:animate-rise [@media(min-height:700px)]:text-xl"
+    >
       {parts.map((part, index) => (
         <Fragment key={index}>{part}</Fragment>
       ))}
@@ -102,16 +108,23 @@ export interface ClipPlayerProps<Beat extends string> {
   /** These wait for the student to do something, and the clock stops. */
   waits: readonly Beat[];
   /** The stage's width over its height, so that the caption can sit right under the picture. */
-  aspect: number;
+  aspect?: number;
   /** A recorded line for each beat. A beat lasts at least as long as its line. */
   voice?: Partial<Record<Beat, ClipVoiceLine>>;
   /** Nothing has been tapped on this page yet, and a phone will not play sound before a tap. */
   waitForTap?: boolean;
-  caption(beat: Beat): string;
-  stage(beat: Beat, advance: () => void): ReactNode;
+  caption(beat: Beat): string | undefined;
+  /** What a wrong tap on a waiting beat gets. */
+  hint?(beat: Beat): { caption: string; src?: string } | undefined;
+  stage(beat: Beat): ReactNode;
   doneLabel: string;
+  /** Lets /dev/scenes preview a still frame without changing the operating system setting. */
+  forceStill?: boolean;
+  /** Called once, when the clip ends or the page goes away part way. */
+  onView?(view: SceneView): void;
   onDone(): void;
-  onSkip(): void;
+  /** Filled in with what skipping does, for the dialog around the player. */
+  skipRef?: RefObject<(() => void) | null>;
 }
 
 /**
@@ -127,14 +140,18 @@ export function ClipPlayer<Beat extends string>({
   voice,
   waitForTap = false,
   caption,
+  hint,
   stage,
   doneLabel,
+  forceStill,
+  onView,
   onDone,
-  onSkip,
+  skipRef,
 }: ClipPlayerProps<Beat>) {
   const [state, dispatch] = useReducer(clipReducer, beats.length, initialClip);
   const [started, setStarted] = useState(!waitForTap);
-  const [soundOn, setSoundOn] = useState(true);
+  const [refused, setRefused] = useState(false);
+  const [hintBeat, setHintBeat] = useState<Beat | null>(null);
   // Not motion's useReducedMotion, which reads the device while hydrating and so disagrees with the server.
   const prefersStill = useSyncExternalStore(
     subscribeToStill,
@@ -146,13 +163,58 @@ export function ClipPlayer<Beat extends string>({
     deviceSettings.get,
     deviceSettings.getServer,
   );
-  const still = prefersStill || settings.reduceMotion;
+  const still = forceStill ?? (prefersStill || settings.reduceMotion);
+  const soundOn = settings.sound && !refused;
 
   const beat = beats[state.index];
   const line = voice?.[beat];
   const ms = Math.max(beatMs[beat] ?? DEFAULT_BEAT_MS, (line?.ms ?? 0) + VOICE_TAIL_MS);
   const isLast = state.index === beats.length - 1;
   const waiting = waits.includes(beat);
+
+  const startedAt = useRef(0);
+  const logged = useRef(false);
+  useEffect(() => {
+    startedAt.current = performance.now();
+  }, []);
+
+  const latest = useRef({ state, onView });
+  useEffect(() => {
+    latest.current = { state, onView };
+  });
+
+  const report = useCallback((skipped: boolean) => {
+    if (logged.current) return;
+    logged.current = true;
+    const { state: last, onView: send } = latest.current;
+    send?.({
+      beatsTotal: last.total,
+      beatsSeen: last.furthest + 1,
+      replays: last.runs,
+      skipped,
+      durationMs: Math.round(performance.now() - startedAt.current),
+    });
+  }, []);
+
+  // A class period ends without warning. The view still counts, as far as it got.
+  useEffect(() => {
+    const leave = () => report(false);
+    window.addEventListener('pagehide', leave);
+    return () => window.removeEventListener('pagehide', leave);
+  }, [report]);
+
+  const finish = (skipped: boolean) => {
+    report(skipped);
+    onDone();
+  };
+  const skip = () => finish(state.furthest < state.total - 1);
+  useEffect(() => {
+    if (!skipRef) return;
+    skipRef.current = skip;
+    return () => {
+      skipRef.current = null;
+    };
+  });
 
   const progress = useMotionValue(0);
   const held = useRef(0);
@@ -164,7 +226,7 @@ export function ClipPlayer<Beat extends string>({
   const say = useCallback((src: string) => {
     clipVoice.play(src).catch((error: Error) => {
       // Another line cutting in is ordinary. Anything else means this device will not play it now.
-      if (error.name !== 'AbortError') setSoundOn(false);
+      if (error.name !== 'AbortError') setRefused(true);
     });
   }, []);
 
@@ -179,11 +241,14 @@ export function ClipPlayer<Beat extends string>({
     return () => clipVoice.pause();
   }, [lineSrc, say, state.index, state.runs]);
 
+  // Only after a pause of this clip's own, since what the player last held may be another clip's line.
+  const wasPaused = useRef(false);
   useEffect(() => {
     if (!started) return;
     if (state.paused) clipVoice.pause();
-    else clipVoice.resume();
-  }, [started, state.paused]);
+    else if (wasPaused.current && lineSrc) clipVoice.resume();
+    wasPaused.current = state.paused;
+  }, [started, state.paused, lineSrc]);
 
   useEffect(() => {
     if (voice) clipVoice.setMuted(!soundOn);
@@ -232,7 +297,8 @@ export function ClipPlayer<Beat extends string>({
 
   const toggleSound = () => {
     const on = !soundOn;
-    setSoundOn(on);
+    deviceSettings.set({ sound: on });
+    setRefused(false);
     clipVoice.setMuted(!on);
     // A line the device refused, or one that ended while muted, can be heard now that there is a tap.
     if (on && lineSrc && !state.paused && !clipVoice.isSpeaking()) say(lineSrc);
@@ -251,85 +317,112 @@ export function ClipPlayer<Beat extends string>({
     else if (!still && !isLast) dispatch({ type: 'toggle' });
   };
 
+  const actions = useMemo(
+    () => ({
+      right() {
+        setHintBeat(null);
+        dispatch({ type: 'next' });
+      },
+      wrong() {
+        setHintBeat(beat);
+        const src = hint?.(beat)?.src;
+        if (src && soundOn) void clipVoice.play(src).catch(() => {});
+      },
+    }),
+    [beat, hint, soundOn],
+  );
+
   const showPaused = state.paused && !waiting && !isLast;
   const progressLabel = fillTokens(th.clip.progress, {
     beat: String(state.index + 1),
     total: String(beats.length),
   });
+  const text = (hintBeat === beat ? hint?.(beat)?.caption : undefined) ?? caption(beat);
 
   return (
     <MotionConfig reducedMotion={still ? 'always' : 'user'}>
       <LazyMotion features={domAnimation} strict>
-        <div className="mx-auto flex h-full w-full max-w-lg flex-col">
-          <div role="img" aria-label={progressLabel} className="flex shrink-0 gap-1 px-4 pt-3">
-            {beats.map((name, index) => (
-              <Segment key={name} state={index - state.index} progress={progress} />
-            ))}
-          </div>
-
-          <header className="flex h-11 shrink-0 items-center pr-1 pl-4">
-            <h1 className="min-w-0 flex-1 truncate text-sm font-semibold">{title}</h1>
-            {voice && (
-              <Button
-                variant="quiet"
-                size="md"
-                className="shrink-0"
-                aria-label={soundOn ? th.clip.soundOff : th.clip.soundOn}
-                onClick={toggleSound}
-              >
-                {soundOn ? (
-                  <SpeakerIcon className="size-5" />
-                ) : (
-                  <SpeakerOffIcon className="size-5" />
-                )}
-              </Button>
-            )}
-            <Button variant="quiet" size="md" className="shrink-0 text-sm" onClick={onSkip}>
-              {th.clip.skip}
-            </Button>
-          </header>
-
+        <div className="mx-auto flex h-full w-full max-w-lg flex-col short-landscape:max-w-none short-landscape:flex-row">
           <div
-            onClick={onStageClick}
-            style={{ aspectRatio: aspect }}
-            className="relative mx-2.5 min-h-0 shrink cursor-pointer select-none"
+            className={`flex min-h-0 min-w-0 flex-col short-landscape:flex-1 ${aspect ? '' : 'flex-1'}`}
           >
-            {started ? (
-              <BeatClockContext.Provider value={{ ms, still }}>
-                <Fragment key={state.runs}>
-                  {stage(beat, () => dispatch({ type: 'next' }))}
-                </Fragment>
-              </BeatClockContext.Provider>
-            ) : (
-              <span className="absolute inset-0 grid place-items-center">
-                <Button
-                  aria-label={th.clip.start}
-                  className="size-20 rounded-full!"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    start();
-                  }}
-                >
-                  <PlayIcon className="size-9 shrink-0" />
-                </Button>
-              </span>
-            )}
-            {showPaused && (
-              <span className="pointer-events-none absolute inset-0 grid place-items-center">
-                <span className="grid size-16 place-items-center rounded-full bg-sunken/80 text-ink">
-                  <PlayIcon className="size-7" />
-                </span>
-              </span>
-            )}
-          </div>
-
-          <div className="flex min-h-0 flex-1 flex-col gap-1 px-4 pt-1 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-            <div role="status" className="flex min-h-[3.6rem] shrink-0 items-center justify-center">
-              {started && <Caption key={`${beat}${caption(beat)}`} text={caption(beat)} />}
+            <div role="img" aria-label={progressLabel} className="flex shrink-0 gap-1 px-4 pt-3">
+              {beats.map((name, index) => (
+                <Segment key={name} state={index - state.index} progress={progress} />
+              ))}
             </div>
 
+            <header className="flex h-11 shrink-0 items-center pr-1 pl-4">
+              <h2 className="min-w-0 flex-1 truncate text-sm font-semibold">{title}</h2>
+              {voice && Object.keys(voice).length > 0 && (
+                <Button
+                  variant="quiet"
+                  size="md"
+                  className="shrink-0"
+                  aria-label={soundOn ? th.clip.soundOff : th.clip.soundOn}
+                  onClick={toggleSound}
+                >
+                  {soundOn ? (
+                    <SpeakerIcon className="size-5" />
+                  ) : (
+                    <SpeakerOffIcon className="size-5" />
+                  )}
+                </Button>
+              )}
+              <Button variant="quiet" size="md" className="shrink-0 text-sm" onClick={skip}>
+                {th.clip.skip}
+              </Button>
+            </header>
+
+            <div
+              onClick={onStageClick}
+              style={aspect ? { aspectRatio: aspect } : undefined}
+              className={`relative mx-2.5 min-h-0 shrink cursor-pointer select-none short-landscape:flex-1 ${aspect ? '' : 'flex-1'}`}
+            >
+              {started ? (
+                <BeatClockContext.Provider value={{ ms, still }}>
+                  <ClipActionsContext.Provider value={actions}>
+                    <Fragment key={state.runs}>{stage(beat)}</Fragment>
+                  </ClipActionsContext.Provider>
+                </BeatClockContext.Provider>
+              ) : (
+                <span className="absolute inset-0 grid place-items-center">
+                  <Button
+                    aria-label={th.clip.start}
+                    className="size-20 rounded-full!"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      start();
+                    }}
+                  >
+                    <PlayIcon className="size-9 shrink-0" />
+                  </Button>
+                </span>
+              )}
+              {showPaused && (
+                <span className="pointer-events-none absolute inset-0 grid place-items-center">
+                  <span className="grid size-16 place-items-center rounded-full bg-sunken/80 text-ink">
+                    <PlayIcon className="size-7" />
+                  </span>
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div
+            className={`flex min-h-0 flex-col gap-1 px-4 pt-1 pb-[max(0.75rem,env(safe-area-inset-bottom))] short-landscape:w-64 short-landscape:flex-none short-landscape:justify-center ${aspect ? 'flex-1' : 'shrink-0'}`}
+          >
+            {aspect && (
+              <div
+                role="status"
+                className="flex min-h-[3.6rem] shrink-0 items-center justify-center"
+              >
+                {started && text && <Caption key={`${beat}${text}`} text={text} />}
+              </div>
+            )}
+
             {started && (
-              <div className="mt-auto shrink-0">
+              <div className="mt-auto shrink-0 short-landscape:mt-0">
                 {isLast ? (
                   <div className="grid grid-cols-[auto_1fr] gap-2">
                     <Button
@@ -340,7 +433,7 @@ export function ClipPlayer<Beat extends string>({
                       <ReplayIcon className="size-5" />
                       <span className="text-sm">{th.clip.again}</span>
                     </Button>
-                    <Button onClick={onDone}>{doneLabel}</Button>
+                    <Button onClick={() => finish(false)}>{doneLabel}</Button>
                   </div>
                 ) : (
                   <div className="flex items-center justify-center gap-2">

@@ -1,21 +1,43 @@
+import * as m from 'motion/react-m';
+import { useContext } from 'react';
+import {
+  Band,
+  BoardMatrix,
+  Choices,
+  Cross,
+  HandText,
+  Reveal,
+  Stage,
+  Tick,
+  WIDTH,
+  boxAt,
+  cellRect,
+  fitted,
+  matrixFont,
+} from '@/components/clip/kit';
 import { th } from '@/lib/content/th';
 import { factorText, rationalText } from '@/lib/topics/matrix/format';
 import type { InverseBeat, SceneSpecOf } from '@/lib/topics/matrix/scenes/types';
-import {
-  Fade,
-  Highlight,
-  Place,
-  STAGE_WIDTH,
-  SvgBracket,
-  SvgMatrix,
-  SvgNumber,
-  SvgText,
-  matrixBox,
-} from './svg';
+import { BeatClockContext, Fade, SvgBracket, SvgNumber, SvgText, useTween } from './svg';
 
-const ORDER: InverseBeat[] = ['show', 'swap', 'negate', 'det', 'divide', 'check'];
+const ORDER: InverseBeat[] = [
+  'show',
+  'swap',
+  'negate',
+  'det',
+  'divide',
+  'check',
+  'try',
+  'try_done',
+];
 
-const SIZE = 16;
+const TOP = 28;
+const CELL = 50;
+const CARD_Y = 152;
+const CARD_LINE = 34;
+const LOW = 276;
+
+const STEPS = ['swap', 'negate', 'divide'] as const;
 
 interface Props {
   spec: SceneSpecOf<'inverse_recipe'>;
@@ -25,262 +47,250 @@ interface Props {
 /** SCENES §3.4. One working matrix changes in place: a and d swap, then b and c change sign. */
 export function InverseRecipe({ spec, beat }: Props) {
   const { A, swapped, adjugate, ad, bc, det, inverse, identity, student } = spec.params;
+  const { try: question } = spec.params;
+  const copy = th.scenes.inverse;
   const reached = (name: InverseBeat) => ORDER.indexOf(beat) >= ORDER.indexOf(name);
-  const flagged = spec.flagged === beat;
+  const tween = useTween();
+  const { still } = useContext(BeatClockContext);
 
-  const width = STAGE_WIDTH;
-  const original = matrixBox(A, SIZE);
-  const working = matrixBox(adjugate, SIZE);
-  const finalBox = matrixBox(inverse, SIZE);
-
-  const yTop = 16;
-  const aX = 44;
-  const arrowX = aX + original.width + 26;
-  const workX = arrowX + 26;
-
-  const yDet = yTop + Math.max(original.height, working.height) + 28;
-  const yDivide = yDet + 66;
-  const divideLeft = 16;
-  const fractionX = divideLeft + 18;
-  const adjX = fractionX + 24;
-  const equalsX = adjX + working.width + 16;
-  const inverseX = equalsX + 16;
-  const yCompare = yDivide + finalBox.height + 18;
-  const studentBox = student ? matrixBox(student, SIZE) : null;
-  const identityBox = matrixBox(identity, SIZE);
-  // The same for every beat, so nothing moves or rescales from one beat to the next.
-  const height =
-    yCompare +
-    Math.max(studentBox?.height ?? 0, spec.beats.includes('check') ? identityBox.height : 0) +
-    12;
-
-  const at = (row: number, col: number) => ({
-    x: workX + working.cellX(col),
-    y: yTop + working.cellY(row),
-  });
-
-  // Where a and d sit: their own corners, then each other's.
-  const aPlace = reached('swap') ? at(1, 1) : at(0, 0);
-  const dPlace = reached('swap') ? at(0, 0) : at(1, 1);
-  const swapTone = flagged && beat === 'swap' ? 'warn' : 'brand';
-  const negateTone = flagged && beat === 'negate' ? 'warn' : 'brand';
-  const divideTone = flagged && beat === 'divide' ? 'warn' : 'brand';
-
+  const box = boxAt(52, TOP, 2, 2, CELL);
+  const work = boxAt(208, TOP, 2, 2, CELL);
+  const font = matrixFont(A, CELL);
+  const middleY = TOP + CELL + 2;
   const [[a, b], [c, d]] = A;
+
+  const flaggedStep = spec.flagged;
   const detLine = `det = ${factorText(a)}·${factorText(d)} − ${factorText(b)}·${factorText(c)}`;
+  const detValue = `= ${factorText(ad)} − ${factorText(bc)} = ${rationalText(det)}`;
+
+  const swapping = reached('swap');
+  const at = (row: number, col: number) => ({ x: work.cx(col), y: work.cy(row) });
+  const aFrom = at(0, 0);
+  const aTo = at(1, 1);
+  // Each goes round the other, so that they never pass through the middle of the matrix.
+  const path = (from: { x: number; y: number }, to: { x: number; y: number }, bend: number) =>
+    swapping
+      ? {
+          x: [from.x, (from.x + to.x) / 2 + bend, to.x],
+          y: [from.y, (from.y + to.y) / 2 - bend, to.y],
+        }
+      : from;
+
+  const final = boxAt(
+    214,
+    LOW + 8,
+    2,
+    2,
+    48,
+    inverse.flat().some((value) => !value.isInteger()) ? 56 : 48,
+  );
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="h-full w-full" aria-hidden="true">
-      <SvgText
-        x={aX - 8}
-        y={yTop + original.height / 2}
-        size={15}
-        anchor="end"
-        className="fill-muted font-semibold"
-      >
-        A =
+    <Stage>
+      <SvgText x={38} y={middleY} size={18} className="fill-muted font-hand">
+        A
       </SvgText>
-      <SvgMatrix value={A} box={original} x={aX} y={yTop} size={SIZE} />
-      {/* Names the cells, because the captions talk about a, b, c and d. */}
-      {[
-        ['a', 0, 0],
-        ['b', 0, 1],
-        ['c', 1, 0],
-        ['d', 1, 1],
-      ].map(([letter, row, col]) => (
+      <BoardMatrix value={A} box={box} />
+      {(
+        [
+          ['a', 0, 0],
+          ['b', 0, 1],
+          ['c', 1, 0],
+          ['d', 1, 1],
+        ] as const
+      ).map(([letter, row, col]) => (
         <SvgText
           key={letter}
-          x={aX + original.cellX(col as number) - original.colWidth / 2 + 3}
-          y={yTop + original.cellY(row as number) - original.rowHeight / 2 + 4}
-          size={9}
-          anchor="start"
-          className="fill-muted font-matrix"
+          x={box.cx(col) - CELL / 2 + 8}
+          y={box.cy(row) - CELL / 2 + 8}
+          size={11}
+          className="fill-muted font-hand"
         >
           {letter}
         </SvgText>
       ))}
-      <SvgText
-        x={arrowX}
-        y={yTop + original.height / 2}
-        size={18}
-        className="fill-muted font-matrix"
-      >
+      <SvgText x={180} y={middleY} size={22} className="fill-muted font-matrix">
         →
       </SvgText>
 
-      <Highlight
-        x={workX + working.cellX(0) - working.colWidth / 2}
-        y={yTop + working.cellY(0) - working.rowHeight / 2}
-        width={working.colWidth}
-        height={working.rowHeight}
-        show={beat === 'swap'}
-        tone={swapTone}
-      />
-      <Highlight
-        x={workX + working.cellX(1) - working.colWidth / 2}
-        y={yTop + working.cellY(1) - working.rowHeight / 2}
-        width={working.colWidth}
-        height={working.rowHeight}
-        show={beat === 'swap'}
-        tone={swapTone}
-      />
-      <Highlight
-        x={workX + working.cellX(1) - working.colWidth / 2}
-        y={yTop + working.cellY(0) - working.rowHeight / 2}
-        width={working.colWidth}
-        height={working.rowHeight}
-        show={beat === 'negate'}
-        tone={negateTone}
-      />
-      <Highlight
-        x={workX + working.cellX(0) - working.colWidth / 2}
-        y={yTop + working.cellY(1) - working.rowHeight / 2}
-        width={working.colWidth}
-        height={working.rowHeight}
-        show={beat === 'negate'}
-        tone={negateTone}
-      />
-      <g transform={`translate(${workX} ${yTop})`}>
-        <SvgBracket width={working.width} height={working.height} />
+      <Band box={cellRect(work, 0, 0)} tone="row" show={beat === 'swap'} />
+      <Band box={cellRect(work, 1, 1)} tone="row" show={beat === 'swap'} />
+      <Band box={cellRect(work, 0, 1)} tone="col" show={beat === 'negate'} />
+      <Band box={cellRect(work, 1, 0)} tone="col" show={beat === 'negate'} />
+      <g transform={`translate(${work.x} ${work.y})`}>
+        <SvgBracket width={work.width} height={work.height} />
       </g>
 
-      <Place x={aPlace.x} y={aPlace.y}>
-        <SvgNumber value={a} size={SIZE} />
-      </Place>
-      <Place x={dPlace.x} y={dPlace.y}>
-        <SvgNumber value={d} size={SIZE} />
-      </Place>
-      <SignSwitch
-        before={swapped[0][1]}
-        after={adjugate[0][1]}
-        at={at(0, 1)}
-        negated={reached('negate')}
-      />
-      <SignSwitch
-        before={swapped[1][0]}
-        after={adjugate[1][0]}
-        at={at(1, 0)}
-        negated={reached('negate')}
-      />
-
-      <Fade show={reached('det')}>
-        <SvgText x={width / 2} y={yDet} size={15} className="fill-ink font-matrix tabular-nums">
-          {detLine}
-        </SvgText>
+      <m.g
+        initial={false}
+        animate={path(aFrom, aTo, 34)}
+        transition={still ? { duration: 0 } : tween(0.15, 0.55)}
+      >
+        <SvgNumber value={a} size={font} />
+      </m.g>
+      <m.g
+        initial={false}
+        animate={path(aTo, aFrom, -34)}
+        transition={still ? { duration: 0 } : tween(0.15, 0.55)}
+      >
+        <SvgNumber value={d} size={font} />
+      </m.g>
+      <Fade show={!reached('negate')}>
+        <SvgNumber value={swapped[0][1]} x={at(0, 1).x} y={at(0, 1).y} size={font} />
+        <SvgNumber value={swapped[1][0]} x={at(1, 0).x} y={at(1, 0).y} size={font} />
       </Fade>
-      <Fade show={reached('det')} start={0.3}>
-        <SvgText
-          x={width / 2}
-          y={yDet + 24}
-          size={15}
-          className="fill-ink font-matrix tabular-nums"
-        >
-          {`= ${factorText(ad)} − ${factorText(bc)} = ${rationalText(det)}`}
-        </SvgText>
-      </Fade>
-
-      <Fade show={reached('divide')}>
-        <SvgText
-          x={fractionX}
-          y={yDivide + working.height / 2 - 11}
-          size={14}
-          className="fill-brand font-matrix font-semibold tabular-nums"
-        >
-          1
-        </SvgText>
-        <line
-          x1={fractionX - 13}
-          x2={fractionX + 13}
-          y1={yDivide + working.height / 2}
-          y2={yDivide + working.height / 2}
-          strokeWidth={1.5}
-          className="stroke-brand"
+      <Reveal show={reached('negate')} start={beat === 'negate' ? 0.3 : 0} pop>
+        <SvgNumber
+          value={adjugate[0][1]}
+          x={at(0, 1).x}
+          y={at(0, 1).y}
+          size={font}
+          className="fill-brand"
         />
-        <SvgText
-          x={fractionX}
-          y={yDivide + working.height / 2 + 11}
-          size={14}
-          className="fill-brand font-matrix font-semibold tabular-nums"
+      </Reveal>
+      <Reveal show={reached('negate')} start={beat === 'negate' ? 0.36 : 0} pop>
+        <SvgNumber
+          value={adjugate[1][0]}
+          x={at(1, 0).x}
+          y={at(1, 0).y}
+          size={font}
+          className="fill-brand"
+        />
+      </Reveal>
+
+      {/* ---- the recipe on a card, ticked off as it goes */}
+      <g className="paper">
+        <rect
+          x={36}
+          y={CARD_Y}
+          width={WIDTH - 72}
+          height={CARD_LINE * 3 + 8}
+          rx={8}
+          transform={`rotate(-0.6 ${WIDTH / 2} ${CARD_Y + 50})`}
+          className="fill-surface"
+          style={{ filter: 'drop-shadow(0 4px 8px rgb(0 0 0 / 0.35))' }}
+        />
+        {STEPS.map((step, index) => {
+          const y = CARD_Y + 21 + index * CARD_LINE;
+          const isFlagged = flaggedStep === step;
+          const lit = beat === step;
+          return (
+            <g key={step}>
+              <Reveal show={lit} length={0.08}>
+                <rect
+                  x={44}
+                  y={y - 15}
+                  width={WIDTH - 88}
+                  height={30}
+                  rx={6}
+                  className={isFlagged ? 'fill-warn/25' : 'fill-marker'}
+                />
+              </Reveal>
+              <HandText
+                x={56}
+                y={y}
+                size={19}
+                anchor="start"
+                className={isFlagged && reached(step) ? 'fill-warn' : 'fill-ink'}
+              >
+                {copy.steps[step]}
+              </HandText>
+              {isFlagged ? (
+                <Cross
+                  x={WIDTH - 62}
+                  y={y}
+                  size={9}
+                  show={reached(step)}
+                  start={beat === step ? 0.6 : 0}
+                />
+              ) : (
+                <Tick
+                  x={WIDTH - 62}
+                  y={y}
+                  size={10}
+                  show={reached(step)}
+                  start={beat === step ? 0.6 : 0}
+                />
+              )}
+            </g>
+          );
+        })}
+      </g>
+
+      {/* ---- what they answered */}
+      {student && (
+        <Reveal show={beat === 'show'} start={0.3}>
+          <HandText x={120} y={LOW + 62} size={18} className="fill-warn">
+            {th.clip.mine}
+          </HandText>
+          <BoardMatrix
+            value={student}
+            box={boxAt(170, LOW + 16, 2, 2, 48, 44)}
+            numberClass="fill-brand"
+          />
+          <Cross x={219} y={LOW + 62} size={34} show={beat === 'show'} start={0.5} />
+        </Reveal>
+      )}
+
+      {/* ---- det, and the division */}
+      <Reveal show={beat === 'det'}>
+        <HandText x={WIDTH / 2} y={LOW + 44} size={fitted(detLine, 30)}>
+          {detLine}
+        </HandText>
+      </Reveal>
+      <Reveal show={beat === 'det'} start={0.35} pop>
+        <HandText
+          x={WIDTH / 2}
+          y={LOW + 96}
+          size={fitted(detValue, 32)}
+          className="fill-cta font-semibold"
         >
+          {detValue}
+        </HandText>
+      </Reveal>
+
+      <Reveal show={reached('divide') && !reached('check') && !reached('try')}>
+        <HandText x={44} y={LOW + 44} size={20} className="fill-cta font-semibold">
+          1
+        </HandText>
+        <line x1={24} x2={64} y1={LOW + 62} y2={LOW + 62} strokeWidth={2} className="stroke-cta" />
+        <HandText x={44} y={LOW + 82} size={20} className="fill-cta font-semibold">
           {rationalText(det)}
-        </SvgText>
-        <SvgMatrix value={adjugate} box={working} x={adjX} y={yDivide} size={SIZE} />
-        <SvgText x={equalsX} y={yDivide + working.height / 2} className="fill-muted font-matrix">
+        </HandText>
+        <BoardMatrix value={adjugate} box={boxAt(70, LOW + 12, 2, 2, 44, 48)} />
+      </Reveal>
+      <Reveal show={reached('divide') && !reached('check') && !reached('try')} start={0.4}>
+        <SvgText x={190} y={LOW + 62} size={22} className="fill-muted font-matrix">
           =
         </SvgText>
-      </Fade>
-      <Fade show={reached('divide')} start={0.3}>
-        <Highlight
-          x={inverseX + 2}
-          y={yDivide}
-          width={finalBox.width - 4}
-          height={finalBox.height}
-          show={flagged && beat === 'divide'}
-          tone={divideTone}
-        />
-        <SvgMatrix value={inverse} box={finalBox} x={inverseX} y={yDivide} size={SIZE} />
-      </Fade>
-
-      {student && studentBox && (
-        <Fade show={reached('divide') && !reached('check')} start={0.5}>
-          <SvgText
-            x={adjX + 52}
-            y={yCompare + studentBox.height / 2}
-            size={13}
-            anchor="end"
-            className="fill-muted font-medium"
-          >
-            {th.scenes.player.student}
-          </SvgText>
-          <SvgMatrix value={student} box={studentBox} x={adjX + 60} y={yCompare} size={SIZE} />
-          <line
-            x1={adjX + 56}
-            x2={adjX + 64 + studentBox.width}
-            y1={yCompare + studentBox.height}
-            y2={yCompare}
-            strokeWidth={1.5}
-            className="stroke-warn"
-          />
-        </Fade>
-      )}
+        <BoardMatrix value={inverse} box={final} numberClass="fill-cta" />
+      </Reveal>
 
       {spec.beats.includes('check') && (
-        <Fade show={reached('check')}>
-          <SvgText
-            x={width / 2 - 10}
-            y={yCompare + identityBox.height / 2}
-            size={15}
-            anchor="end"
-            className="fill-ink font-matrix"
-          >
+        <Reveal show={beat === 'check'}>
+          <HandText x={120} y={LOW + 62} size={22}>
             A·A⁻¹ =
-          </SvgText>
-          <SvgMatrix value={identity} box={identityBox} x={width / 2} y={yCompare} size={SIZE} />
-        </Fade>
+          </HandText>
+          <BoardMatrix value={identity} box={boxAt(170, LOW + 16, 2, 2, 48, 44)} />
+        </Reveal>
       )}
-    </svg>
-  );
-}
 
-function SignSwitch({
-  before,
-  after,
-  at,
-  negated,
-}: {
-  before: Parameters<typeof SvgNumber>[0]['value'];
-  after: Parameters<typeof SvgNumber>[0]['value'];
-  at: { x: number; y: number };
-  negated: boolean;
-}) {
-  return (
-    <>
-      <Fade show={!negated}>
-        <SvgNumber value={before} x={at.x} y={at.y} size={SIZE} />
-      </Fade>
-      <Fade show={negated}>
-        <SvgNumber value={after} x={at.x} y={at.y} size={SIZE} className="fill-brand" />
-      </Fade>
-    </>
+      {/* ---- their turn */}
+      {question && beat === 'try' && (
+        <Choices options={question.options} right={question.right} y={LOW - 2} />
+      )}
+      {question && (
+        <Reveal show={beat === 'try_done'} start={0.1} pop>
+          <HandText
+            x={WIDTH / 2}
+            y={LOW + 62}
+            size={fitted(question.options[question.right], 36)}
+            className="fill-cta font-semibold"
+          >
+            {question.options[question.right]}
+          </HandText>
+        </Reveal>
+      )}
+    </Stage>
   );
 }

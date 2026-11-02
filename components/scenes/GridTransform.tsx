@@ -1,10 +1,22 @@
 import { useContext, useId, useLayoutEffect, useRef } from 'react';
+import {
+  Choices,
+  HEIGHT,
+  HandText,
+  Reveal,
+  Stage,
+  Tick,
+  WIDTH,
+  fitted,
+} from '@/components/clip/kit';
 import type { Matrix } from '@/lib/core/types';
 import type { GridBeat, GridBounds, SceneSpecOf } from '@/lib/topics/matrix/scenes/types';
-import { BeatClockContext, Fade, STAGE_WIDTH, SvgMatrix, SvgText, matrixBox } from './svg';
+import { BeatClockContext, SvgMatrix, SvgText, matrixBox } from './svg';
 
 /** A beat whose frame differs from the one before animates for this share of its length. */
 const MOVE_SHARE = 0.75;
+/** Room under the picture for what a beat concludes, or for a question. */
+const BOTTOM = 84;
 
 interface Props {
   spec: SceneSpecOf<'grid_transform'>;
@@ -163,8 +175,8 @@ function Shape({ from, to, geometry, tone }: ShapeProps) {
   }, [to.join(), from.join(), ms, still]);
 
   const { origin, i, j, corner } = pointsOf(to);
-  const stroke = tone === 'warn' ? 'stroke-warn' : 'stroke-brand';
-  const fill = tone === 'warn' ? 'fill-warn' : 'fill-brand';
+  const stroke = tone === 'warn' ? 'stroke-warn' : 'stroke-cta';
+  const fill = tone === 'warn' ? 'fill-warn' : 'fill-cta';
 
   return (
     <g>
@@ -195,9 +207,9 @@ function Shape({ from, to, geometry, tone }: ShapeProps) {
       <polygon
         ref={polygon}
         points={`${origin} ${i} ${corner} ${j}`}
-        strokeWidth={2}
+        strokeWidth={2.5}
         strokeLinejoin="round"
-        fillOpacity={0.2}
+        fillOpacity={0.25}
         className={`${stroke} ${fill}`}
       />
       <line
@@ -206,7 +218,7 @@ function Shape({ from, to, geometry, tone }: ShapeProps) {
         y1={origin[1]}
         x2={i[0]}
         y2={i[1]}
-        strokeWidth={2.5}
+        strokeWidth={3}
         markerEnd={`url(#${markerI})`}
         className="stroke-brand"
       />
@@ -216,7 +228,7 @@ function Shape({ from, to, geometry, tone }: ShapeProps) {
         y1={origin[1]}
         x2={j[0]}
         y2={j[1]}
-        strokeWidth={2.5}
+        strokeWidth={3}
         markerEnd={`url(#${markerJ})`}
         className="stroke-good"
       />
@@ -241,43 +253,46 @@ export function GridTransform({ spec, beat }: Props) {
   const previous = previousFrame(spec, beat);
   const isWarn = beat === 'cant_undo' || beat === 'flip';
 
-  const width = STAGE_WIDTH;
   const shown = params.shown;
-  const boxes = shown.map(({ value }) => matrixBox(value, 14, 22));
+  const boxes = shown.map(({ value }) => matrixBox(value, 16, 26));
   const bandHeight = Math.max(...boxes.map((box) => box.height)) + 22;
-  const stageHeight = 260;
-  const height = bandHeight + stageHeight + (params.panels ? 22 : 0);
+  const panelLabel = params.panels ? 24 : 0;
+  const panelTop = bandHeight + panelLabel;
+  const stageHeight = HEIGHT - panelTop - BOTTOM;
   const count = panels.length;
   const gap = 12;
-  const panelWidth = (width - gap * (count - 1)) / count;
-  const panelTop = bandHeight + (params.panels ? 22 : 0);
+  const panelWidth = (WIDTH - gap * (count - 1)) / count;
 
-  const labelWidths = shown.map((_, index) => boxes[index].width + 34);
-  const bandWidth = labelWidths.reduce((sum, value) => sum + value, 0) + 16 * (shown.length - 1);
+  // Room for "−2A =", which is wider than "A =".
+  const nameWidths = shown.map(({ label }) => label.length * 8 + 22);
+  const labelWidths = shown.map((_, index) => boxes[index].width + nameWidths[index]);
+  const bandWidth = labelWidths.reduce((sum, value) => sum + value, 0) + 12 * (shown.length - 1);
   const labelX = (index: number) =>
-    (width - bandWidth) / 2 +
-    labelWidths.slice(0, index).reduce((sum, value) => sum + value + 16, 0);
+    (WIDTH - bandWidth) / 2 +
+    labelWidths.slice(0, index).reduce((sum, value) => sum + value + 12, 0);
+  const lowY = HEIGHT - BOTTOM / 2;
+  const mark = params.marks[beat];
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="h-full w-full" aria-hidden="true">
+    <Stage>
       {shown.map(({ label, value, from }, index) => {
         const box = boxes[index];
         const x = labelX(index);
-        const visible = spec.beats.indexOf(beat) >= spec.beats.indexOf(from);
+        const visible = from === 'unit' || spec.beats.indexOf(beat) >= spec.beats.indexOf(from);
         const y = 6 + (bandHeight - 22 - box.height) / 2;
         return (
-          <Fade key={label} show={visible}>
+          <Reveal key={label} show={visible}>
             <SvgText
-              x={x + 24}
+              x={x + nameWidths[index] - 6}
               y={y + box.height / 2}
               size={14}
               anchor="end"
-              className="fill-muted font-semibold"
+              className="fill-muted font-hand"
             >
               {`${label} =`}
             </SvgText>
-            <SvgMatrix value={value} box={box} size={14} x={x + 30} y={y} />
-          </Fade>
+            <SvgMatrix value={value} box={box} size={16} x={x + nameWidths[index]} y={y} />
+          </Reveal>
         );
       })}
 
@@ -288,14 +303,14 @@ export function GridTransform({ spec, beat }: Props) {
         return (
           <g key={index}>
             {params.panels && (
-              <SvgText
+              <HandText
                 x={x + panelWidth / 2}
                 y={panelTop - 12}
-                size={14}
+                size={18}
                 className="fill-ink font-semibold"
               >
                 {params.panels[index]}
-              </SvgText>
+              </HandText>
             )}
             <Lattice
               bounds={params.bounds}
@@ -314,6 +329,38 @@ export function GridTransform({ spec, beat }: Props) {
           </g>
         );
       })}
-    </svg>
+
+      {mark && (
+        <Reveal show start={0.3} pop>
+          <HandText
+            x={WIDTH / 2}
+            y={lowY}
+            size={fitted(mark, 38)}
+            className={`font-semibold ${isWarn ? 'fill-warn' : 'fill-cta'}`}
+          >
+            {mark}
+          </HandText>
+        </Reveal>
+      )}
+
+      {params.try && beat === 'try' && (
+        <Choices options={params.try.options} right={params.try.right} y={HEIGHT - BOTTOM + 14} />
+      )}
+      {params.try && (
+        <>
+          <Reveal show={beat === 'try_done'} start={0.1} pop>
+            <HandText
+              x={WIDTH / 2 - 16}
+              y={lowY}
+              size={fitted(params.try.options[params.try.right], 36, 240)}
+              className="fill-cta font-semibold"
+            >
+              {params.try.options[params.try.right]}
+            </HandText>
+          </Reveal>
+          <Tick x={WIDTH / 2 + 120} y={lowY} size={14} show={beat === 'try_done'} start={0.25} />
+        </>
+      )}
+    </Stage>
   );
 }

@@ -3,7 +3,15 @@ import { clipReducer, initialClip } from './clipState';
 
 describe('clipReducer', () => {
   it('starts at the first beat, playing', () => {
-    expect(initialClip(3)).toEqual({ index: 0, total: 3, paused: false, runs: 0 });
+    expect(initialClip(3)).toEqual({ index: 0, total: 3, furthest: 0, paused: false, runs: 0 });
+  });
+
+  it('remembers the furthest beat reached, through stepping back and replaying', () => {
+    const run = (...types: ('next' | 'back' | 'replay')[]) =>
+      types.reduce((state, type) => clipReducer(state, { type }), initialClip(4));
+    expect(run('next', 'next', 'back').furthest).toBe(2);
+    expect(run('next', 'replay').furthest).toBe(1);
+    expect(run('next', 'next', 'next', 'next').furthest).toBe(3);
   });
 
   it('moves on, and stops at the last beat', () => {

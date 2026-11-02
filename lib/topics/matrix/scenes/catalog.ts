@@ -2,6 +2,7 @@ import { classify } from '@/lib/core/classify';
 import { createRng } from '@/lib/core/prng';
 import { Rational } from '@/lib/core/rational';
 import type { Answer, Level } from '@/lib/core/types';
+import type { ThemeId } from '@/lib/learner/types';
 import { generate } from '../generators';
 import { CATALOG, probeLevels, variantsOf } from '../misconceptions';
 import type { SkillId } from '../skills';
@@ -52,6 +53,7 @@ export interface CaughtExample {
 export function caughtExample(
   { id, skill, level, variant }: SceneCombo,
   seed: number,
+  theme?: ThemeId,
 ): CaughtExample | null {
   const item = generate({ skill, difficulty: level, seed, target: id, targetVariant: variant });
   const diagnostic = item.diagnostics.find(
@@ -62,5 +64,5 @@ export function caughtExample(
   const classification = classify(item, answer);
   if (classification.type !== 'misconception') return null;
   const caught = { id: classification.id as MisconceptionId, variant: classification.variant };
-  return { item, answer, caught, spec: remediationScene(item, answer, caught) };
+  return { item, answer, caught, spec: remediationScene(item, answer, caught, theme) };
 }

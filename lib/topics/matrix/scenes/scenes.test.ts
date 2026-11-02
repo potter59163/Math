@@ -29,7 +29,7 @@ import { cellLocatorScene } from './cellLocator';
 import { dimensionScene } from './dimensionMatch';
 import { gridScene } from './gridTransform';
 import { inverseScene } from './inverseRecipe';
-import { rowColDotScene } from './rowColDot';
+import { billOf, rowColDotScene } from './rowColDot';
 import { sarrusScene } from './sarrus';
 import { transposeScene } from './transposeFlip';
 import type { AnyScene, SceneSpec } from './types';
@@ -61,10 +61,15 @@ function expectPlayable(spec: SceneSpec) {
     const caption = scene.captions[beat];
     if (spec.template !== 'worked_solution') expect(caption).toBeTruthy();
     if (caption) {
-      expect(caption).not.toMatch(/[{}\n]/);
-      expect(spacingLength(caption)).toBeLessThanOrEqual(MAX_CAPTION_SPACING);
+      expect(caption).not.toMatch(/[{}]/);
+      const lines = caption.replace(TONE_MARK, '$1').split('\n');
+      expect(lines.length).toBeLessThanOrEqual(2);
+      for (const line of lines) {
+        expect(spacingLength(line)).toBeLessThanOrEqual(MAX_CAPTION_SPACING);
+      }
     }
   }
+  for (const beat of scene.waits ?? []) expect(scene.hints?.[beat]?.caption).toBeTruthy();
   if (scene.flagged) expect(scene.beats).toContain(scene.flagged);
   expect(sceneDurationMs(spec)).toBeLessThanOrEqual(sceneLimitMs(spec.purpose));
 }
@@ -75,6 +80,8 @@ function expectPlayable(spec: SceneSpec) {
 const THAI_MARKS = /[ัิ-ฺ็-๎]/g;
 const spacingLength = (text: string) => text.replace(THAI_MARKS, '').length;
 const MAX_CAPTION_SPACING = 44;
+/** Words in a caption that wear the colour of what they name, as [r:this]. */
+const TONE_MARK = /\[[rcw]:([^\]]*)\]/g;
 
 describe('row_col_dot on the documented example', () => {
   it('works out cell (1,1) as SCENES §3.5 shows: 2·1 + 1·2 = 4', () => {
@@ -424,7 +431,7 @@ describe('cell_locator on the example of MISCONCEPTIONS §3 (M02)', () => {
     expect(params.name).toBe('a₂₃');
     expect(params.swapped?.value.equals(Rational.of(3))).toBe(true);
     expect(params.swapped?.name).toBe('a₃₂');
-    expect(beats).toEqual(['row', 'col', 'hit', 'compare']);
+    expect(beats).toEqual(['compare', 'row', 'col', 'hit', 'try', 'try_done']);
     expect(captions.row).toBe('แถวที่ 2 คือแนวนอน');
     expect(captions.col).toBe('หลักที่ 3 คือแนวตั้ง');
     expect(captions.compare).toContain('a₃₂');
@@ -508,7 +515,7 @@ describe('sarrus on the examples of MISCONCEPTIONS §3', () => {
     expect(params.wrong?.value.equals(Rational.of(value))).toBe(true);
     expect(params.wrong?.expression).toBe(expression);
     expect(captions.compare).toBe(caption);
-    expect(beats).toEqual(['copy', 'compare', 'down', 'up', 'result']);
+    expect(beats).toEqual(['copy', 'compare', 'down', 'try', 'up', 'result']);
   });
 
   it('M12: det = 2·4 − 1·3 = 5, with no column to copy', () => {
@@ -529,7 +536,7 @@ describe('sarrus on the examples of MISCONCEPTIONS §3', () => {
     const { params, beats } = sarrusScene({ A, variant, purpose: 'remediate' });
     expect(params.wrong?.value.equals(Rational.of(value))).toBe(true);
     expect(params.wrong?.expression).toBe(expression);
-    expect(beats).toEqual(['compare', 'down', 'up', 'result']);
+    expect(beats).toEqual(['compare', 'down', 'try', 'up', 'result']);
   });
 });
 
@@ -755,7 +762,8 @@ describe('every ★ misconception has a scene with numbers from the generator', 
           const { A: asked, i, j } = caught.item.data;
           expect(params.value.equals(asked[i - 1][j - 1])).toBe(true);
           expect(params.swapped?.value.equals(caught.answer.value)).toBe(true);
-          expect(beats.at(-1)).toBe('compare');
+          expect(beats[0]).toBe('compare');
+          expect(beats.at(-1)).toBe('try_done');
         },
       ),
     );
@@ -852,12 +860,12 @@ describe('every ★ misconception has a scene with numbers from the generator', 
 describe('every ★ skill has a concept scene', () => {
   const skillLevels = SKILLS.flatMap(({ id }) => levelsOf(id).map((level) => ({ id, level })));
 
-  it.each(skillLevels)('$id at L$level plays within 20 seconds', ({ id, level }) => {
+  it.each(skillLevels)('$id at L$level plays within its limit', ({ id, level }) => {
     for (const seed of SEEDS) {
       const spec = conceptScene(id, { seed, level });
       expect(spec.purpose).toBe('concept');
       expectPlayable(spec);
-      expect(sceneDurationMs(spec)).toBeLessThanOrEqual(20000);
+      expect(sceneDurationMs(spec)).toBeLessThanOrEqual(sceneLimitMs('concept'));
     }
   });
 
@@ -1251,6 +1259,96 @@ describe('cell_by_cell', () => {
     const spec = cellByCellScene({ op: 'add', left: A, right: B, purpose: 'concept' });
     for (const beat of spec.beats) expect(spec.captions[beat]).toBeTruthy();
     expect(sceneDurationMs(spec)).toBeLessThanOrEqual(sceneLimitMs('concept'));
+  });
+});
+
+describe('the bill a cell-by-cell answer gets', () => {
+  const cellByCell = (left: Matrix, right: Matrix): Matrix =>
+    left.map((cells, i) => cells.map((cell, j) => cell.mul(right[i][j])));
+  const swords = matrix([
+    [1, 2],
+    [3, 4],
+  ]);
+  const prices = matrix([
+    [5, 6],
+    [7, 8],
+  ]);
+
+  it('is told on the first wrong cell of the diagonal, in the student’s own story', () => {
+    const bill = billOf(swords, prices, cellByCell(swords, prices), 'game');
+    expect(bill?.cell).toEqual([1, 1]);
+    expect(bill?.story.who).toBe('ผู้เล่น ก');
+    expect(bill?.story.items[0]).toBe('ดาบ');
+  });
+
+  it('will not count swords with a negative number, so it moves to a row that can be counted', () => {
+    const left = matrix([
+      [-1, 2],
+      [3, 4],
+    ]);
+    expect(billOf(left, prices, cellByCell(left, prices), 'game')?.cell).toEqual([2, 2]);
+  });
+
+  it('is not told when no row can be counted, and the clip is the plain one', () => {
+    const left = matrix([
+      [-1, 2],
+      [3, -4],
+    ]);
+    const student = cellByCell(left, prices);
+    expect(billOf(left, prices, student, 'game')).toBeNull();
+    const plain = rowColDotScene({
+      left,
+      right: prices,
+      variant: 'elementwise',
+      student,
+      purpose: 'remediate',
+    });
+    expect(plain.params.story).toBeUndefined();
+    expect(plain.beats).toContain('multiply');
+    expect(plain.beats).not.toContain('only_first');
+  });
+
+  it('adds up, on every sampled seed: their one line is what they answered, and the total is right', () => {
+    let told = 0;
+    for (const seed of SEEDS_TO_SEARCH.slice(0, 400)) {
+      const item = generate({
+        skill: 'mult',
+        difficulty: 1,
+        seed,
+        target: 'M09_MULT_ELEMENTWISE',
+      });
+      const wrong = item.diagnostics.find(({ id }) => id === 'M09_MULT_ELEMENTWISE');
+      if (wrong?.answer.kind !== 'matrix') continue;
+      const spec = remediationScene(item, wrong.answer, { id: 'M09_MULT_ELEMENTWISE' }, 'food');
+      if (spec.template !== 'row_col_dot') throw new Error('wrong template');
+      const { params, beats, captions } = spec;
+      expectPlayable(spec);
+      const [row, col] = [params.cell[0] - 1, params.cell[1] - 1];
+      expect(sum(params.terms.map(({ product }) => product)).equals(params.product[row][col])).toBe(
+        true,
+      );
+      if (!params.story) continue;
+      told += 1;
+      expect(row).toBe(col);
+      expect(beats).toContain('only_first');
+      expect(params.terms[row].product.equals(params.student![row][col])).toBe(true);
+      expect(params.terms.every(({ a, b }) => a.sign() >= 0 && b.sign() >= 0)).toBe(true);
+      expect(captions.pick_row).toContain(params.story.who);
+    }
+    expect(told).toBeGreaterThan(100);
+  });
+
+  it('asks for another cell than the one it worked out', () => {
+    const spec = rowColDotScene({
+      left: swords,
+      right: prices,
+      variant: 'elementwise',
+      student: cellByCell(swords, prices),
+      purpose: 'remediate',
+    });
+    expect(spec.params.tryCell).not.toEqual(spec.params.cell);
+    expect(spec.waits).toEqual(['try_row', 'try_col']);
+    expect(spec.hints?.try_row?.voice).toBe('bill.hint_row');
   });
 });
 

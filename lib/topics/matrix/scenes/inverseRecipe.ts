@@ -1,7 +1,9 @@
 import { th } from '@/lib/content/th';
 import type { Answer, Matrix } from '@/lib/core/types';
 import { adjugate2, det2, inv2, mul } from '../ops';
+import { choiceOf } from './tryChoice';
 import type { InverseBeat, InverseVariant, ScenePurpose, SceneSpecOf } from './types';
+import { timedBeats, type VoiceId } from './voice';
 
 const BEAT_MS: Record<InverseBeat, number> = {
   show: 2000,
@@ -10,6 +12,8 @@ const BEAT_MS: Record<InverseBeat, number> = {
   det: 3000,
   divide: 3000,
   check: 3000,
+  try: 1000,
+  try_done: 2000,
 };
 
 /** The beat each slip skipped or got wrong (SCENES §3.4). */
@@ -21,6 +25,8 @@ const FLAGGED: Record<InverseVariant, InverseBeat> = {
   TRANSPOSED: 'negate',
   RECIPROCAL: 'show',
 };
+
+type RecipeStep = keyof typeof th.scenes.inverse.steps;
 
 export interface InverseInput {
   A: Matrix;
@@ -44,6 +50,27 @@ export function inverseScene({
   const [[a, b], [c, d]] = A;
   const inverse = inv2(A);
   const flagged = variant && FLAGGED[variant];
+  // Mixing up the whole idea of an inverse is not one forgotten step of the three.
+  const missed = flagged && flagged !== 'show' ? (flagged as RecipeStep) : undefined;
+  const question = missed
+    ? choiceOf(
+        copy.steps[missed],
+        (Object.keys(copy.steps) as RecipeStep[])
+          .filter((step) => step !== missed)
+          .map((step) => copy.steps[step]),
+        a.n + d.n,
+      )
+    : undefined;
+  const voice: Partial<Record<InverseBeat, VoiceId>> = {
+    show: 'recipe.show',
+    swap: 'recipe.swap',
+    negate: 'recipe.negate',
+    det: 'recipe.det',
+    divide: 'recipe.divide',
+    try: 'recipe.try',
+    try_done: 'recipe.try_done',
+    ...(flagged && { [flagged]: `recipe.compare_${variant}` as const }),
+  };
   return {
     template: 'inverse_recipe',
     params: {
@@ -60,8 +87,17 @@ export function inverseScene({
       identity: mul(A, inverse),
       ...(variant && { variant }),
       ...(student && { student }),
+      ...(question && { try: question }),
     },
-    beats: ['show', 'swap', 'negate', 'det', 'divide', ...(withCheck ? (['check'] as const) : [])],
+    beats: [
+      'show',
+      'swap',
+      'negate',
+      'det',
+      'divide',
+      ...(withCheck ? (['check'] as const) : []),
+      ...(question ? (['try', 'try_done'] as const) : []),
+    ],
     captions: {
       show: copy.show,
       swap: copy.swap,
@@ -70,8 +106,14 @@ export function inverseScene({
       divide: copy.divide,
       check: copy.check,
       ...(flagged && { [flagged]: copy.compare[variant] }),
+      ...(question && { try: copy.try, try_done: copy.try_done }),
     },
-    beatMs: BEAT_MS,
+    beatMs: timedBeats(BEAT_MS, voice),
+    voice,
+    ...(question && {
+      waits: ['try'] as InverseBeat[],
+      hints: { try: { caption: copy.hint, voice: 'recipe.hint' as const } },
+    }),
     ...(studentAnswer && { compare: { studentAnswer, variant } }),
     ...(flagged && { flagged }),
     purpose,
