@@ -204,7 +204,7 @@ export const th = {
     showOnBoard: 'แสดงชื่อในตารางอันดับ',
     learning: 'การเรียน',
     theme: 'ยกตัวอย่างเรื่องอะไร',
-    sound: 'เสียงพากย์ในคลิป',
+    sound: 'เสียงในแอป',
     display: 'หน้าจอ',
     colorScheme: 'โหมดสี',
     schemes: { system: 'ตามเครื่อง', light: 'สว่าง', dark: 'มืด' },
@@ -578,6 +578,13 @@ export const th = {
       remediate: 'แก้ความเข้าใจผิด',
       worked: 'ดูวิธีทำ',
       unit: 'หน่วยที่ {{n}}',
+      sounds: 'เสียงเอฟเฟกต์',
+      soundNames: {
+        correct: 'ตอบถูก',
+        wrong: 'ตอบผิด',
+        streak: 'ถูกติดกัน 5 ข้อ',
+        done: 'สรุปผล',
+      },
     },
     receipt: {
       total: 'รวม',

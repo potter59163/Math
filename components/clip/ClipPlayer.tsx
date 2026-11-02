@@ -35,6 +35,7 @@ import {
   SpeakerOffIcon,
 } from '@/components/ui/Icons';
 import { deviceSettings } from '@/lib/client/settings';
+import { sfx } from '@/lib/client/sfx';
 import { th } from '@/lib/content/th';
 import { fillTokens } from '@/lib/core/tokens';
 import { VOICE_TAIL_MS } from '@/lib/topics/matrix/scenes/voice';
@@ -320,10 +321,12 @@ export function ClipPlayer<Beat extends string>({
   const actions = useMemo(
     () => ({
       right() {
+        sfx.play('correct');
         setHintBeat(null);
         dispatch({ type: 'next' });
       },
       wrong() {
+        sfx.play('wrong');
         setHintBeat(beat);
         const src = hint?.(beat)?.src;
         if (src && soundOn) void clipVoice.play(src).catch(() => {});

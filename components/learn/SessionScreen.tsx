@@ -12,6 +12,8 @@ import { BulbIcon, CheckIcon } from '@/components/ui/Icons';
 import { learner, useLearner, useRequiredProfile } from '@/components/app/useLearner';
 import { LazyScene, preloadScenes } from '@/components/scenes/LazyScene';
 import type { SceneView } from '@/components/scenes/playerState';
+import { sfx } from '@/lib/client/sfx';
+import { soundFor } from '@/lib/practice/rewards';
 import { th } from '@/lib/content/th';
 import { restoreAnswer, storeAnswer } from '@/lib/core/answerJson';
 import { fillTokens } from '@/lib/core/tokens';
@@ -155,13 +157,14 @@ function SessionLoop({ profile }: { profile: Profile }) {
   const submit = (answer: Answer, time: { timeMs: number; at: number }) => {
     if (!open) return;
     const hintLevel = profile.current?.hintLevel ?? 0;
-    const { outcome } = learner.dispatch({
+    const { outcome, profile: next } = learner.dispatch({
       type: 'attempt',
       ref: open.ref,
       answer: storeAnswer(answer),
       hintLevel,
       ...time,
     });
+    if (outcome) sfx.play(soundFor(outcome.classification.type === 'correct', next.combo));
     if (outcome?.classification.type !== 'correct') preloadFormula();
   };
 

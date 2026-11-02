@@ -1,7 +1,8 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { Mascot } from '@/components/app/Mascot';
+import { sfx } from '@/lib/client/sfx';
 import { useRequiredProfile } from '@/components/app/useLearner';
 import { LinkButton } from '@/components/ui/Button';
 import { BoltIcon, CheckIcon, FlameIcon } from '@/components/ui/Icons';
@@ -51,6 +52,10 @@ function ListOfDone({ title, items }: { title: string; items: string[] }) {
 /** What this student has to show for the session (SPEC §4, §11). */
 export function SummaryScreen() {
   const profile = useRequiredProfile();
+  const hasDoneSome = (profile?.itemsDone ?? 0) > 0;
+  useEffect(() => {
+    if (hasDoneSome) sfx.play('done');
+  }, [hasDoneSome]);
   if (!profile) return <LoadingScreen />;
 
   const passedSkills = mapOf(profile)

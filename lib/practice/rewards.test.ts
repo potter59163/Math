@@ -2,7 +2,21 @@ import { describe, expect, it } from 'vitest';
 import { CONFIG } from '@/lib/config';
 import { newLearnerProfile } from '@/lib/learner/profile';
 import type { LearnerProfile, MisconceptionState, SkillState } from '@/lib/learner/types';
-import { badgesOf, comboAfter, xpFor } from './rewards';
+import { badgesOf, comboAfter, soundFor, xpFor } from './rewards';
+
+describe('soundFor', () => {
+  it('tells a right answer from a wrong one, whatever the run so far', () => {
+    expect(soundFor(true, 1)).toBe('correct');
+    expect(soundFor(false, 0)).toBe('wrong');
+    expect(soundFor(false, CONFIG.sound.streakEvery)).toBe('wrong');
+  });
+
+  it('marks every so many right answers in a row', () => {
+    expect(soundFor(true, CONFIG.sound.streakEvery)).toBe('streak');
+    expect(soundFor(true, CONFIG.sound.streakEvery * 2)).toBe('streak');
+    expect(soundFor(true, CONFIG.sound.streakEvery + 1)).toBe('correct');
+  });
+});
 
 describe('badgesOf (SPEC §11)', () => {
   const passed: SkillState = {
@@ -24,8 +38,7 @@ describe('badgesOf (SPEC §11)', () => {
     lastCaughtAtItem: 5,
     rewarded,
   });
-  const base = (): LearnerProfile =>
-    newLearnerProfile({ id: 'A-1', units: [4, 3] });
+  const base = (): LearnerProfile => newLearnerProfile({ id: 'A-1', units: [4, 3] });
 
   it('starts empty', () => {
     expect(badgesOf(base())).toEqual([]);

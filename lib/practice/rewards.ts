@@ -16,6 +16,12 @@ export function comboAfter(combo: number, correct: boolean, hintLevel: HintLevel
   return hintLevel <= 1 ? combo + 1 : combo;
 }
 
+/** What an answer sounds like. A run of right answers gets its own sound every so often. */
+export function soundFor(correct: boolean, combo: number): 'correct' | 'wrong' | 'streak' {
+  if (!correct) return 'wrong';
+  return combo > 0 && combo % CONFIG.sound.streakEvery === 0 ? 'streak' : 'correct';
+}
+
 export type Badge = { kind: 'unit'; unit: UnitId } | { kind: 'fixed' };
 
 /** SPEC §11. A badge stays once earned: a later relapse does not take back a fix that happened. */

@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { IBM_Plex_Sans_Thai, Kodchasan, Mitr, Playpen_Sans_Thai } from 'next/font/google';
-import { VoiceUnlock } from '@/components/clip/VoiceUnlock';
+import { SoundUnlock } from '@/components/clip/SoundUnlock';
 import { CONFIG } from '@/lib/config';
 import { th } from '@/lib/content/th';
 import { SETTINGS_BOOT_SCRIPT } from '@/lib/client/settings';
@@ -66,7 +66,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
         <script dangerouslySetInnerHTML={{ __html: SETTINGS_BOOT_SCRIPT }} />
       </head>
       <body>
-        <VoiceUnlock />
+        <SoundUnlock />
         {children}
       </body>
     </html>

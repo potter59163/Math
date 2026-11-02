@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from 'react';
 import { ScenePlayer } from '@/components/scenes/ScenePlayer';
+import { sfx, type SoundName } from '@/lib/client/sfx';
 import { th } from '@/lib/content/th';
 import { fillTokens } from '@/lib/core/tokens';
 import type { ThemeId } from '@/lib/learner/types';
@@ -10,6 +11,7 @@ import { conceptScene, introScene, revealScene, type SceneSpec } from '@/lib/top
 import { SCENE_COMBOS, caughtExample } from '@/lib/topics/matrix/scenes/catalog';
 import { SKILLS } from '@/lib/topics/matrix/skills';
 
+const SOUNDS: readonly SoundName[] = ['correct', 'wrong', 'streak', 'done'];
 const THEMES: readonly ThemeId[] = ['game', 'shop', 'food', 'music', 'sport'];
 const UNITS = [1, 2, 3, 4, 5] as const;
 const FIRST_SEED = 7;
@@ -103,6 +105,21 @@ export function ClipPreview() {
             {th.clip.preview.again}
           </button>
         </div>
+        <section className="flex flex-col gap-2">
+          <h2 className="font-hand text-lg text-cta">{th.clip.preview.sounds}</h2>
+          <div className="grid grid-cols-2 gap-2">
+            {SOUNDS.map((name) => (
+              <button
+                key={name}
+                type="button"
+                onClick={() => sfx.play(name)}
+                className="min-h-11 rounded-lg border border-line px-3 py-2 text-left"
+              >
+                {th.clip.preview.soundNames[name]}
+              </button>
+            ))}
+          </div>
+        </section>
         {sections.map((section) => (
           <section key={section.title} className="flex flex-col gap-1">
             <h2 className="font-hand text-lg text-cta">{section.title}</h2>

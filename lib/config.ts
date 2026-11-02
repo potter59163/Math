@@ -27,6 +27,7 @@ export const CONFIG = {
   },
   xp: { firstTry: 10, withL1Hint: 7, withDeepHint: 3, misconceptionResolved: 20 },
   // SCENES §1. A scene's length is the sum of its beats' declared times, not the wait for a tap.
+  sound: { streakEvery: 5 },
   scenes: {
     // A spoken line sets the pace now, and the longest of them takes just over 5 seconds.
     maxBeatMs: 5700,
