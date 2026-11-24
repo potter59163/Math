@@ -1,8 +1,8 @@
 import { createRng, type Rng } from '@/lib/core/prng';
-import type { Answer } from '@/lib/core/types';
+import type { Answer, Item } from '@/lib/core/types';
 import type { ChosenScene } from '@/lib/director/types';
-import { catalogEntry } from '@/lib/topics/matrix/misconceptions';
-import type { MatrixItem, MisconceptionId } from '@/lib/topics/matrix/types';
+import { misconceptionOf } from '@/lib/topics';
+import type { MisconceptionId } from '@/lib/topics/types';
 import { misconceptionAnswer, randomAnswer, slipAnswer } from './answers';
 
 // Simulated learners (PLAN Phase 4). Deterministic: every student draws from its own seed. These test
@@ -10,7 +10,7 @@ import { misconceptionAnswer, randomAnswer, slipAnswer } from './answers';
 
 export interface SimStudent {
   label: string;
-  answer(item: MatrixItem): Answer;
+  answer(item: Item): Answer;
   /** Every clip that plays for this student. */
   onScene(scene: ChosenScene): void;
 }
@@ -37,7 +37,7 @@ export function slipper(p: number, seed: number): SimStudent {
 
 function isAboutBug({ request }: ChosenScene, id: MisconceptionId): boolean {
   if (request.kind === 'remediate') return request.caught.id === id;
-  return request.kind === 'reveal' && catalogEntry(id).skills.includes(request.ref.skill);
+  return request.kind === 'reveal' && misconceptionOf(id).skills.includes(request.ref.skill);
 }
 
 /**
@@ -72,7 +72,7 @@ export function randomStudent(seed: number): SimStudent {
  */
 export function planned(rate: number, seed: number): SimStudent {
   const rng = createRng(seed);
-  const wrong = (item: MatrixItem): Answer => {
+  const wrong = (item: Item): Answer => {
     if (item.diagnostics.length > 0 && chance(rng, 0.5)) {
       const { id, variant } = rng.pick(item.diagnostics);
       return misconceptionAnswer(item, id, variant, rng) ?? slipAnswer(item);

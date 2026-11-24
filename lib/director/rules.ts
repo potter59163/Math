@@ -1,8 +1,8 @@
 import { storeAnswer } from '@/lib/core/answerJson';
 import { applyAttempt, openMisconceptions } from '@/lib/learner/profile';
 import type { AttemptEvent, AttemptOutcome } from '@/lib/learner/types';
-import type { MatrixItem } from '@/lib/topics/matrix/types';
-import type { SkillId } from '@/lib/topics/matrix/skills';
+import type { Item } from '@/lib/core/types';
+import type { SkillId } from '@/lib/topics/types';
 import {
   afterAttemptCandidates,
   practiceCandidates,
@@ -149,7 +149,7 @@ export function practiceSkill(
 /** student_request: "ไม่เข้าใจ". The item stays open, and null means no clip could be built. */
 export function requestHelp(
   profile: Profile,
-  item: MatrixItem,
+  item: Item,
   nth: number,
 ): { profile: Profile; turn: NextTurn } | null {
   const candidates = requestCandidates(item, nth);

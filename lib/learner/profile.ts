@@ -2,9 +2,8 @@ import { CONFIG } from '@/lib/config';
 import { classify } from '@/lib/core/classify';
 import type { Level } from '@/lib/core/types';
 import { comboAfter, xpFor } from '@/lib/practice/rewards';
-import { CATALOG, catalogEntry } from '@/lib/topics/matrix/misconceptions';
-import { skillById, type SkillId } from '@/lib/topics/matrix/skills';
-import type { MisconceptionId } from '@/lib/topics/matrix/types';
+import { allMisconceptions, misconceptionOf, packOfSkill, skillOf } from '@/lib/topics';
+import type { MisconceptionId, SkillId } from '@/lib/topics/types';
 import { logActivity } from './activity';
 import { guessRate, updateKnown } from './bkt';
 import { nextLevel } from './difficulty';
@@ -64,15 +63,21 @@ export function levelOf(profile: Pick<LearnerProfile, 'skills'>, id: SkillId): L
   return profile.skills[id]?.level ?? 1;
 }
 
-/** Suspected or active, in catalog order, for one skill or for all of them. */
+/**
+ * Suspected or active, in catalog order, for one skill or for all of them. All of them means every
+ * topic's, each topic in its own catalog order.
+ */
 export function openMisconceptions(
   profile: Pick<LearnerProfile, 'misconceptions'>,
   skill?: SkillId,
 ): MisconceptionId[] {
-  return CATALOG.filter(
-    ({ id, skills }) =>
-      isOpen(profile.misconceptions[id]) && (skill === undefined || skills.includes(skill)),
-  ).map(({ id }) => id);
+  const catalog = skill === undefined ? allMisconceptions() : packOfSkill(skill).catalog;
+  return catalog
+    .filter(
+      ({ id, skills }) =>
+        isOpen(profile.misconceptions[id]) && (skill === undefined || skills.includes(skill)),
+    )
+    .map(({ id }) => id);
 }
 
 /**
@@ -83,7 +88,7 @@ export function isFixingMisconception(
   profile: Pick<LearnerProfile, 'misconceptions' | 'skills'>,
 ): boolean {
   return openMisconceptions(profile).some((id) =>
-    catalogEntry(id).skills.some((skill) => (profile.skills[skill]?.attempts.length ?? 0) > 0),
+    misconceptionOf(id).skills.some((skill) => (profile.skills[skill]?.attempts.length ?? 0) > 0),
   );
 }
 
@@ -97,8 +102,8 @@ export function applyPretest<P extends LearnerProfile>(
   const misconceptions = { ...profile.misconceptions };
   const { correct, misconception, otherWrong } = config.bktFromPretest;
 
-  for (const [key, result] of Object.entries(results)) {
-    const id = key as SkillId;
+  for (const [id, result] of Object.entries(results)) {
+    if (!result) continue;
     if (result.outcome === 'correct') {
       skills[id] = {
         ...newSkillState(correct),
@@ -147,7 +152,7 @@ export function applyAttempt<P extends LearnerProfile>(
     };
   }
   if (classification.type === 'misconception') {
-    const id = classification.id as MisconceptionId;
+    const id = classification.id;
     const when = { itemNo, at, variant: classification.variant };
     misconceptions = { ...misconceptions, [id]: onCaught(misconceptions[id], when, config) };
   }
@@ -158,7 +163,7 @@ export function applyAttempt<P extends LearnerProfile>(
     { level: difficulty, countsCorrect, clean: correct && hintLevel === 0, timeMs },
   ];
   const pKnown = updateKnown(before.pKnown, countsCorrect, guessRate(item, config), config);
-  const { maxLevel, unit } = skillById(skill);
+  const { maxLevel, unit } = skillOf(skill);
   const level = nextLevel(before.level, attempts, pKnown, maxLevel, config);
   // Any right answer ends the streak: the screen has just said so, even if BKT reads a deep hint as
   // wrong. R7 then starts counting again, so a stuck student is not sent to the solution every time.
@@ -199,7 +204,7 @@ export function applyAttempt<P extends LearnerProfile>(
       bonusXp,
       skillPassed: justPassed ? skill : null,
       unitPassed: justPassed && isUnitPassed(next, unit) ? unit : null,
-      allPassed: justPassed && nextSkill(next) === null,
+      allPassed: justPassed && nextSkill(next, packOfSkill(skill).id) === null,
       resolved,
       stuck,
       levelChange: (level - before.level) as AttemptOutcome['levelChange'],

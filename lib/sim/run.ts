@@ -5,8 +5,8 @@ import type { ChosenScene, Condition, NextTurn, Profile } from '@/lib/director/t
 import { applyPretest } from '@/lib/learner/profile';
 import { isUnlocked } from '@/lib/learner/progress';
 import type { AttemptOutcome, PretestResult, UnitId } from '@/lib/learner/types';
-import type { SkillId } from '@/lib/topics/matrix/skills';
-import type { MatrixItemRef } from '@/lib/topics/matrix/types';
+import type { ItemRef } from '@/lib/core/types';
+import type { SkillId } from '@/lib/topics/types';
 import { answerItem, openItem } from './drive';
 import { checkStep, checkTurn, type Violation } from './invariants';
 import type { SimStudent } from './students';
@@ -27,7 +27,7 @@ export interface SimOptions {
 }
 
 export interface SimStep {
-  ref: MatrixItemRef;
+  ref: ItemRef;
   outcome: AttemptOutcome;
   turn: NextTurn;
   /** The item came up in a skill whose prereqs were unfinished. Only the fixed path can do this. */

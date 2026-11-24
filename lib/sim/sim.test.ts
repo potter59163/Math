@@ -228,7 +228,7 @@ describe('reviews (SPEC §7.4)', () => {
       clipsSeen: ['mult_defined', 'mult'],
     };
     let profile = passing;
-    const skills: SkillId[] = [];
+    const skills: string[] = [];
     for (let index = 0; index < 6; index += 1) {
       const opened = openItem(profile);
       skills.push(opened.item.ref.skill);

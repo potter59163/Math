@@ -1,11 +1,10 @@
 import type { CONFIG } from '@/lib/config';
-import type { Answer, Classification, Level } from '@/lib/core/types';
-import type { Skill, SkillId } from '@/lib/topics/matrix/skills';
-import type { MatrixItem, MatrixItemRef, MisconceptionId } from '@/lib/topics/matrix/types';
+import type { Answer, Classification, Item, ItemRef, Level } from '@/lib/core/types';
+import type { MisconceptionId, SkillId, TopicId, UnitId } from '@/lib/topics/types';
 
 export type LearnerConfig = typeof CONFIG;
 
-export type UnitId = Skill['unit'];
+export type { MisconceptionId, SkillId, UnitId };
 
 /** How far down the hint ladder a student went on one item. 0 means no hint. */
 export type HintLevel = 0 | 1 | 2 | 3;
@@ -20,9 +19,14 @@ export type ThemeId = 'shop' | 'game' | 'sport' | 'music' | 'food';
 export interface Student {
   /** An account id or, for a guest, a random one. Seeds this student's items through deriveSeed. */
   id: string;
-  /** All of them unless a trial narrows them. */
+  /**
+   * Matrix units: all of them unless a trial narrows them. It predates topics, so it never holds another
+   * topic's units, and a pack whose units are not here opens all of its own (TopicPack.openUnits).
+   */
   units: UnitId[];
   theme?: ThemeId;
+  /** The topic the director plans in and the lessons page shows. Missing means matrices. */
+  activeTopic?: TopicId;
 }
 
 /** One day of work, for the streak and the daily goal. `day` is YYYY-MM-DD in Thai time. */
@@ -89,7 +93,7 @@ export interface MisconceptionState {
 }
 
 export interface OpenItem {
-  ref: MatrixItemRef;
+  ref: ItemRef;
   hintLevel: HintLevel;
 }
 
@@ -101,6 +105,7 @@ export interface LearnerProfile {
   combo: number;
   bestCombo: number;
   itemsDone: number;
+  /** One flat map for every topic: ids never collide across topics. */
   skills: Partial<Record<SkillId, SkillState>>;
   misconceptions: Partial<Record<MisconceptionId, MisconceptionState>>;
   /** Survives a reload, so refreshing never gives new numbers or a second try. */
@@ -115,7 +120,7 @@ export interface LearnerProfile {
 }
 
 export interface AttemptEvent {
-  item: MatrixItem;
+  item: Item;
   answer: Answer;
   hintLevel: HintLevel;
   /** From the item opening to sending. Measured by the caller, since nothing here reads a clock. */

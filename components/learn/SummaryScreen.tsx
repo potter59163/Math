@@ -10,8 +10,7 @@ import { th } from '@/lib/content/th';
 import { fillTokens } from '@/lib/core/tokens';
 import { mapOf } from '@/lib/learner/progress';
 import { badgesOf, type Badge } from '@/lib/practice/rewards';
-import { CATALOG } from '@/lib/topics/matrix/misconceptions';
-import { skillById } from '@/lib/topics/matrix/skills';
+import { allMisconceptions, skillOf } from '@/lib/topics';
 import { LoadingScreen } from './LoadingScreen';
 
 function Stat({ icon, label, value }: { icon?: ReactNode; label: string; value: string }) {
@@ -61,10 +60,10 @@ export function SummaryScreen() {
   const passedSkills = mapOf(profile)
     .flatMap(({ skills }) => skills)
     .filter(({ status }) => status === 'passed')
-    .map(({ id }) => skillById(id).nameTh);
-  const fixed = CATALOG.filter(({ id }) => profile.misconceptions[id]?.status === 'resolved').map(
-    ({ nameTh }) => nameTh,
-  );
+    .map(({ id }) => skillOf(id).nameTh);
+  const fixed = allMisconceptions()
+    .filter(({ id }) => profile.misconceptions[id]?.status === 'resolved')
+    .map(({ nameTh }) => nameTh);
   const badges = badgesOf(profile);
 
   return (

@@ -165,7 +165,7 @@ describe('a concept clip is never the item that follows it (SPEC §4)', () => {
       const next = drawItem(profile, step).item;
       expect(next.ref.skill).toBe(skill);
       // addsub compares only dims, and the same dims are fine, so it is not in this list.
-      expect(sameNumbers(spec, next)).toBe(false);
+      expect(sameNumbers(spec, next as MatrixItem)).toBe(false);
     }
   });
 

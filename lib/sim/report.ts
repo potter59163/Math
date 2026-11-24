@@ -2,14 +2,15 @@ import { createRng } from '@/lib/core/prng';
 import type { Condition } from '@/lib/director/types';
 import { nextSkill } from '@/lib/learner/progress';
 import type { PretestResult, UnitId } from '@/lib/learner/types';
-import { CATALOG } from '@/lib/topics/matrix/misconceptions';
-import { SKILLS, type SkillId } from '@/lib/topics/matrix/skills';
-import type { MisconceptionId } from '@/lib/topics/matrix/types';
+import { packOf } from '@/lib/topics';
+import type { MisconceptionId, SkillId } from '@/lib/topics/types';
 import { runStudent, type SimRun } from './run';
 import { buggy, perfect, planned, randomStudent, slipper, type SimStudent } from './students';
 
 // The report of `npm run sim` (PLAN Phase 4). A check on the system: a plan table to compare with, and
-// no number here may go in the proposal.
+// no number here may go in the proposal. It is about matrices, the topic of the trial.
+
+const { skills: SKILLS, catalog: CATALOG } = packOf('matrix');
 
 /** The unit choices and planning estimates of RESEARCH §3.1. */
 const PLANS: { units: UnitId[]; minutes: number; passAll: Record<Rate, number> }[] = [
@@ -95,7 +96,9 @@ function itemsToMaster(run: SimRun): number[] {
 function summarize(runs: SimRun[], skills: SkillId[]): CohortStats {
   const items = runs.flatMap(({ steps }) => steps);
   const right = items.filter(({ outcome }) => outcome.classification.type === 'correct');
-  const states = runs.flatMap(({ profile }) => Object.values(profile.misconceptions));
+  const states = runs
+    .flatMap(({ profile }) => Object.values(profile.misconceptions))
+    .filter((state) => state !== undefined);
   const fixes = states.filter(({ status }) => status === 'resolved');
   const per = (count: (run: SimRun) => number) => mean(runs.map(count)).toFixed(1);
   return {

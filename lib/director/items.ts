@@ -1,8 +1,9 @@
 import { deriveSeed } from '@/lib/core/prng';
+import type { Item, ItemRef } from '@/lib/core/types';
 import { levelOf } from '@/lib/learner/profile';
 import type { LearnerProfile } from '@/lib/learner/types';
-import { generate, regenerate } from '@/lib/topics/matrix/generators';
-import type { GenerateRequest, MatrixItem, MatrixItemRef } from '@/lib/topics/matrix/types';
+import { packOf, packOfSkill } from '@/lib/topics';
+import type { GenerateRequest } from '@/lib/topics/types';
 import type { NextStep } from './types';
 
 /** A generator failure is a bug, but one bad seed must not stop a class, so try the next few. */
@@ -14,26 +15,38 @@ export const RECENT_ITEMS = 30;
 /** Forms with few possible items run out, and then an item may come back. */
 const TRIES_FOR_A_NEW_ITEM = 12;
 
-/** Short, since a profile keeps thirty of these, and pure, since the server draws the same item. */
-export function fingerprintOf(item: MatrixItem): string {
+/**
+ * Short, since a profile keeps thirty of these, and pure, since the server draws the same item.
+ *
+ * It hashes the data alone, not the topic or the skill. Adding them would change every fingerprint that
+ * profiles already store in `recentItems`, so a student could meet a recent item again. Every pack's data
+ * starts with its own `form` names, which keeps two topics' items apart (docs/VECTORS.md §6.2).
+ */
+export function fingerprintOf(item: Pick<Item, 'data'>): string {
   return deriveSeed(JSON.stringify(item.data), 0).toString(36);
 }
 
 /** Null when the item cannot be rebuilt, which means its generator version has gone. */
-export function rebuildItem(ref: MatrixItemRef): MatrixItem | null {
+export function rebuildItem(ref: ItemRef): Item | null {
   try {
-    return regenerate(ref);
+    return packOf(ref.topic).regenerate(ref);
   } catch {
     return null;
   }
 }
 
-export function currentItem(profile: Pick<LearnerProfile, 'current'>): MatrixItem | null {
+export function currentItem(profile: Pick<LearnerProfile, 'current'>): Item | null {
   return profile.current ? rebuildItem(profile.current.ref) : null;
 }
 
+/**
+ * Makes an item for a request. Written as a method so that a test can pass one pack's own `generate`,
+ * whose request is narrower than any topic's.
+ */
+type MakeItem = { make(request: GenerateRequest): Item }['make'];
+
 export interface Draw {
-  item: MatrixItem;
+  item: Item;
   /** The profile's next counter once this item is really issued. */
   counter: number;
   /** A probe could not be built and a plain item took its place. */
@@ -47,7 +60,7 @@ export interface Draw {
 export function drawItem(
   profile: Pick<LearnerProfile, 'student' | 'counter' | 'skills' | 'recentItems'>,
   { skill, level, target, targetVariant }: NextStep,
-  make: (request: GenerateRequest) => MatrixItem = generate,
+  make: MakeItem = (request) => packOfSkill(request.skill).generate(request),
 ): Draw {
   const recent = profile.recentItems ?? [];
   let failure: unknown;

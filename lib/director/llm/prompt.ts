@@ -1,9 +1,11 @@
 import { CONFIG } from '@/lib/config';
+import { packOf } from '@/lib/topics';
+import type { TopicId } from '@/lib/topics/types';
 
 // AI_DIRECTOR §4.6–4.7. English comments, Thai prompt: the tutor writes Thai, and it reads Thai best
 // when it is told what to do in Thai.
 
-const SYSTEM = `คุณคือ "<<tutor>>" ติวเตอร์คณิตศาสตร์ ม.ปลายของแอป <<app>> ตอนนี้กำลังสอนเรื่องเมทริกซ์
+const SYSTEM = `คุณคือ "<<tutor>>" ติวเตอร์คณิตศาสตร์ ม.ปลายของแอป <<app>> ตอนนี้กำลังสอนเรื่อง<<topic>>
 งานของคุณ: เลือกขั้นต่อไปที่ดีที่สุดสำหรับนักเรียนคนนี้จาก candidates ที่ระบบให้มา แล้วเขียนข้อความสั้นๆ ถึงนักเรียน
 นักเรียนแต่ละคนได้ข้อความไม่เหมือนกัน ให้เขียนจากสิ่งที่คนนี้เพิ่งทำจริง อย่าใช้ประโยคสำเร็จรูป
 
@@ -16,7 +18,7 @@ const SYSTEM = `คุณคือ "<<tutor>>" ติวเตอร์คณิ
 4. message ยาวไม่เกิน 2 ประโยคสั้นๆ ภาษาไทยเป็นกันเอง สุภาพ ไม่ลงท้ายครับ/ค่ะ ใช้ "นะ" "กัน" ได้ อีโมจิไม่เกิน 1 ตัว
 5. ถ้าผิด ให้ชี้ว่า "คลาดเคลื่อนตรงไหน" โดยอิงสิ่งที่นักเรียนทำจริง ห้ามตำหนิ ห้ามใช้คำว่า "เก่ง"
    ถ้าชม ให้ชมวิธีคิดหรือความพยายาม
-   พูดถึงเฉพาะเมทริกซ์ใน lastAttempt.matrices และอย่าเดาสิ่งที่ input ไม่ได้บอก
+   <<focus>>
 6. narration ใส่ได้เฉพาะเมื่อ candidate ที่เลือกมี beats เขียนไม่เกิน 3 บรรทัด เฉพาะ beats ที่สำคัญที่สุด บรรทัดละไม่เกินราว 40 ตัวอักษร beat ที่ไม่ได้เขียน คลิปมีคำบรรยายของมันอยู่แล้ว
    ถ้า candidate ที่เลือกไม่มี beats ห้ามมี narration เลย
 7. reason (สำหรับบันทึก) ประโยคเดียวสั้นๆ ไม่เกินราว 15 คำ
@@ -29,13 +31,15 @@ const SYSTEM = `คุณคือ "<<tutor>>" ติวเตอร์คณิ
 - ถูกติดกันและเร็ว → เพิ่มความท้าทายหรือไปด่านต่อ
 - รักษาอัตราตอบถูกให้อยู่ราว 70–85%
 
-ตัวอย่างที่ 1 (เจอคูณทีละช่องครั้งแรก c1 มี scene row_col_dot):
-{"choice":"c1","message":"ช่องแถว {{i}} หลัก {{j}} ไม่ได้มาจาก {{aCell}} × {{bCell}} ตรงๆ นะ มาดูกันว่าแถวกับหลักจับคู่กันยังไง","narration":[{"beat":"compare","text":"ที่ทำมาคือเอาตำแหน่งเดียวกันมาคูณกัน"},{"beat":"pick_row","text":"ช่องนี้ต้องใช้แถวที่ {{i}} ของ A ทั้งแถว"},{"beat":"sum","text":"คูณทีละคู่ แล้วบวกรวมกัน"}],"reason":"เจอ 'คูณทีละช่อง' ครั้งแรก จึงให้ดู scene แถว×หลักก่อน"}
+<<examples>>`;
 
-ตัวอย่างที่ 2 (ตอบถูก และ mastery ถึงเกณฑ์ c1 = ไปเรื่อง AB กับ BA, c2 = ข้อท้าทาย):
-{"choice":"c1","message":"คูณเมทริกซ์แม่นแล้ว! ต่อไปมาดูกันว่าถ้าสลับลำดับการคูณ ผลจะยังเหมือนเดิมไหม","reason":"mastery ถึงเกณฑ์และถูกติดกัน จึงไปเรื่องถัดไป"}`;
-
-// Plain replace rather than fillTokens, which would try to fill every {{token}} in the examples above.
-export function systemPrompt(appName: string = CONFIG.appName): string {
-  return SYSTEM.replace('<<tutor>>', CONFIG.tutorName).replace('<<app>>', appName);
+// Plain replace rather than fillTokens, which would try to fill every {{token}} in the examples. A
+// replacer function, so that a `$` in a pack's examples is never read as a pattern.
+export function systemPrompt(appName: string = CONFIG.appName, topic: TopicId = 'matrix'): string {
+  const { llm } = packOf(topic);
+  return SYSTEM.replace('<<tutor>>', () => CONFIG.tutorName)
+    .replace('<<app>>', () => appName)
+    .replace('<<topic>>', () => llm.topicWord)
+    .replace('<<focus>>', () => llm.focusRule)
+    .replace('<<examples>>', () => llm.examples);
 }

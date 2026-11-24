@@ -4,8 +4,10 @@ import type { Profile } from '@/lib/director/types';
 import type { AssessmentPhase, AssessmentStatus } from '@/lib/sync/assessment';
 import type { BoardRow } from '@/lib/sync/leaderboard';
 import type { Account, AccountUpdate, AvatarId } from '@/lib/sync/types';
-import type { FormId } from '@/lib/topics/matrix/assessment';
 import type { LogEntry, SyncStore } from './sync';
+
+/** A form of the matrix pre/post test, 'A' or 'B' (lib/topics/matrix/assessment.ts). */
+type FormId = string;
 
 // Every query here takes a user id that the route has already checked (lib/server/auth.ts). The field
 // names are what scripts/export-data.mjs writes out and analysis/analyze.py reads, so keep them.

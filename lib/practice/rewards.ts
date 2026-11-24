@@ -32,6 +32,6 @@ export function badgesOf(
     .sort((a, b) => a - b)
     .filter((unit) => isUnitPassed(profile, unit))
     .map((unit): Badge => ({ kind: 'unit', unit }));
-  const fixedOne = Object.values(profile.misconceptions).some((state) => state.rewarded);
+  const fixedOne = Object.values(profile.misconceptions).some((state) => state?.rewarded === true);
   return fixedOne ? [...units, { kind: 'fixed' }] : units;
 }

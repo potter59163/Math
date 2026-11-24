@@ -1,8 +1,9 @@
 import { CONFIG } from '@/lib/config';
 import { th } from '@/lib/content/th';
 import { storeAnswer } from '@/lib/core/answerJson';
+import { exampleSeed } from '@/lib/core/prng';
 import { fillTokens } from '@/lib/core/tokens';
-import type { Answer, Level } from '@/lib/core/types';
+import type { Answer, Item, Level } from '@/lib/core/types';
 import { longestUnseen, REVIEW_LEVEL, reviewDue } from '@/lib/learner/interleave';
 import {
   isFixingMisconception,
@@ -12,10 +13,8 @@ import {
 } from '@/lib/learner/profile';
 import { hasPassed, isUnlocked, nextSkill } from '@/lib/learner/progress';
 import type { AttemptOutcome, LearnerProfile } from '@/lib/learner/types';
-import { probeLevel, probeLevels } from '@/lib/topics/matrix/misconceptions';
-import { exampleSeed } from '@/lib/topics/matrix/scenes';
-import { SKILLS, skillById, type SkillId } from '@/lib/topics/matrix/skills';
-import type { MatrixItem, MisconceptionId } from '@/lib/topics/matrix/types';
+import { activeTopicOf, misconceptionShortOf, packOf, packOfSkill, skillOf } from '@/lib/topics';
+import type { MisconceptionId, SkillId } from '@/lib/topics/types';
 import { drawItem } from './items';
 import { chosenScene, helpRequest, leadClip, needsLeadClip } from './scene';
 import type { Candidate, CandidateId, ChosenScene, NextStep, PathKind } from './types';
@@ -49,7 +48,7 @@ const CHALLENGE_LEVEL: Level = 3;
 
 /** The answer that was just sent, on a profile that already includes it. */
 export interface AttemptContext {
-  item: MatrixItem;
+  item: Item;
   answer: Answer;
   outcome: AttemptOutcome;
 }
@@ -59,9 +58,9 @@ export type DraftCandidate = Omit<Candidate, 'id'>;
 const reason = (key: keyof typeof th.ruleReasons, params?: Record<string, string>): string =>
   fillTokens(th.ruleReasons[key], params);
 
-const skillName = (id: SkillId): string => skillById(id).nameTh;
+const skillName = (id: SkillId): string => skillOf(id).nameTh;
 
-const shortName = (id: MisconceptionId): string => th.misconceptionShort[id];
+const shortName = (id: MisconceptionId): string => misconceptionShortOf(id);
 
 function itemStep(skill: SkillId, level: Level, hintLevel?: 1): NextStep {
   return { skill, level, purpose: 'practice', ...(hintLevel && { hintLevel }) };
@@ -77,10 +76,11 @@ export function probeStep(
   target: MisconceptionId,
   targetVariant?: string,
 ): NextStep {
-  if (probeLevels(skill, target, targetVariant).length > 0) {
+  const pack = packOfSkill(skill);
+  if (pack.probeLevels(skill, target, targetVariant).length > 0) {
     return {
       skill,
-      level: probeLevel(skill, target, level, targetVariant),
+      level: pack.probeLevel(skill, target, level, targetVariant),
       purpose: 'probe',
       target,
       ...(targetVariant !== undefined && { targetVariant }),
@@ -138,7 +138,7 @@ export function finalizeCandidates(drafts: DraftCandidate[]): Candidate[] {
     .map((draft, index) => ({ ...draft, id: `c${index + 1}` as CandidateId }));
 }
 
-function workedThen(ref: MatrixItem['ref'], next: NextStep, draft: Omit<DraftCandidate, 'next'>) {
+function workedThen(ref: Item['ref'], next: NextStep, draft: Omit<DraftCandidate, 'next'>) {
   return withScene({ ...draft, next }, chosenScene({ kind: 'reveal', ref }));
 }
 
@@ -312,7 +312,7 @@ function passedRule(profile: LearnerProfile, { item }: AttemptContext): DraftCan
   const s = item.ref.skill;
   const following = nextSkill(profile);
   const challenge: DraftCandidate[] =
-    skillById(s).maxLevel >= CHALLENGE_LEVEL
+    skillOf(s).maxLevel >= CHALLENGE_LEVEL
       ? [
           {
             rule: 'R4',
@@ -385,12 +385,7 @@ function mainRule(profile: LearnerProfile, attempt: AttemptContext): DraftCandid
   const { classification } = attempt.outcome;
   switch (classification.type) {
     case 'misconception':
-      return misconceptionRule(
-        profile,
-        attempt,
-        classification.id as MisconceptionId,
-        classification.variant,
-      );
+      return misconceptionRule(profile, attempt, classification.id, classification.variant);
     case 'slip':
       return slipRule(profile, attempt);
     case 'shape_error':
@@ -422,7 +417,7 @@ export function afterAttemptCandidates(
 export function sessionStartCandidates(profile: LearnerProfile): Candidate[] {
   const skill = nextSkill(profile);
   if (skill === null) {
-    const oldest = longestUnseen(profile) ?? SKILLS[0].id;
+    const oldest = longestUnseen(profile) ?? packOf(activeTopicOf(profile.student)).skills[0].id;
     return finalizeCandidates([
       {
         rule: 'start',
@@ -479,7 +474,7 @@ export function practiceCandidates(profile: LearnerProfile, skill: SkillId): Can
   ]);
 }
 
-export function requestCandidates(item: MatrixItem, nth: number): Candidate[] {
+export function requestCandidates(item: Item, nth: number): Candidate[] {
   const scene = chosenScene(helpRequest(item, nth));
   if (!scene) return [];
   return finalizeCandidates([

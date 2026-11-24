@@ -10,7 +10,7 @@ import {
   type SceneViewLog,
 } from '@/lib/sync/actions';
 import type { QueuedAction, SyncResponse } from '@/lib/sync/types';
-import type { MatrixItem, MatrixItemRef } from '@/lib/topics/matrix/types';
+import type { Item, ItemRef } from '@/lib/core/types';
 
 // Applies a device's queued actions to the server's copy of a student. Written against `SyncStore` so
 // that its rules can be tested without a database, and against the real one in lib/server/store.ts.
@@ -27,14 +27,14 @@ export type LogEntry =
   | {
       kind: 'attempt';
       seq: number;
-      item: MatrixItem;
+      item: Item;
       action: Extract<LearnerAction, { type: 'attempt' }>;
       outcome: AttemptOutcome;
       turn: NextTurn;
     }
   | { kind: 'decision'; turn: NextTurn }
   | { kind: 'session' }
-  | { kind: 'hint'; itemRef: MatrixItemRef | null; level: number }
+  | { kind: 'hint'; itemRef: ItemRef | null; level: number }
   | { kind: 'scene_view'; view: SceneViewLog };
 
 export interface SyncStore {
@@ -68,7 +68,7 @@ async function applyOne(
   action: LearnerAction,
   condition: Condition,
   decide: Decide | null,
-): Promise<{ result: ActionResult; item?: MatrixItem }> {
+): Promise<{ result: ActionResult; item?: Item }> {
   if (action.type !== 'attempt') {
     return { result: applyAction(profile, action, condition) };
   }
@@ -92,7 +92,7 @@ async function applyOne(
 function logsOf(
   { action, seq }: QueuedAction,
   before: Profile,
-  { result, item }: { result: ActionResult; item?: MatrixItem },
+  { result, item }: { result: ActionResult; item?: Item },
 ): LogEntry[] {
   const { turn, outcome } = result;
   switch (action.type) {

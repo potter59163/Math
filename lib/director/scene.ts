@@ -1,19 +1,10 @@
 import { restoreAnswer, storeAnswer } from '@/lib/core/answerJson';
-import type { Answer, Classification } from '@/lib/core/types';
+import { exampleSeed } from '@/lib/core/prng';
+import type { Answer, Classification, Item } from '@/lib/core/types';
 import { skillStateOf } from '@/lib/learner/profile';
 import type { LearnerProfile } from '@/lib/learner/types';
-import { regenerate } from '@/lib/topics/matrix/generators';
-import { sceneFor } from '@/lib/topics/matrix/misconceptions';
-import {
-  conceptScene,
-  exampleSeed,
-  introScene,
-  remediationScene,
-  revealScene,
-  type SceneSpec,
-} from '@/lib/topics/matrix/scenes';
-import { SKILLS, skillById, type SkillId } from '@/lib/topics/matrix/skills';
-import type { MatrixItem, MisconceptionId } from '@/lib/topics/matrix/types';
+import { packOf, packOfSkill, skillOf } from '@/lib/topics';
+import type { SceneSpec, SkillId } from '@/lib/topics/types';
 import { drawItem, rebuildItem } from './items';
 import type { ChosenScene, NextStep, SceneRequest } from './types';
 
@@ -21,23 +12,30 @@ import type { ChosenScene, NextStep, SceneRequest } from './types';
 export function buildScene(request: SceneRequest): SceneSpec {
   switch (request.kind) {
     case 'intro':
-      return introScene(request.unit, { seed: request.seed, theme: request.theme });
+      return packOfSkill(request.skill).scenes.intro(request.unit, {
+        seed: request.seed,
+        theme: request.theme,
+      });
     case 'concept':
-      return conceptScene(request.skill, {
+      return packOfSkill(request.skill).scenes.concept(request.skill, {
         seed: request.seed,
         level: request.level,
         avoid: (request.avoid && rebuildItem(request.avoid)) ?? undefined,
         purpose: request.purpose,
       });
-    case 'remediate':
-      return remediationScene(
-        regenerate(request.ref),
+    case 'remediate': {
+      const pack = packOf(request.ref.topic);
+      return pack.scenes.remediate(
+        pack.regenerate(request.ref),
         restoreAnswer(request.answer),
         request.caught,
         request.theme,
       );
-    case 'reveal':
-      return revealScene(regenerate(request.ref));
+    }
+    case 'reveal': {
+      const pack = packOf(request.ref.topic);
+      return pack.scenes.reveal(pack.regenerate(request.ref));
+    }
   }
 }
 
@@ -74,8 +72,8 @@ export function needsLeadClip(profile: LearnerProfile, skill: SkillId): boolean 
  */
 export function leadClip(profile: LearnerProfile, step: NextStep): ChosenScene | undefined {
   const { skill } = step;
-  const { unit } = skillById(skill);
-  const seenInUnit = SKILLS.some(
+  const { unit } = skillOf(skill);
+  const seenInUnit = packOfSkill(skill).skills.some(
     (other) => other.unit === unit && profile.clipsSeen.includes(other.id),
   );
   if (!seenInUnit) {
@@ -99,7 +97,7 @@ export function leadClip(profile: LearnerProfile, step: NextStep): ChosenScene |
 }
 
 /** "ไม่เข้าใจ": the concept scene on a sibling example, a new one on each press (SPEC §4). */
-export function helpRequest(item: MatrixItem, nth: number): SceneRequest {
+export function helpRequest(item: Item, nth: number): SceneRequest {
   return {
     kind: 'concept',
     skill: item.ref.skill,
@@ -112,14 +110,13 @@ export function helpRequest(item: MatrixItem, nth: number): SceneRequest {
 
 /** What "ดูวิธีทำ" opens: the misconception's own worked scene when it has one, else the plain one. */
 export function workedRequest(
-  item: MatrixItem,
+  item: Item,
   answer: Answer,
   classification: Classification,
 ): SceneRequest {
   if (classification.type === 'misconception') {
-    const id = classification.id as MisconceptionId;
-    const { variant } = classification;
-    if (sceneFor(id, { kind: item.kind, variant }).template === 'worked_solution') {
+    const { id, variant } = classification;
+    if (packOf(item.ref.topic).scenes.hasWorkedScene({ id, variant }, item.kind)) {
       return {
         kind: 'remediate',
         ref: item.ref,

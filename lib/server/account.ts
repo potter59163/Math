@@ -3,11 +3,11 @@ import { newProfile } from '@/lib/director/turn';
 import type { Profile } from '@/lib/director/types';
 import { ALL_UNITS } from '@/lib/learner/progress';
 import type { ThemeId } from '@/lib/learner/types';
-import { SKILLS } from '@/lib/topics/matrix/skills';
+import { allSkills } from '@/lib/topics';
+import type { SkillId } from '@/lib/topics/types';
 
 // A student's first server copy, which may start from what they did as a guest on this device.
 
-const skillIds = SKILLS.map(({ id }) => id) as [string, ...string[]];
 const level = z.union([z.literal(1), z.literal(2), z.literal(3)]);
 
 const skillState = z.object({
@@ -45,28 +45,37 @@ const misconceptionState = z.object({
   fromPretest: z.boolean().optional(),
 });
 
-const guestProgress = z.object({
-  counter: z.number().int().min(0),
-  xp: z.number().int().min(0),
-  combo: z.number().int().min(0),
-  bestCombo: z.number().int().min(0),
-  itemsDone: z.number().int().min(0),
-  skills: z.partialRecord(z.enum(skillIds), skillState),
-  misconceptions: z.record(z.string().max(40), misconceptionState),
-  clipsSeen: z.array(z.enum(skillIds)),
-  lastReviewAt: z.number().int().min(0),
-  activity: z
-    .array(
-      z.object({
-        day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-        items: z.number().int().min(0),
-        xp: z.number().int().min(0),
-      }),
-    )
-    .max(400)
-    .optional(),
-  recentItems: z.array(z.string().max(16)).max(30).optional(),
-});
+/**
+ * What is carried over, for skills of these topics. One unknown skill drops the whole guest profile, so
+ * it takes every registered topic's skills: a guest who tried vectors keeps their matrices too.
+ */
+export function guestProgressFor(skills: readonly SkillId[]) {
+  const skillIds = z.enum(skills as [string, ...string[]]);
+  return z.object({
+    counter: z.number().int().min(0),
+    xp: z.number().int().min(0),
+    combo: z.number().int().min(0),
+    bestCombo: z.number().int().min(0),
+    itemsDone: z.number().int().min(0),
+    skills: z.partialRecord(skillIds, skillState),
+    misconceptions: z.record(z.string().max(40), misconceptionState),
+    clipsSeen: z.array(skillIds),
+    lastReviewAt: z.number().int().min(0),
+    activity: z
+      .array(
+        z.object({
+          day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+          items: z.number().int().min(0),
+          xp: z.number().int().min(0),
+        }),
+      )
+      .max(400)
+      .optional(),
+    recentItems: z.array(z.string().max(16)).max(30).optional(),
+  });
+}
+
+const guestProgress = guestProgressFor(allSkills().map(({ id }) => id));
 
 export function freshProfile(userId: string, theme: ThemeId): Profile {
   return newProfile({ id: userId, units: [...ALL_UNITS], theme });

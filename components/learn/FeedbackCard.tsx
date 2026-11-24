@@ -7,10 +7,13 @@ import { fillTokens } from '@/lib/core/tokens';
 import type { NextTurn } from '@/lib/director/types';
 import type { AttemptOutcome } from '@/lib/learner/types';
 import { feedbackFor } from '@/lib/practice/feedback';
-import { skillById } from '@/lib/topics/matrix/skills';
+import { DEFAULT_TOPIC, misconceptionShortOf, skillOf } from '@/lib/topics';
+import type { TopicId } from '@/lib/topics/types';
 
 interface FeedbackCardProps {
   outcome: AttemptOutcome;
+  /** The item's topic, which words a slip. */
+  topic?: TopicId;
   /** What the director chose next. It names the main button. */
   turn: NextTurn;
   /** The tutor may still answer, and its words would replace the ones shown. */
@@ -33,13 +36,14 @@ function nextLabel({ classification }: AttemptOutcome, { scenes, pathStep }: Nex
 /** Fills the slot the keypad was in, so nothing above it moves when the answer is sent. */
 export function FeedbackCard({
   outcome,
+  topic = DEFAULT_TOPIC,
   turn,
   thinking,
   waiting,
   onNext,
   onShowWorked,
 }: FeedbackCardProps) {
-  const feedback = feedbackFor(outcome.classification);
+  const feedback = feedbackFor(outcome.classification, topic);
   const isCorrect = feedback.tone === 'correct';
   const { allPassed, bonusXp, resolved, skillPassed, unitPassed, xp } = outcome;
   // When the solution is the next step anyway, one button opens it and goes on from there.
@@ -78,14 +82,14 @@ export function FeedbackCard({
         {resolved && (
           <p className="font-semibold">
             {fillTokens(th.session.misconceptionFixed, {
-              m: th.misconceptionShort[resolved],
+              m: misconceptionShortOf(resolved),
               xp: bonusXp > 0 ? fillTokens(th.feedback.xpGained, { xp: String(bonusXp) }) : '',
             }).trim()}
           </p>
         )}
         {skillPassed && (
           <p className="font-semibold">
-            {fillTokens(th.session.skillPassed, { skill: skillById(skillPassed).nameTh })}
+            {fillTokens(th.session.skillPassed, { skill: skillOf(skillPassed).nameTh })}
           </p>
         )}
         {unitPassed && (

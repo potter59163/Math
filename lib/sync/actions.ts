@@ -4,10 +4,10 @@ import { beginSession, practiceSkill, requestHelp, submitAttempt } from '@/lib/d
 import { finishScene, finishTurn, noteWorkedView } from '@/lib/director/turn';
 import type { Condition, NextTurn, Profile, SceneRequest } from '@/lib/director/types';
 import { advanceHint } from '@/lib/learner/profile';
+import { isRegisteredTopic } from '@/lib/topics';
 import type { AttemptEvent, AttemptOutcome, HintLevel, ThemeId } from '@/lib/learner/types';
-import type { ScenePurpose, TemplateId } from '@/lib/topics/matrix/scenes';
-import type { SkillId } from '@/lib/topics/matrix/skills';
-import type { MatrixItemRef } from '@/lib/topics/matrix/types';
+import type { ItemRef } from '@/lib/core/types';
+import type { ScenePurpose, SkillId, TemplateId, TopicId } from '@/lib/topics/types';
 
 // Everything a student does that changes their profile, as data. The browser applies an action at once
 // and the server applies the same one to its own copy, through the same pure code. So feedback never
@@ -29,18 +29,20 @@ export type LearnerAction =
   | { type: 'hint' }
   | {
       type: 'attempt';
-      ref: MatrixItemRef;
+      ref: ItemRef;
       answer: StoredAnswer;
       hintLevel: HintLevel;
       timeMs: number;
       at: number;
     }
-  | { type: 'help'; ref: MatrixItemRef; nth: number }
+  | { type: 'help'; ref: ItemRef; nth: number }
   | { type: 'finish_scene' }
   | { type: 'finish_turn' }
   | { type: 'note_worked'; request: SceneRequest }
   | { type: 'scene_view'; view: SceneViewLog }
-  | { type: 'set_theme'; theme: ThemeId };
+  | { type: 'set_theme'; theme: ThemeId }
+  /** The topic tab on the lessons page. Only sent when more than one topic is switched on. */
+  | { type: 'set_topic'; topic: TopicId };
 
 export interface ActionResult {
   profile: Profile;
@@ -101,5 +103,9 @@ export function applyAction(
       return { profile };
     case 'set_theme':
       return { profile: { ...profile, student: { ...profile.student, theme: action.theme } } };
+    case 'set_topic':
+      return isRegisteredTopic(action.topic)
+        ? { profile: { ...profile, student: { ...profile.student, activeTopic: action.topic } } }
+        : { profile };
   }
 }

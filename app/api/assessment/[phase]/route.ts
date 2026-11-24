@@ -7,21 +7,23 @@ import { fail, notConfigured, ok, readJson, unauthorized } from '@/lib/server/ht
 import { assessmentSubmit } from '@/lib/server/schemas';
 import { createStore } from '@/lib/server/store';
 import {
+  ASSESSED_TOPIC,
   testBlock,
   type AssessmentAnswer,
   type AssessmentForm,
   type AssessmentPhase,
   type AssessmentResult,
 } from '@/lib/sync/assessment';
-import {
-  assessmentForm,
-  formFor,
-  markAssessment,
-  pretestResults,
-  scoreOf,
-} from '@/lib/topics/matrix/assessment';
+import { packOf, type TopicAssessment } from '@/lib/topics';
 
 const PHASES: readonly string[] = ['pre', 'post'];
+
+/** The matrix pack's test: the only one wired in, whose rows are unique by user and phase. */
+function assessment(): TopicAssessment {
+  const found = packOf(ASSESSED_TOPIC).assessment;
+  if (!found) throw new Error(`assessment: ${ASSESSED_TOPIC} has no test`);
+  return found;
+}
 
 type Params = { params: Promise<{ phase: string }> };
 
@@ -39,7 +41,9 @@ export async function GET(_request: Request, { params }: Params) {
   const status = await store.assessmentScores(userId);
   return ok<AssessmentForm>({
     phase: taken,
-    refs: assessmentForm(formFor(userId, taken)).map(({ ref }) => ref),
+    refs: assessment()
+      .items(assessment().formFor(userId, taken))
+      .map(({ ref }) => ref),
     done: status[taken],
   });
 }
@@ -74,9 +78,10 @@ export async function POST(request: Request, { params }: Params) {
   const blocked = testBlock(taken, row?.profile.itemsDone ?? 0);
   if (blocked) return fail(409, blocked);
 
-  const form = formFor(userId, taken);
-  const marked = markAssessment(form, answers);
-  const { score, total } = scoreOf(marked);
+  const test = assessment();
+  const form = test.formFor(userId, taken);
+  const marked = test.mark(form, answers);
+  const { score, total } = test.score(marked);
 
   const given = new Map(parsed.data.answers.map((entry) => [entry.itemNo, entry]));
   const saved = await store.saveAssessment(userId, {
@@ -99,7 +104,9 @@ export async function POST(request: Request, { params }: Params) {
 
   let profile: AssessmentResult['profile'] = null;
   if (taken === 'pre' && row) {
-    const next = applyPretest(row.profile, pretestResults(marked), { at: parsed.data.startedAt });
+    const next = applyPretest(row.profile, test.pretestResults(marked), {
+      at: parsed.data.startedAt,
+    });
     if (await store.saveLearner(userId, { profile: next, devices: row.devices }, row.rev)) {
       profile = next;
     }

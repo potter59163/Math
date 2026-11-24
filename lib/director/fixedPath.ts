@@ -2,7 +2,8 @@ import { th } from '@/lib/content/th';
 import { fillTokens } from '@/lib/core/tokens';
 import type { Level } from '@/lib/core/types';
 import type { LearnerProfile, UnitId } from '@/lib/learner/types';
-import { SKILLS, skillById, type SkillId } from '@/lib/topics/matrix/skills';
+import { activeTopicOf, DEFAULT_TOPIC, packOf, skillOf } from '@/lib/topics';
+import type { SkillId, TopicId } from '@/lib/topics/types';
 import type { AttemptContext } from './candidates';
 import { finalizeCandidates } from './candidates';
 import { chosenScene, leadClip } from './scene';
@@ -23,8 +24,9 @@ const ONLY = 1;
 export function fixedStepAt(
   units: readonly UnitId[],
   position: number,
+  topic: TopicId = DEFAULT_TOPIC,
 ): { skill: SkillId; level: Level } {
-  const skills = SKILLS.filter(({ unit }) => units.includes(unit));
+  const skills = packOf(topic).skills.filter(({ unit }) => units.includes(unit));
   const round = position % (skills.length * LEVELS.length);
   const skill = skills[Math.floor(round / LEVELS.length)];
   const level = Math.min(LEVELS[round % LEVELS.length], skill.maxLevel) as Level;
@@ -33,7 +35,8 @@ export function fixedStepAt(
 
 /** One path, from the number of items done. `attempt` is missing when the session starts. */
 export function fixedCandidates(profile: LearnerProfile, attempt?: AttemptContext): Candidate[] {
-  const { skill, level } = fixedStepAt(profile.student.units, profile.itemsDone);
+  const pack = packOf(activeTopicOf(profile.student));
+  const { skill, level } = fixedStepAt(pack.openUnits(profile.student), profile.itemsDone, pack.id);
   const next: NextStep = { skill, level, purpose: 'practice' };
 
   const wrong = attempt && attempt.outcome.classification.type !== 'correct';
@@ -51,7 +54,7 @@ export function fixedCandidates(profile: LearnerProfile, attempt?: AttemptContex
       next,
       stepKind: 'fixed',
       ruleReason: fillTokens(th.ruleReasons.fixed, {
-        skill: skillById(skill).nameTh,
+        skill: skillOf(skill).nameTh,
         level: String(level),
       }),
     },

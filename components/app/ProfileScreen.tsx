@@ -13,8 +13,7 @@ import { skillStateOf } from '@/lib/learner/profile';
 import { mapOf } from '@/lib/learner/progress';
 import { badgesOf, type Badge } from '@/lib/practice/rewards';
 import { testBlock, type AssessmentStatus } from '@/lib/sync/assessment';
-import { CATALOG } from '@/lib/topics/matrix/misconceptions';
-import { skillById } from '@/lib/topics/matrix/skills';
+import { allMisconceptions, misconceptionShortOf, skillOf } from '@/lib/topics';
 import { Avatar } from './Avatar';
 import { useLearner, useRequiredProfile } from './useLearner';
 
@@ -83,13 +82,13 @@ function Mastery({ profile }: { profile: Profile }) {
           const shown = status === 'passed' ? 100 : profile.skills[id] ? percent : 0;
           return (
             <li key={id} className="flex items-center gap-2 text-sm">
-              <span className="w-32 shrink-0 truncate">{skillById(id).nameTh}</span>
+              <span className="w-32 shrink-0 truncate">{skillOf(id).nameTh}</span>
               <span
                 role="progressbar"
                 aria-valuemin={0}
                 aria-valuemax={100}
                 aria-valuenow={shown}
-                aria-label={skillById(id).nameTh}
+                aria-label={skillOf(id).nameTh}
                 className="h-3 min-w-0 flex-1 overflow-hidden rounded-full border border-edge bg-surface"
               >
                 <span
@@ -182,8 +181,9 @@ export function ProfileScreen() {
   if (!profile) return <LoadingScreen />;
 
   const badges = badgesOf(profile);
-  const fixed = CATALOG.filter(({ id }) => profile.misconceptions[id]?.status === 'resolved');
-  const open = CATALOG.filter(({ id }) => {
+  const catalog = allMisconceptions();
+  const fixed = catalog.filter(({ id }) => profile.misconceptions[id]?.status === 'resolved');
+  const open = catalog.filter(({ id }) => {
     const status = profile.misconceptions[id]?.status;
     return status === 'suspected' || status === 'active';
   });
@@ -250,7 +250,7 @@ export function ProfileScreen() {
           </ul>
           {open.length > 0 && (
             <p className="text-sm text-muted">
-              {th.profile.open}: {open.map(({ id }) => th.misconceptionShort[id]).join(', ')}
+              {th.profile.open}: {open.map(({ id }) => misconceptionShortOf(id)).join(', ')}
             </p>
           )}
         </Section>

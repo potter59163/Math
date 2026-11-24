@@ -21,7 +21,15 @@ import { itemsOn, streakOf } from '@/lib/learner/activity';
 import { skillStateOf } from '@/lib/learner/profile';
 import { mapOf, nextSkill, type SkillStatus, type UnitOnMap } from '@/lib/learner/progress';
 import { recommendationFor, type Recommendation } from '@/lib/learner/recommend';
-import { skillById, type SkillId } from '@/lib/topics/matrix/skills';
+import {
+  activeTopicOf,
+  misconceptionShortOf,
+  packOf,
+  packOfSkill,
+  skillOf,
+  unitOf,
+} from '@/lib/topics';
+import type { SkillId } from '@/lib/topics/types';
 import { Mascot } from './Mascot';
 import { learner, useLearner, useRequiredProfile } from './useLearner';
 
@@ -31,10 +39,10 @@ function recommendationText(recommendation: Recommendation): string {
     case 'done':
       return copy.done;
     case 'fix':
-      return fillTokens(copy.fix, { m: th.misconceptionShort[recommendation.misconception] });
+      return fillTokens(copy.fix, { m: misconceptionShortOf(recommendation.misconception) });
     default:
       return fillTokens(copy[recommendation.kind], {
-        skill: skillById(recommendation.skill).nameTh,
+        skill: skillOf(recommendation.skill).nameTh,
       });
   }
 }
@@ -165,7 +173,7 @@ function SkillNode({
   onOpen(id: SkillId): void;
 }) {
   const Icon = NODE_ICON[status];
-  const { nameTh } = skillById(id);
+  const { nameTh } = skillOf(id);
   return (
     <li className="relative flex justify-center" style={{ height: PITCH }}>
       <button
@@ -205,9 +213,9 @@ function UnitPath({ unit, skills, onOpen }: UnitOnMap & { onOpen(id: SkillId): v
     <section className="flex flex-col gap-5">
       <h2 className="flex items-baseline gap-2">
         <span className="font-sans text-sm text-muted">
-          {fillTokens(th.learn.unit, { n: String(unit) })}
+          {fillTokens(th.learn.unit, { n: unitOf(unit).label })}
         </span>
-        <span className="marker text-xl">{th.units[unit]}</span>
+        <span className="marker text-xl">{unitOf(unit).titleTh}</span>
         <span className="ml-auto font-matrix text-sm text-muted tabular-nums">
           {done}/{skills.length}
         </span>
@@ -255,13 +263,15 @@ function SkillSheet({
     return () => element?.close();
   }, []);
 
-  const { nameTh, prereq, unit } = skillById(id);
+  const { nameTh, prereq, unit } = skillOf(id);
   const percent = Math.round(skillStateOf(profile, id).pKnown * 100);
   const openPrereqs = prereq.filter((other) => profile.skills[other]?.passed !== true);
 
   const go = () => {
     // The skill the director is already on just carries on, with whatever is open.
-    if (nextSkill(profile) !== id) learner.dispatch({ type: 'practice', skill: id });
+    if (nextSkill(profile, packOfSkill(id).id) !== id) {
+      learner.dispatch({ type: 'practice', skill: id });
+    }
     router.push('/learn/session');
   };
 
@@ -280,7 +290,7 @@ function SkillSheet({
     >
       <div className="flex flex-col gap-3 p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] motion-safe:animate-rise">
         <p className="text-sm text-muted">
-          {fillTokens(th.learn.unit, { n: String(unit) })} · {th.units[unit]}
+          {fillTokens(th.learn.unit, { n: unitOf(unit).label })} · {unitOf(unit).titleTh}
         </p>
         <h2 className="text-2xl">{nameTh}</h2>
         {status !== 'locked' && (
@@ -306,7 +316,7 @@ function SkillSheet({
         {status === 'locked' ? (
           <p className="text-muted">
             {fillTokens(th.learn.sheetLocked, {
-              skills: openPrereqs.map((other) => skillById(other).nameTh).join(', '),
+              skills: openPrereqs.map((other) => skillOf(other).nameTh).join(', '),
             })}
           </p>
         ) : (
@@ -337,7 +347,7 @@ function MyPath({ steps }: { steps: readonly PathStep[] }) {
         {recent.map(({ note, skill }, index) => (
           <li key={steps.length - index} className={index === 0 ? '' : 'text-muted'}>
             <p className="font-hand text-sm leading-relaxed">{note}</p>
-            <p className="text-xs text-muted">{skillById(skill).nameTh}</p>
+            <p className="text-xs text-muted">{skillOf(skill).nameTh}</p>
           </li>
         ))}
       </ol>
@@ -353,7 +363,8 @@ export function LessonsScreen() {
   const [openSkill, setOpenSkill] = useState<SkillId | null>(null);
   if (!profile) return <LoadingScreen />;
 
-  const units = mapOf(profile);
+  const shown = packOf(activeTopicOf(profile.student));
+  const units = mapOf(profile, shown.id);
   const openStatus = units
     .flatMap(({ skills }) => skills)
     .find(({ id }) => id === openSkill)?.status;
@@ -362,8 +373,8 @@ export function LessonsScreen() {
     <div className="mx-auto flex w-full max-w-lg flex-col">
       <header className="sticky top-0 z-10 flex items-center gap-2 border-b border-line bg-canvas px-4 py-2">
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-xl leading-tight">{th.learn.topic}</h1>
-          <p className="truncate text-xs text-muted">{th.learn.topicNote}</p>
+          <h1 className="truncate text-xl leading-tight">{shown.titleTh}</h1>
+          <p className="truncate text-xs text-muted">{shown.noteTh}</p>
         </div>
         <Chips profile={profile} now={now} />
       </header>
