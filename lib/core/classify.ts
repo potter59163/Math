@@ -1,7 +1,14 @@
+import type { Surd } from './surd';
 import type { Answer, Classification, DiagnosticAnswer, Item, Matrix } from './types';
 
 function sameShape(a: Matrix, b: Matrix): boolean {
   return a.length === b.length && a.every((row, i) => row.length === b[i].length);
+}
+
+/** Number of components where two same-length vectors differ, or null when the lengths differ. */
+export function countDiffComponents(a: Surd[], b: Surd[]): number | null {
+  if (a.length !== b.length) return null;
+  return a.filter((part, i) => !part.equals(b[i])).length;
 }
 
 /** Number of cells where two same-shape matrices differ, or null when the shapes differ. */
@@ -26,6 +33,10 @@ export function answersEqual(a: Answer, b: Answer): boolean {
       return b.kind === 'dims' && a.rows === b.rows && a.cols === b.cols;
     case 'choice':
       return b.kind === 'choice' && a.id === b.id;
+    case 'surd':
+      return b.kind === 'surd' && a.value.equals(b.value);
+    case 'vector':
+      return b.kind === 'vector' && countDiffComponents(a.value, b.value) === 0;
     case 'undefined':
       return b.kind === 'undefined';
   }
@@ -71,6 +82,17 @@ export function classify(item: Item, answer: Answer): Classification {
       const wrong = countDiffCells(answer.value, correct.value);
       if (wrong === null) return { type: 'shape_error' };
       if (wrong === 1) return { type: 'slip', cell: firstWrongCell(answer.value, correct.value) };
+    }
+  }
+
+  if (item.kind === 'vector' && item.correct.kind === 'vector') {
+    const expected = item.correct.value;
+    if (answer.kind !== 'vector') return { type: 'shape_error' };
+    const wrong = countDiffComponents(answer.value, expected);
+    if (wrong === null) return { type: 'shape_error' };
+    if (wrong === 1) {
+      const i = answer.value.findIndex((part, k) => !part.equals(expected[k]));
+      return { type: 'slip', cell: [i + 1, 1] };
     }
   }
 

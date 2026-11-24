@@ -126,7 +126,10 @@ function answerText(answer: DiagnosticAnswer): string {
     case 'matrix':
       return minus(JSON.stringify(answer.value).replace(/"/g, ''));
     case 'scalar':
+    case 'surd':
       return minus(answer.value.toString());
+    case 'vector':
+      return minus(`(${answer.value.join(', ')})`);
     case 'dims':
       return `${answer.rows}×${answer.cols}`;
     case 'choice':
@@ -169,7 +172,10 @@ function draftFrom(answer: DiagnosticAnswer, grid: Dims): Draft {
         cells: draft.cells.map((row, i) => row.map((_, j) => String(i + j + 1))),
       };
     case 'scalar':
+    case 'surd':
       return { ...draft, text: answer.value.toString() };
+    case 'vector':
+      return { ...draft, text: answer.value.join(', ') };
     case 'dims':
       return { ...draft, rows: String(answer.rows), cols: String(answer.cols) };
     case 'choice':

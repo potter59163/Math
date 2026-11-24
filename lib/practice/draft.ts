@@ -5,7 +5,7 @@ import type { Answer, Item } from '@/lib/core/types';
 // physical keyboard share one set of rules and tests can drive it key by key.
 
 export type KeypadChar =
-  '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '-' | '/' | '.';
+  '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '-' | '/' | '.' | '√';
 export type KeypadKey = KeypadChar | 'backspace' | 'next';
 export type Direction = 'left' | 'right' | 'up' | 'down';
 
@@ -30,6 +30,8 @@ const MAX_DIMENSION_DIGITS = 2;
 
 const isMatrixKind = ({ kind }: DraftItem) => kind === 'matrix' || kind === 'matrix_or_undefined';
 const isDimsKind = ({ kind }: DraftItem) => kind === 'dims' || kind === 'dims_or_undefined';
+/** Items whose boxes take √ (docs/VECTORS.md §3.3). A vector item's grid is n×1. */
+export const takesRoot = ({ kind }: DraftItem) => kind === 'surd' || kind === 'vector';
 
 function gridOf(item: DraftItem) {
   if (!item.grid) throw new Error(`draft: ${item.kind} item has no grid`);
@@ -38,6 +40,7 @@ function gridOf(item: DraftItem) {
 
 function boxCount(item: DraftItem): number {
   if (isMatrixKind(item)) return gridOf(item).rows * gridOf(item).cols;
+  if (item.kind === 'vector') return gridOf(item).rows;
   if (isDimsKind(item)) return 2;
   return item.kind === 'choice' ? 0 : 1;
 }
@@ -63,7 +66,10 @@ export function draftFromAnswer(item: DraftItem, answer: Answer): Draft {
     case 'matrix':
       return { ...draft, cells: answer.value.flat().map((cell) => cell.toString()) };
     case 'scalar':
+    case 'surd':
       return { ...draft, cells: [answer.value.toString()] };
+    case 'vector':
+      return { ...draft, cells: answer.value.map((part) => part.toString()) };
     case 'dims':
       return { ...draft, cells: [String(answer.rows), String(answer.cols)] };
     case 'choice':
@@ -80,9 +86,11 @@ function typeNumber(text: string, char: KeypadChar): string {
     return atLimit ? text : `-${text}`;
   }
   if (atLimit) return text;
-  if (char === '/') return /\d/.test(text) && !/[/.]/.test(text) ? `${text}/` : text;
+  // One √ per box, never in a decimal: 3√2, -√3/2, 3/2√2 and 1/√2 are the forms parseSurd reads.
+  if (char === '√') return /[√.]/.test(text) ? text : `${text}√`;
+  if (char === '/') return /\d$/.test(text) && !/[/.]/.test(text) ? `${text}/` : text;
   if (char === '.') {
-    if (/[/.]/.test(text)) return text;
+    if (/[/.√]/.test(text)) return text;
     return /\d$/.test(text) ? `${text}.` : `${text}0.`;
   }
   return text + char;
@@ -108,6 +116,7 @@ export function pressKey(draft: Draft, item: DraftItem, key: KeypadKey): Draft {
     return draft.active > 0 ? { ...draft, active: draft.active - 1 } : draft;
   }
 
+  if (key === '√' && !takesRoot(item)) return draft;
   const typed = isDimsKind(item) ? typeDimension(text, key) : typeNumber(text, key);
   return typed === text ? draft : withText(draft, typed);
 }
@@ -150,6 +159,7 @@ function toRaw(item: DraftItem, draft: Draft): RawAnswer | null {
   if (item.kind === 'choice') {
     return draft.choice === null ? null : { type: 'choice', id: draft.choice };
   }
+  if (item.kind === 'vector') return { type: 'vector', cells: draft.cells };
   return { type: 'number', text: draft.cells[0] };
 }
 

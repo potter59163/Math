@@ -12,6 +12,12 @@ import type {
 } from '@/lib/core/types';
 import type { SkillId } from './skills';
 
+/** The kinds a matrix item can be: never the √ kinds, which belong to vectors. */
+export type MatrixItemKind = Exclude<ItemKind, 'surd' | 'vector'>;
+
+/** An answer key of a matrix item. Students can still type any Answer. */
+export type MatrixAnswer = Exclude<Answer, { kind: 'surd' | 'vector' }>;
+
 /** The ★ misconceptions of docs/MISCONCEPTIONS.md. */
 export type MisconceptionId =
   | 'M01_DIM_SWAP'
@@ -85,12 +91,12 @@ export interface MatrixChoiceOption extends ChoiceOption {
 
 /** Everything about an item except its identity and diagnostics. */
 export interface ItemBody {
-  kind: ItemKind;
+  kind: MatrixItemKind;
   prompt: { key: PromptKey; params?: Record<string, string> };
   data: MatrixData;
   grid?: Dims;
   options?: MatrixChoiceOption[];
-  correct: Answer;
+  correct: MatrixAnswer;
 }
 
 export interface MatrixDiagnostic extends Diagnostic {

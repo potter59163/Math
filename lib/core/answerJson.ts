@@ -1,4 +1,5 @@
 import { Rational } from './rational';
+import { Surd } from './surd';
 import type { Answer } from './types';
 
 /** An Answer that survives JSON, as `attempts.answer` and a reload both need (SPEC §13). */
@@ -7,6 +8,8 @@ export type StoredAnswer =
   | { kind: 'scalar'; value: string }
   | { kind: 'dims'; rows: number; cols: number }
   | { kind: 'choice'; id: string }
+  | { kind: 'surd'; value: string }
+  | { kind: 'vector'; value: string[] }
   | { kind: 'undefined' };
 
 export function storeAnswer(answer: Answer): StoredAnswer {
@@ -18,7 +21,13 @@ export function storeAnswer(answer: Answer): StoredAnswer {
       };
     case 'scalar':
       return { kind: 'scalar', value: answer.value.toString() };
-    default:
+    case 'surd':
+      return { kind: 'surd', value: answer.value.toString() };
+    case 'vector':
+      return { kind: 'vector', value: answer.value.map((part) => part.toString()) };
+    case 'dims':
+    case 'choice':
+    case 'undefined':
       return answer;
   }
 }
@@ -32,7 +41,13 @@ export function restoreAnswer(stored: StoredAnswer): Answer {
       };
     case 'scalar':
       return { kind: 'scalar', value: Rational.parse(stored.value) };
-    default:
+    case 'surd':
+      return { kind: 'surd', value: Surd.parse(stored.value) };
+    case 'vector':
+      return { kind: 'vector', value: stored.value.map((part) => Surd.parse(part)) };
+    case 'dims':
+    case 'choice':
+    case 'undefined':
       return stored;
   }
 }

@@ -37,9 +37,11 @@ function enter(item: Item, answer: Answer): Draft {
   const boxes =
     answer.kind === 'matrix'
       ? answer.value.flat().map(String)
-      : answer.kind === 'scalar'
+      : answer.kind === 'scalar' || answer.kind === 'surd'
         ? [answer.value.toString()]
-        : [String(answer.rows), String(answer.cols)];
+        : answer.kind === 'vector'
+          ? answer.value.map(String)
+          : [String(answer.rows), String(answer.cols)];
   return boxes.reduce((current, text) => pressKey(type(current, item, text), item, 'next'), draft);
 }
 

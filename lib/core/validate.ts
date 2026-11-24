@@ -1,4 +1,9 @@
-import { countDiffCells, diagnosticsCollide, matchesDiagnostic } from './classify';
+import {
+  countDiffCells,
+  countDiffComponents,
+  diagnosticsCollide,
+  matchesDiagnostic,
+} from './classify';
 import type { Answer, DiagnosticAnswer, Item } from './types';
 
 export interface ValidationFailure {
@@ -47,6 +52,7 @@ function checkDiagnosticAgainstCorrect(
   answer: DiagnosticAnswer,
   correct: Answer,
   name: string,
+  oneOff: boolean,
 ): ValidationFailure | null {
   if (matchesDiagnostic(answer, correct)) {
     return { rule: 1, detail: `${name} equals the correct answer` };
@@ -55,6 +61,15 @@ function checkDiagnosticAgainstCorrect(
     const distance = countDiffCells(answer.value, correct.value);
     if (distance !== null && distance < 2) {
       return { rule: 3, detail: `${name} is ${distance} cell away from the correct answer` };
+    }
+  }
+  if (answer.kind === 'vector' && correct.kind === 'vector') {
+    const distance = countDiffComponents(answer.value, correct.value);
+    if (distance !== null && distance < (oneOff ? 1 : 2)) {
+      return {
+        rule: 3,
+        detail: `${name} is ${distance} component away from the correct answer`,
+      };
     }
   }
   return null;
@@ -71,6 +86,7 @@ export function validateItem(item: Item, topicRules?: TopicRules): ValidationRes
         diagnostic.answer,
         item.correct,
         label(diagnostic),
+        diagnostic.oneOff === true,
       );
       if (problem) return problem;
     }

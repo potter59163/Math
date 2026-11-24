@@ -1,6 +1,7 @@
 import { th } from '@/lib/content/th';
 import { fillTokens, tokensIn } from '@/lib/core/tokens';
 import type { Answer, Matrix } from '@/lib/core/types';
+import { surdText } from '@/lib/core/surd';
 import { dimsLabel, rationalText, signed } from '@/lib/topics/matrix/format';
 import { det, shape } from '@/lib/topics/matrix/ops';
 import { firstWrongCell } from '@/lib/topics/matrix/scenes';
@@ -85,6 +86,10 @@ function answerText(item: MatrixItem, answer: Answer): string {
       return matrixText(answer.value);
     case 'scalar':
       return rationalText(answer.value);
+    case 'surd':
+      return surdText(answer.value);
+    case 'vector':
+      return `(${answer.value.map(surdText).join(', ')})`;
     case 'dims':
       return dimsLabel(answer);
     case 'undefined':
