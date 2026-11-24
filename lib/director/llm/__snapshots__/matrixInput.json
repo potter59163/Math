@@ -1,0 +1,411 @@
+[
+  {
+    "trigger": "after_attempt",
+    "revealAllowed": true,
+    "session": {
+      "itemsDone": 1
+    },
+    "interest": "เกม",
+    "lastAttempt": {
+      "skill": "mult",
+      "level": "ง่าย",
+      "matrices": [
+        "A",
+        "B"
+      ],
+      "result": "misconception",
+      "misconception": {
+        "id": "M09_MULT_ELEMENTWISE",
+        "nameTh": "คูณทีละช่อง"
+      },
+      "speed": "ปกติ",
+      "hintLevel": 0
+    },
+    "skills": [
+      {
+        "id": "mult",
+        "nameTh": "คูณเมทริกซ์",
+        "mastery": 0.17,
+        "level": "ง่าย",
+        "recentFirstTry": "✗"
+      },
+      {
+        "id": "mult_defined",
+        "nameTh": "คูณได้ไหม / มิติผลคูณ",
+        "mastery": 0.15,
+        "level": "ง่าย",
+        "recentFirstTry": ""
+      }
+    ],
+    "misconceptions": [
+      {
+        "id": "M09_MULT_ELEMENTWISE",
+        "nameTh": "คูณทีละช่อง",
+        "status": "suspected",
+        "count": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": "c1",
+        "scene": "row_col_dot",
+        "beats": [
+          "compare",
+          "pick_row",
+          "pick_col",
+          "only_first",
+          "sum",
+          "place",
+          "try_row",
+          "try_col",
+          "try_done",
+          "end"
+        ],
+        "next": {
+          "skill": "mult",
+          "level": "ง่าย",
+          "purpose": "probe",
+          "target": "M09_MULT_ELEMENTWISE"
+        },
+        "ruleReason": "เจอคูณทีละช่อง ครั้งที่ 1 → อธิบายด้วยคลิป แล้วให้ข้อทดสอบ"
+      },
+      {
+        "id": "c2",
+        "next": {
+          "skill": "mult",
+          "level": "ง่าย",
+          "purpose": "probe",
+          "target": "M09_MULT_ELEMENTWISE"
+        },
+        "ruleReason": "เจอคูณทีละช่อง → ให้ข้อทดสอบซ้ำโดยไม่อธิบาย"
+      },
+      {
+        "id": "c3",
+        "scene": "worked_solution",
+        "beats": [
+          "step_1",
+          "step_2",
+          "step_3",
+          "step_4",
+          "step_5"
+        ],
+        "next": {
+          "skill": "mult",
+          "level": "ง่าย",
+          "purpose": "probe",
+          "target": "M09_MULT_ELEMENTWISE"
+        },
+        "ruleReason": "เจอคูณทีละช่อง → ดูวิธีทำทีละขั้น แล้วให้ข้อทดสอบที่ง่ายลง"
+      }
+    ],
+    "allowedTokens": [
+      "i",
+      "j",
+      "aCell",
+      "bCell",
+      "studentCell",
+      "correctCell",
+      "dimsA",
+      "dimsB",
+      "studentAnswer",
+      "correctAnswer"
+    ]
+  },
+  {
+    "trigger": "after_attempt",
+    "revealAllowed": true,
+    "session": {
+      "itemsDone": 1
+    },
+    "interest": "เกม",
+    "lastAttempt": {
+      "skill": "addsub",
+      "level": "กลาง",
+      "matrices": [
+        "A",
+        "B"
+      ],
+      "result": "misconception",
+      "misconception": {
+        "id": "M05_SUB_REVERSED",
+        "nameTh": "ลบสลับลำดับ"
+      },
+      "speed": "ปกติ",
+      "hintLevel": 0
+    },
+    "skills": [
+      {
+        "id": "addsub",
+        "nameTh": "บวก/ลบเมทริกซ์",
+        "mastery": 0.17,
+        "level": "ง่าย",
+        "recentFirstTry": "✗"
+      },
+      {
+        "id": "dim",
+        "nameTh": "มิติของเมทริกซ์",
+        "mastery": 0.15,
+        "level": "ง่าย",
+        "recentFirstTry": ""
+      }
+    ],
+    "misconceptions": [
+      {
+        "id": "M05_SUB_REVERSED",
+        "nameTh": "ลบสลับลำดับ",
+        "status": "suspected",
+        "count": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": "c1",
+        "scene": "cell_by_cell",
+        "beats": [
+          "compare",
+          "setup",
+          "cell_1",
+          "try",
+          "try_done",
+          "rest",
+          "done"
+        ],
+        "next": {
+          "skill": "addsub",
+          "level": "กลาง",
+          "purpose": "probe",
+          "target": "M05_SUB_REVERSED"
+        },
+        "ruleReason": "เจอลบสลับลำดับ ครั้งที่ 1 → อธิบายด้วยคลิป แล้วให้ข้อทดสอบ"
+      },
+      {
+        "id": "c2",
+        "next": {
+          "skill": "addsub",
+          "level": "กลาง",
+          "purpose": "probe",
+          "target": "M05_SUB_REVERSED"
+        },
+        "ruleReason": "เจอลบสลับลำดับ → ให้ข้อทดสอบซ้ำโดยไม่อธิบาย"
+      },
+      {
+        "id": "c3",
+        "scene": "worked_solution",
+        "beats": [
+          "step_1",
+          "step_2",
+          "step_3",
+          "step_4",
+          "step_5"
+        ],
+        "next": {
+          "skill": "addsub",
+          "level": "กลาง",
+          "purpose": "probe",
+          "target": "M05_SUB_REVERSED"
+        },
+        "ruleReason": "เจอลบสลับลำดับ → ดูวิธีทำทีละขั้น แล้วให้ข้อทดสอบที่ง่ายลง"
+      }
+    ],
+    "allowedTokens": [
+      "i",
+      "j",
+      "aCell",
+      "bCell",
+      "studentCell",
+      "correctCell",
+      "dimsA",
+      "dimsB",
+      "studentAnswer",
+      "correctAnswer"
+    ]
+  },
+  {
+    "trigger": "after_attempt",
+    "revealAllowed": true,
+    "session": {
+      "itemsDone": 1
+    },
+    "interest": "เกม",
+    "lastAttempt": {
+      "skill": "det_small",
+      "level": "ง่าย",
+      "matrices": [
+        "A"
+      ],
+      "result": "misconception",
+      "misconception": {
+        "id": "M12_DET2_FORMULA",
+        "nameTh": "ใช้สูตร det ผิด",
+        "variant": "ADD"
+      },
+      "speed": "ปกติ",
+      "hintLevel": 0
+    },
+    "skills": [
+      {
+        "id": "det_small",
+        "nameTh": "det",
+        "mastery": 0.17,
+        "level": "ง่าย",
+        "recentFirstTry": "✗"
+      },
+      {
+        "id": "dim",
+        "nameTh": "มิติของเมทริกซ์",
+        "mastery": 0.15,
+        "level": "ง่าย",
+        "recentFirstTry": ""
+      }
+    ],
+    "misconceptions": [
+      {
+        "id": "M12_DET2_FORMULA",
+        "nameTh": "ใช้สูตร det ผิด",
+        "status": "suspected",
+        "count": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": "c1",
+        "scene": "det_diagonals",
+        "beats": [
+          "compare",
+          "down",
+          "try",
+          "up",
+          "result"
+        ],
+        "next": {
+          "skill": "det_small",
+          "level": "ง่าย",
+          "purpose": "probe",
+          "target": "M12_DET2_FORMULA"
+        },
+        "ruleReason": "เจอใช้สูตร det ผิด ครั้งที่ 1 → อธิบายด้วยคลิป แล้วให้ข้อทดสอบ"
+      },
+      {
+        "id": "c2",
+        "next": {
+          "skill": "det_small",
+          "level": "ง่าย",
+          "purpose": "probe",
+          "target": "M12_DET2_FORMULA"
+        },
+        "ruleReason": "เจอใช้สูตร det ผิด → ให้ข้อทดสอบซ้ำโดยไม่อธิบาย"
+      },
+      {
+        "id": "c3",
+        "scene": "worked_solution",
+        "beats": [
+          "step_1"
+        ],
+        "next": {
+          "skill": "det_small",
+          "level": "ง่าย",
+          "purpose": "probe",
+          "target": "M12_DET2_FORMULA"
+        },
+        "ruleReason": "เจอใช้สูตร det ผิด → ดูวิธีทำทีละขั้น แล้วให้ข้อทดสอบที่ง่ายลง"
+      }
+    ],
+    "allowedTokens": [
+      "dimsA",
+      "studentAnswer",
+      "correctAnswer",
+      "det"
+    ]
+  },
+  {
+    "trigger": "after_attempt",
+    "revealAllowed": true,
+    "session": {
+      "itemsDone": 1
+    },
+    "interest": "เกม",
+    "lastAttempt": {
+      "skill": "dim",
+      "level": "ง่าย",
+      "matrices": [
+        "A"
+      ],
+      "result": "misconception",
+      "misconception": {
+        "id": "M01_DIM_SWAP",
+        "nameTh": "ตอบมิติสลับกัน"
+      },
+      "speed": "ปกติ",
+      "hintLevel": 0
+    },
+    "skills": [
+      {
+        "id": "dim",
+        "nameTh": "มิติของเมทริกซ์",
+        "mastery": 0.17,
+        "level": "ง่าย",
+        "recentFirstTry": "✗"
+      }
+    ],
+    "misconceptions": [
+      {
+        "id": "M01_DIM_SWAP",
+        "nameTh": "ตอบมิติสลับกัน",
+        "status": "suspected",
+        "count": 1
+      }
+    ],
+    "candidates": [
+      {
+        "id": "c1",
+        "scene": "dimension_match",
+        "beats": [
+          "compare",
+          "count_rows",
+          "count_cols",
+          "result",
+          "try",
+          "try_done"
+        ],
+        "next": {
+          "skill": "dim",
+          "level": "ง่าย",
+          "purpose": "probe",
+          "target": "M01_DIM_SWAP"
+        },
+        "ruleReason": "เจอตอบมิติสลับกัน ครั้งที่ 1 → อธิบายด้วยคลิป แล้วให้ข้อทดสอบ"
+      },
+      {
+        "id": "c2",
+        "next": {
+          "skill": "dim",
+          "level": "ง่าย",
+          "purpose": "probe",
+          "target": "M01_DIM_SWAP"
+        },
+        "ruleReason": "เจอตอบมิติสลับกัน → ให้ข้อทดสอบซ้ำโดยไม่อธิบาย"
+      },
+      {
+        "id": "c3",
+        "scene": "worked_solution",
+        "beats": [
+          "step_1",
+          "step_2",
+          "step_3"
+        ],
+        "next": {
+          "skill": "dim",
+          "level": "ง่าย",
+          "purpose": "probe",
+          "target": "M01_DIM_SWAP"
+        },
+        "ruleReason": "เจอตอบมิติสลับกัน → ดูวิธีทำทีละขั้น แล้วให้ข้อทดสอบที่ง่ายลง"
+      }
+    ],
+    "allowedTokens": [
+      "dimsA",
+      "studentAnswer",
+      "correctAnswer"
+    ]
+  }
+]

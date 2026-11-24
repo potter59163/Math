@@ -73,3 +73,11 @@ export function deriveSeed(studentId: string, counter: number): number {
   hash ^= hash >>> 16;
   return hash >>> 0;
 }
+
+/**
+ * Seed for a scene's example. It never touches `Profile.counter`, so how many clips a student opens
+ * cannot move the numbers of their real items (SPEC §6). Every topic's clips use it.
+ */
+export function exampleSeed(base: number | string, nth: number): number {
+  return deriveSeed(`example:${base}`, nth);
+}

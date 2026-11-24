@@ -1,3 +1,12 @@
+/** A comma list of topic ids. Empty or missing means matrices only. */
+export function topicsFrom(raw: string | undefined): readonly string[] {
+  const topics = (raw ?? '')
+    .split(',')
+    .map((topic) => topic.trim())
+    .filter((topic) => topic.length > 0);
+  return topics.length > 0 ? topics : ['matrix'];
+}
+
 export const CONFIG = {
   appName: 'Kidma',
   tutorName: 'คิว',
@@ -34,5 +43,9 @@ export const CONFIG = {
     // Without the time a student takes to tap. See docs/DECISIONS.md: a clip with a voice runs longer.
     limitMs: { intro: 40000, concept: 22000, request: 22000, remediate: 30000, reveal: 30000 },
   },
+  // The matrix generators' version, which every matrix ItemRef carries. Each topic pack has its own, so
+  // a change to another topic's generators never orphans a matrix item (docs/VECTORS.md §6.1).
   generatorVersion: 2,
+  // Topics students may be offered, from NEXT_PUBLIC_TOPICS ("matrix,vector"). Only registered ones are.
+  topics: topicsFrom(process.env.NEXT_PUBLIC_TOPICS),
 } as const;
