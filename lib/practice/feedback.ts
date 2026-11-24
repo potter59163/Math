@@ -1,7 +1,7 @@
 import { th } from '@/lib/content/th';
-import { fillTokens } from '@/lib/core/tokens';
 import type { Classification } from '@/lib/core/types';
-import type { MisconceptionId } from '@/lib/topics/matrix/types';
+import { DEFAULT_TOPIC, packOf, packOfMisconception } from '@/lib/topics';
+import type { MisconceptionId, TopicId } from '@/lib/topics/types';
 
 export interface Feedback {
   tone: 'correct' | 'wrong';
@@ -13,13 +13,17 @@ export interface Feedback {
 
 /** The message for this way of being wrong. Never contains the right answer (SPEC §9). */
 export function misconceptionMessage(id: MisconceptionId, variant?: string): string {
-  const entry: string | Record<string, string> = th.feedback.misconceptions[id];
-  if (typeof entry === 'string') return entry;
-  return (variant !== undefined && entry[variant]) || th.hints[id];
+  return packOfMisconception(id).copy.misconceptionFeedback(id, variant);
 }
 
-/** SPEC §9. Runs on the client with no network, so it appears as soon as the answer is sent. */
-export function feedbackFor(classification: Classification): Feedback {
+/**
+ * SPEC §9. Runs on the client with no network, so it appears as soon as the answer is sent. The topic
+ * words a slip: a cell of a matrix, a component of a vector.
+ */
+export function feedbackFor(
+  classification: Classification,
+  topic: TopicId = DEFAULT_TOPIC,
+): Feedback {
   switch (classification.type) {
     case 'correct':
       return { tone: 'correct', headline: th.feedback.correct, offersWorked: false };
@@ -27,18 +31,16 @@ export function feedbackFor(classification: Classification): Feedback {
       return {
         tone: 'wrong',
         headline: th.feedback.wrong,
-        detail: misconceptionMessage(classification.id as MisconceptionId, classification.variant),
+        detail: misconceptionMessage(classification.id, classification.variant),
         offersWorked: true,
       };
-    case 'slip': {
-      const [i, j] = classification.cell;
+    case 'slip':
       return {
         tone: 'wrong',
         headline: th.feedback.almost,
-        detail: fillTokens(th.feedback.slip, { i: String(i), j: String(j) }),
+        detail: packOf(topic).copy.slip(classification.cell),
         offersWorked: true,
       };
-    }
     case 'shape_error':
     case 'unknown':
       return {

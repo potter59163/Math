@@ -1,7 +1,8 @@
 import { th } from '@/lib/content/th';
 import { fillTokens } from '@/lib/core/tokens';
 import type { Level } from '@/lib/core/types';
-import type { MisconceptionId } from '@/lib/topics/matrix/types';
+import { misconceptionShortOf } from '@/lib/topics';
+import type { MisconceptionId } from '@/lib/topics/types';
 import type { Candidate, PathKind, PathStep, Profile } from './types';
 
 /** One line at 360px (AI_DIRECTOR §3.2). */
@@ -11,7 +12,7 @@ export const MAX_NOTE_UNITS = 40;
 export function noteFor(kind: PathKind, misconception?: MisconceptionId): string {
   return fillTokens(
     th.pathNotes[kind],
-    misconception && { m: th.misconceptionShort[misconception] },
+    misconception ? { m: misconceptionShortOf(misconception) } : undefined,
   );
 }
 

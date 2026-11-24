@@ -1,4 +1,4 @@
-import type { SceneSpec } from '@/lib/topics/matrix/scenes';
+import type { SceneSpec } from '@/lib/topics/types';
 import { CellByCell } from './CellByCell';
 import { CellLocator } from './CellLocator';
 import { DetSum } from './DetSum';
@@ -10,7 +10,10 @@ import { Sarrus } from './Sarrus';
 import { TransposeFlip } from './TransposeFlip';
 import { WorkedSolution } from './WorkedSolution';
 
-/** Pure on its spec and beat: the same two always draw the same frame (SCENES §2). */
+/**
+ * Pure on its spec and beat: the same two always draw the same frame (SCENES §2). The switch covers
+ * every topic's templates, so a pack that adds one cannot compile until it has a case here.
+ */
 export function SceneStage({ spec, beat }: { spec: SceneSpec; beat: string }) {
   switch (spec.template) {
     case 'cell_by_cell':

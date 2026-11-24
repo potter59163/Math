@@ -1,9 +1,8 @@
 import { th } from '@/lib/content/th';
 import { createRng, deriveSeed } from '@/lib/core/prng';
 import { tokensIn } from '@/lib/core/tokens';
-import type { Answer } from '@/lib/core/types';
+import type { Answer, Item } from '@/lib/core/types';
 import type { AttemptOutcome } from '@/lib/learner/types';
-import type { MatrixItem } from '@/lib/topics/matrix/types';
 import { fillStudentText, resolveTokens } from './tokens';
 import type { Candidate, Profile } from './types';
 
@@ -47,7 +46,7 @@ function keyFor(
 
 export function ruleMessage(
   profile: Pick<Profile, 'student' | 'itemsDone'>,
-  item: MatrixItem,
+  item: Item,
   answer: Answer,
   outcome: AttemptOutcome,
   chosen: Candidate,

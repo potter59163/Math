@@ -1,6 +1,6 @@
 import type { th } from '@/lib/content/th';
 import type { StoredAnswer } from '@/lib/core/answerJson';
-import type { Level } from '@/lib/core/types';
+import type { ItemRef, Level } from '@/lib/core/types';
 import type {
   AttemptOutcome,
   HintLevel,
@@ -8,9 +8,7 @@ import type {
   ThemeId,
   UnitId,
 } from '@/lib/learner/types';
-import type { Caught, TemplateId } from '@/lib/topics/matrix/scenes';
-import type { SkillId } from '@/lib/topics/matrix/skills';
-import type { MatrixItemRef, MisconceptionId } from '@/lib/topics/matrix/types';
+import type { Caught, MisconceptionId, SkillId, TemplateId } from '@/lib/topics/types';
 
 // All of this is plain JSON, so a turn can be saved, logged to `decisions` and sent by /api/attempt.
 
@@ -58,11 +56,11 @@ export type SceneRequest =
       seed: number;
       level: Level;
       /** The item the example must not give away (SPEC §4). */
-      avoid?: MatrixItemRef;
+      avoid?: ItemRef;
       purpose: 'concept' | 'request';
     }
-  | { kind: 'remediate'; ref: MatrixItemRef; answer: StoredAnswer; caught: Caught; theme?: ThemeId }
-  | { kind: 'reveal'; ref: MatrixItemRef };
+  | { kind: 'remediate'; ref: ItemRef; answer: StoredAnswer; caught: Caught; theme?: ThemeId }
+  | { kind: 'reveal'; ref: ItemRef };
 
 export interface ChosenScene {
   request: SceneRequest;
@@ -110,7 +108,7 @@ export interface NextTurn {
   /** Played in order before the next item. */
   scenes: ChosenScene[];
   /** Null when the open item carries on. */
-  next: MatrixItemRef | null;
+  next: ItemRef | null;
   pathStep: PathStep;
   /** R7 fired, so the teacher should be alerted, whichever candidate was chosen. */
   stuck: boolean;
@@ -124,7 +122,7 @@ export interface NextTurn {
 
 /** The item just answered, kept so that a reload after sending shows the same feedback. */
 export interface ClosedAttempt {
-  ref: MatrixItemRef;
+  ref: ItemRef;
   answer: StoredAnswer;
   outcome: AttemptOutcome;
   hintLevel: HintLevel;

@@ -1,8 +1,8 @@
-import { th } from '@/lib/content/th';
-import type { MatrixChoiceOption } from '@/lib/topics/matrix/types';
+import { th, type ChoiceKey } from '@/lib/content/th';
+import type { ChoiceOption } from '@/lib/core/types';
 
 interface ChoiceButtonsProps {
-  options: MatrixChoiceOption[];
+  options: ChoiceOption[];
   selected: string | null;
   onPick(id: string): void;
 }
@@ -25,7 +25,7 @@ export function ChoiceButtons({ options, selected, onPick }: ChoiceButtonsProps)
               isSelected ? 'border-brand bg-brand-soft text-ink' : 'border-edge bg-surface text-ink'
             }`}
           >
-            {th.choices[labelKey]}
+            {th.choices[labelKey as ChoiceKey]}
           </button>
         );
       })}

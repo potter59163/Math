@@ -13,6 +13,7 @@ import { CONFIG } from '@/lib/config';
 import { th } from '@/lib/content/th';
 import { storeAnswer } from '@/lib/core/answerJson';
 import { fillTokens } from '@/lib/core/tokens';
+import type { Item } from '@/lib/core/types';
 import { rebuildItem } from '@/lib/director/items';
 import {
   emptyDraft,
@@ -31,7 +32,6 @@ import {
   type AssessmentResult,
   type AssessmentScore,
 } from '@/lib/sync/assessment';
-import type { MatrixItem } from '@/lib/topics/matrix/types';
 import { Mascot } from './Mascot';
 import { learner, useLearner, useRequiredProfile } from './useLearner';
 
@@ -41,9 +41,9 @@ type Stage =
   | { name: 'loading' }
   | { name: 'unavailable' }
   | { name: 'intro'; form: AssessmentForm }
-  | { name: 'taking'; items: MatrixItem[]; startedAt: number }
-  | { name: 'sending'; items: MatrixItem[]; startedAt: number }
-  | { name: 'failed'; items: MatrixItem[]; startedAt: number }
+  | { name: 'taking'; items: Item[]; startedAt: number }
+  | { name: 'sending'; items: Item[]; startedAt: number }
+  | { name: 'failed'; items: Item[]; startedAt: number }
   | { name: 'done'; result: AssessmentScore };
 
 function TestItem({
@@ -52,7 +52,7 @@ function TestItem({
   total,
   onAnswer,
 }: {
-  item: MatrixItem;
+  item: Item;
   itemNo: number;
   total: number;
   onAnswer(answer: AssessmentAnswer['answer'], timeMs: number): void;
@@ -217,7 +217,7 @@ export function TestScreen({ phase }: { phase: AssessmentPhase }) {
 
   const items = useMemo(() => ('items' in stage ? stage.items : null), [stage]);
 
-  const submit = async (all: AssessmentAnswer[], current: MatrixItem[], startedAt: number) => {
+  const submit = async (all: AssessmentAnswer[], current: Item[], startedAt: number) => {
     setStage({ name: 'sending', items: current, startedAt });
     try {
       // The server counts practice from what it has received, so anything still queued goes first.
@@ -294,7 +294,7 @@ export function TestScreen({ phase }: { phase: AssessmentPhase }) {
               setStage({ name: 'unavailable' });
               return;
             }
-            setStage({ name: 'taking', items: built as MatrixItem[], startedAt: Date.now() });
+            setStage({ name: 'taking', items: built as Item[], startedAt: Date.now() });
           }}
         >
           {th.test.begin}

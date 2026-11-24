@@ -14,10 +14,10 @@ import { LazyScene, preloadScenes } from '@/components/scenes/LazyScene';
 import type { SceneView } from '@/components/scenes/playerState';
 import { sfx } from '@/lib/client/sfx';
 import { soundFor } from '@/lib/practice/rewards';
-import { th } from '@/lib/content/th';
+import { th, type ChoiceKey } from '@/lib/content/th';
 import { restoreAnswer, storeAnswer } from '@/lib/core/answerJson';
 import { fillTokens } from '@/lib/core/tokens';
-import type { Answer } from '@/lib/core/types';
+import type { Answer, Item } from '@/lib/core/types';
 import { rebuildItem } from '@/lib/director/items';
 import { stripNote } from '@/lib/director/pathStep';
 import { sceneOfChosen, sceneOrNull, workedRequest } from '@/lib/director/scene';
@@ -46,9 +46,8 @@ import {
 } from '@/lib/practice/draft';
 import { hintAt, type Hint } from '@/lib/practice/hints';
 import { actionFromKey } from '@/lib/practice/keyboard';
-import type { SceneSpec } from '@/lib/topics/matrix/scenes';
-import { skillById, type SkillId } from '@/lib/topics/matrix/skills';
-import type { MatrixItem } from '@/lib/topics/matrix/types';
+import { activeTopicOf, packOf, skillOf, unitOf } from '@/lib/topics';
+import type { SceneSpec, SkillId } from '@/lib/topics/types';
 import { FeedbackCard } from './FeedbackCard';
 import { HintBubble } from './HintBubble';
 import { ItemPrompt } from './ItemPrompt';
@@ -66,7 +65,7 @@ const ANSWER_SLOT = 'mx-auto h-[278px] w-full max-w-lg px-4 py-2';
 const DIRECTIONS: readonly string[] = ['left', 'right', 'up', 'down'];
 
 interface ClosedItem extends Omit<ClosedAttempt, 'ref' | 'answer'> {
-  item: MatrixItem;
+  item: Item;
   answer: Answer;
   turn: NextTurn;
 }
@@ -77,9 +76,10 @@ function skillOfScene(request: SceneRequest, fallback: SkillId): SkillId {
 }
 
 function sceneTitle(spec: SceneSpec, skill: SkillId): string {
-  const { nameTh, unit } = skillById(skill);
+  const { nameTh, unit } = skillOf(skill);
   if (spec.purpose === 'intro') {
-    return fillTokens(th.scenes.player.unitTitle, { n: String(unit), name: th.units[unit] });
+    const { label, titleTh } = unitOf(unit);
+    return fillTokens(th.scenes.player.unitTitle, { n: label, name: titleTh });
   }
   return spec.purpose === 'reveal' ? th.session.workedTitle : nameTh;
 }
@@ -102,6 +102,7 @@ export function SessionScreen() {
 /** A clip with no feedback to go back to, like the lead clip of a new session. Never blocks the item. */
 function ClipOnly({ profile, clip }: { profile: Profile; clip: ChosenScene }) {
   const { request } = clip;
+  const firstSkill = packOf(activeTopicOf(profile.student)).skills[0].id;
   const spec = useMemo(() => sceneOfChosen(clip), [clip]);
   const skip = useEffectEvent(() => learner.dispatch({ type: 'finish_scene' }));
   useEffect(() => {
@@ -115,7 +116,7 @@ function ClipOnly({ profile, clip }: { profile: Profile; clip: ChosenScene }) {
         <LazyScene
           modal
           spec={spec}
-          title={sceneTitle(spec, skillOfScene(request, profile.current?.ref.skill ?? 'dim'))}
+          title={sceneTitle(spec, skillOfScene(request, profile.current?.ref.skill ?? firstSkill))}
           onView={(view) => logView(spec, view)}
           onDone={() => learner.dispatch({ type: 'finish_scene' })}
         />
@@ -189,7 +190,7 @@ function SessionLoop({ profile }: { profile: Profile }) {
 }
 
 interface ItemScreenProps {
-  item: MatrixItem;
+  item: Item;
   profile: Profile;
   closed: ClosedItem | null;
   onSubmit(answer: Answer, time: { timeMs: number; at: number }): void;
@@ -305,7 +306,7 @@ function ItemScreen({
     if (hintLevel > 0) hintSpot.current?.scrollIntoView({ block: 'nearest' });
   }, [hintLevel]);
 
-  const skill = skillById(item.ref.skill);
+  const skill = skillOf(item.ref.skill);
   const answered = closed ? answeredLine(item, draft) : '';
 
   /**
@@ -417,6 +418,7 @@ function ItemScreen({
             {closed ? (
               <FeedbackCard
                 outcome={closed.outcome}
+                topic={packOf(item.ref.topic).id}
                 turn={closed.turn}
                 thinking={llm && thinking}
                 waiting={waiting}
@@ -488,7 +490,7 @@ function ItemScreen({
   );
 }
 
-function canBeUndefined({ kind }: MatrixItem): boolean {
+function canBeUndefined({ kind }: Item): boolean {
   return kind === 'matrix_or_undefined' || kind === 'dims_or_undefined';
 }
 
@@ -534,7 +536,7 @@ function HelpButton({ onHelp }: { onHelp(): void }) {
 }
 
 interface AnswerBoxesProps {
-  item: MatrixItem;
+  item: Item;
   draft: Draft;
   outcome?: AttemptOutcome;
   onSelect(box: number): void;
@@ -579,8 +581,10 @@ function issueText(issue: NotReadyReason, isChoice: boolean): string {
 }
 
 /** Repeats an answer the closed screen no longer shows: a choice, or the undefined button. */
-function answeredLine(item: MatrixItem, draft: Draft): string {
+function answeredLine(item: Item, draft: Draft): string {
   const option = item.options?.find(({ id }) => id === draft.choice);
-  const answer = draft.isUndefined ? th.session.undefined : option && th.choices[option.labelKey];
+  const answer = draft.isUndefined
+    ? th.session.undefined
+    : option && th.choices[option.labelKey as ChoiceKey];
   return answer ? fillTokens(th.session.yourAnswer, { answer }) : '';
 }

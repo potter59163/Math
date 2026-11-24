@@ -1,11 +1,17 @@
 import { CONFIG } from '@/lib/config';
 import type { StoredAnswer } from '@/lib/core/answerJson';
 import type { Profile } from '@/lib/director/types';
-import type { MatrixItemRef } from '@/lib/topics/matrix/types';
+import type { ItemRef } from '@/lib/core/types';
 
 // The pre-test and the post-test across the wire.
 
 export type AssessmentPhase = 'pre' | 'post';
+
+/**
+ * Only matrices have a pre/post test in the app. Its rows are keyed by user and phase, so a second
+ * topic's test needs that unique index to take the topic too (docs/VECTORS.md §6.1).
+ */
+export const ASSESSED_TOPIC = 'matrix';
 
 export type TestBlock = 'already_learning' | 'too_early';
 
@@ -28,7 +34,7 @@ export type AssessmentStatus = Record<AssessmentPhase, AssessmentScore | null>;
 export interface AssessmentForm {
   phase: AssessmentPhase;
   /** Only references: the browser builds the items with the same engine, and nothing says which is right. */
-  refs: MatrixItemRef[];
+  refs: ItemRef[];
   /** Already taken, so the screen shows the result instead of the test. */
   done: AssessmentScore | null;
 }

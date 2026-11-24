@@ -1,4 +1,4 @@
-import type { Answer } from '@/lib/core/types';
+import type { Answer, Item } from '@/lib/core/types';
 import { currentItem } from '@/lib/director/items';
 import { beginSession, requestHelp } from '@/lib/director/rules';
 import { newProfile } from '@/lib/director/turn';
@@ -7,8 +7,7 @@ import { applyPretest } from '@/lib/learner/profile';
 import type { AttemptOutcome, PretestResult, SkillState, UnitId } from '@/lib/learner/types';
 import { misconceptionAnswer, slipAnswer, unknownAnswer } from '@/lib/sim/answers';
 import { answerItem, openItem } from '@/lib/sim/drive';
-import type { SkillId } from '@/lib/topics/matrix/skills';
-import type { MatrixItem, MisconceptionId } from '@/lib/topics/matrix/types';
+import type { MisconceptionId, SkillId } from '@/lib/topics/types';
 
 /** How to answer one item. A bug the item cannot show is answered right, and the table says so. */
 export type Mark = 'right' | 'slip' | 'unknown' | { bug: MisconceptionId };
@@ -182,7 +181,7 @@ export const SCENARIOS: Scenario[] = [
 ];
 
 export interface LabStep {
-  item: MatrixItem;
+  item: Item;
   answer: Answer;
   outcome: AttemptOutcome;
   turn: NextTurn;
@@ -195,7 +194,7 @@ export interface LabRun {
   turn: NextTurn | null;
 }
 
-export function answerFor(item: MatrixItem, mark: Mark): Answer {
+export function answerFor(item: Item, mark: Mark): Answer {
   if (mark === 'right') return item.correct;
   if (mark === 'slip') return slipAnswer(item);
   if (mark === 'unknown') return unknownAnswer(item);
@@ -247,6 +246,6 @@ export function runScenario(scenario: Scenario, extra: Mark[]): LabRun {
 }
 
 /** The item a next answer would go to. */
-export function nextItemOf(profile: Profile): MatrixItem | null {
+export function nextItemOf(profile: Profile): Item | null {
   return currentItem(profile);
 }

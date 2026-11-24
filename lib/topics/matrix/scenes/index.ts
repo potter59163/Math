@@ -1,7 +1,7 @@
 import { CONFIG } from '@/lib/config';
 import { th } from '@/lib/content/th';
 import { answersEqual, countDiffCells } from '@/lib/core/classify';
-import { createRng, deriveSeed } from '@/lib/core/prng';
+import { createRng, exampleSeed } from '@/lib/core/prng';
 import { Rational } from '@/lib/core/rational';
 import { fillTokens } from '@/lib/core/tokens';
 import type { Answer, Level, Matrix } from '@/lib/core/types';
@@ -48,13 +48,7 @@ export function sceneLimitMs(purpose: ScenePurpose): number {
   return CONFIG.scenes.limitMs[purpose];
 }
 
-/**
- * Seed for a scene's example. It never touches `Profile.counter`, so how many clips a student opens
- * cannot move the numbers of their real items (SPEC §6).
- */
-export function exampleSeed(base: number | string, nth: number): number {
-  return deriveSeed(`example:${base}`, nth);
-}
+export { exampleSeed };
 
 /** The cell a scene focuses on. Director tokens use it too, so words and picture name the same cell. */
 export function firstWrongCell(answer: Answer, correct: Answer): CellIndex {

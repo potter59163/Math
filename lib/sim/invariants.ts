@@ -3,8 +3,7 @@ import { MAX_NOTE_UNITS } from '@/lib/director/pathStep';
 import type { NextTurn, Profile } from '@/lib/director/types';
 import { isLegalStatusChange } from '@/lib/learner/misconceptionStatus';
 import { isUnlocked } from '@/lib/learner/progress';
-import { CATALOG, probeLevels } from '@/lib/topics/matrix/misconceptions';
-import { SKILLS, skillById } from '@/lib/topics/matrix/skills';
+import { allMisconceptions, allSkills, packOfSkill, skillOf } from '@/lib/topics';
 
 // What `npm run sim` counts as an illegal transition: a step that SPEC §7.2 does not have, an advance
 // past an unfinished prereq, or a skill level that jumps or leaves its range. The checks on the turn
@@ -21,7 +20,7 @@ const DIGIT = /[0-9๐-๙]/;
 export function checkStep(before: Profile, after: Profile): Violation[] {
   const found: Violation[] = [];
 
-  for (const { id } of CATALOG) {
+  for (const { id } of allMisconceptions()) {
     const from = before.misconceptions[id]?.status;
     const to = after.misconceptions[id]?.status;
     if (!isLegalStatusChange(from, to)) {
@@ -29,7 +28,7 @@ export function checkStep(before: Profile, after: Profile): Violation[] {
     }
   }
 
-  for (const { id, maxLevel } of SKILLS) {
+  for (const { id, maxLevel } of allSkills()) {
     const from = before.skills[id]?.level ?? 1;
     const to = after.skills[id]?.level ?? 1;
     if (Math.abs(to - from) > 1 || to < 1 || to > maxLevel) {
@@ -72,10 +71,13 @@ export function checkTurn(profile: Profile, turn: NextTurn): Violation[] {
 
   if (next) {
     const { skill, difficulty, target, targetVariant } = next;
-    if (difficulty > skillById(skill).maxLevel) {
+    if (difficulty > skillOf(skill).maxLevel) {
       found.push({ kind: 'item', detail: `${skill} has no L${difficulty}` });
     }
-    if (target && !probeLevels(skill, target, targetVariant).includes(difficulty)) {
+    if (
+      target &&
+      !packOfSkill(skill).probeLevels(skill, target, targetVariant).includes(difficulty)
+    ) {
       found.push({ kind: 'item', detail: `${target} cannot be probed on ${skill} L${difficulty}` });
     }
     if (mode === 'fixed' && target) {

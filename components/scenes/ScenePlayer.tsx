@@ -5,9 +5,10 @@ import { ClipPlayer, type ClipVoiceLine } from '@/components/clip/ClipPlayer';
 import { STAGE_ASPECT } from '@/components/clip/kit';
 import { clipVoice } from '@/components/clip/voice';
 import { th } from '@/lib/content/th';
-import type { SceneSpec } from '@/lib/topics/matrix/scenes';
 import type { AnyScene } from '@/lib/topics/matrix/scenes/types';
+// The recorded lines are the matrix manifest's. A topic with its own voice adds its manifest here.
 import { recordedLine } from '@/lib/topics/matrix/scenes/voice';
+import type { SceneSpec } from '@/lib/topics/types';
 import type { SceneView } from './playerState';
 import { SceneStage } from './SceneStage';
 

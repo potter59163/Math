@@ -150,6 +150,8 @@ export const th = {
     myPath: 'เส้นทางของฉัน',
     guestAction: 'ล็อกอินเพื่อเก็บความคืบหน้า',
     offline: 'ออฟไลน์อยู่ ข้อที่ทำจะส่งให้เมื่อกลับมาออนไลน์',
+    // TODO(review): names the topic tabs ("เมทริกซ์ | เวกเตอร์") for a screen reader.
+    topicTabs: 'เลือกหัวข้อที่จะเรียน',
   },
 
   // TODO(review): everything in this block.

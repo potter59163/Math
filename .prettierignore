@@ -9,3 +9,6 @@ START_HERE.md
 next-env.d.ts
 package-lock.json
 eslint.config.mjs
+
+# Frozen outputs that tests compare byte for byte
+lib/director/llm/__snapshots__/
