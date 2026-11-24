@@ -23,13 +23,14 @@ import { mapOf, nextSkill, type SkillStatus, type UnitOnMap } from '@/lib/learne
 import { recommendationFor, type Recommendation } from '@/lib/learner/recommend';
 import {
   activeTopicOf,
+  enabledTopics,
   misconceptionShortOf,
   packOf,
   packOfSkill,
   skillOf,
   unitOf,
 } from '@/lib/topics';
-import type { SkillId } from '@/lib/topics/types';
+import type { SkillId, TopicId } from '@/lib/topics/types';
 import { Mascot } from './Mascot';
 import { learner, useLearner, useRequiredProfile } from './useLearner';
 
@@ -355,6 +356,40 @@ function MyPath({ steps }: { steps: readonly PathStep[] }) {
   );
 }
 
+/**
+ * "เมทริกซ์ | เวกเตอร์": only when more than one topic is switched on. Choosing one is an action, so
+ * the director plans in it on this device and on the server alike.
+ */
+function TopicTabs({ topics, shown }: { topics: readonly TopicId[]; shown: TopicId }) {
+  return (
+    <div
+      role="tablist"
+      aria-label={th.learn.topicTabs}
+      className="flex gap-1 rounded-xl border border-edge bg-surface p-1"
+    >
+      {topics.map((topic) => {
+        const selected = topic === shown;
+        return (
+          <button
+            key={topic}
+            type="button"
+            role="tab"
+            aria-selected={selected}
+            onClick={() => {
+              if (!selected) learner.dispatch({ type: 'set_topic', topic });
+            }}
+            className={`min-h-11 min-w-0 flex-1 touch-manipulation truncate rounded-lg px-3 text-base font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+              selected ? 'bg-brand text-on-brand' : 'text-muted'
+            }`}
+          >
+            {packOf(topic).titleTh}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 /** The home of the app: what คิว suggests, then the whole path. */
 export function LessonsScreen() {
   const profile = useRequiredProfile();
@@ -363,6 +398,7 @@ export function LessonsScreen() {
   const [openSkill, setOpenSkill] = useState<SkillId | null>(null);
   if (!profile) return <LoadingScreen />;
 
+  const topics = enabledTopics();
   const shown = packOf(activeTopicOf(profile.student));
   const units = mapOf(profile, shown.id);
   const openStatus = units
@@ -378,6 +414,11 @@ export function LessonsScreen() {
         </div>
         <Chips profile={profile} now={now} />
       </header>
+      {topics.length > 1 && (
+        <div className="px-4 pt-3">
+          <TopicTabs topics={topics} shown={shown.id} />
+        </div>
+      )}
 
       <main className="flex flex-col gap-8 px-4 py-5">
         {offline && (
