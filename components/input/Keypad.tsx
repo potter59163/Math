@@ -15,6 +15,9 @@ const digit = (key: KeypadKey): KeyDef => ({ key, label: key });
 
 const { keys } = th.session;
 
+/** Takes the decimal point's place on items that take √ (docs/VECTORS.md §3.3). */
+const ROOT_KEY: KeyDef = { key: '√', label: '√', ariaLabel: keys.root, numberOnly: true };
+
 /** Laid out like a phone keypad, with the send key added in the corner (SPEC §5). */
 const ROWS: KeyDef[][] = [
   [
@@ -47,6 +50,11 @@ const KEY =
 
 interface KeypadProps {
   digitsOnly: boolean;
+  /**
+   * Swaps the decimal point for √ on vector items. Their answers are fractions and roots, and a
+   * decimal can still be typed on a physical keyboard. Without it the keypad is exactly as before.
+   */
+  withRoot?: boolean;
   sendReady: boolean;
   onKey(key: KeypadKey): void;
   onSend(): void;
@@ -56,10 +64,11 @@ interface KeypadProps {
 // must keep meaning "send" rather than repeating the last key clicked.
 const keepFocus = (event: { preventDefault(): void }) => event.preventDefault();
 
-export function Keypad({ digitsOnly, sendReady, onKey, onSend }: KeypadProps) {
+export function Keypad({ digitsOnly, withRoot = false, sendReady, onKey, onSend }: KeypadProps) {
+  const keyDefs = ROWS.flat().map((def) => (withRoot && def.key === '.' ? ROOT_KEY : def));
   return (
     <div className="grid grid-cols-4 gap-1.5 font-matrix">
-      {ROWS.flat().map(({ key, label, ariaLabel, numberOnly }) => (
+      {keyDefs.map(({ key, label, ariaLabel, numberOnly }) => (
         <button
           key={key}
           type="button"

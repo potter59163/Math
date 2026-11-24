@@ -76,3 +76,12 @@ describe('vector drafts', () => {
     expect(ready.ready && ready.answer).toEqual(answer);
   });
 });
+
+describe('√ from a physical keyboard', () => {
+  it('reads R, on any layout, as √', async () => {
+    const { actionFromKey } = await import('./keyboard');
+    expect(actionFromKey('KeyR', 'r')).toBe('√');
+    expect(actionFromKey('KeyR', 'พ')).toBe('√');
+    expect(actionFromKey('', '√')).toBe('√');
+  });
+});

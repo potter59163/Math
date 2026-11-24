@@ -390,6 +390,8 @@ export const th = {
       // TODO(review)
       cell: 'แถว {{i}} หลัก {{j}}',
       // TODO(review)
+      component: 'องค์ประกอบที่ {{i}}',
+      // TODO(review)
       dimFirst: 'ตัวเลขตัวแรก',
       // TODO(review)
       dimSecond: 'ตัวเลขตัวหลัง',
@@ -411,6 +413,8 @@ export const th = {
       slash: 'เศษส่วน',
       // TODO(review)
       point: 'จุดทศนิยม',
+      // TODO(review)
+      root: 'รากที่สอง',
     },
   },
 

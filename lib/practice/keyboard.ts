@@ -11,6 +11,8 @@ const BY_CODE = new Map<string, BoardAction>([
   ['NumpadDivide', '/'],
   ['Period', '.'],
   ['NumpadDecimal', '.'],
+  // No keyboard has √, so R stands for "root". The draft ignores it on items that take no √.
+  ['KeyR', '√'],
   ['Backspace', 'backspace'],
   ['Enter', 'send'],
   ['NumpadEnter', 'send'],
@@ -26,6 +28,7 @@ const BY_CHARACTER = new Map<string, BoardAction>([
   ['–', '-'],
   ['/', '/'],
   ['.', '.'],
+  ['√', '√'],
 ]);
 
 /**
