@@ -95,6 +95,14 @@ const VECTOR_TEMPLATE_IDS = new Set(VECTOR_TEMPLATES);
 /** An item ref from before topics names none, and it is a matrix one. */
 const isMatrixRef = (ref) => (ref?.topic ?? 'matrix') === 'matrix';
 
+/**
+ * A clip view names the topic the student was on (lib/server/sync.ts), as the solutions of both topics
+ * play worked_solution. One logged before views named it is a matrix one, unless it is in one of the
+ * vector pack's own templates.
+ */
+const isMatrixView = ({ topic, template }) =>
+  (topic ?? 'matrix') === 'matrix' && !VECTOR_TEMPLATE_IDS.has(template);
+
 /** A decision is in the topic of the step it chose: every candidate of a turn is in the same one. */
 function isMatrixDecision({ candidates, choice }) {
   const chosen = candidates?.find(({ id }) => id === choice) ?? candidates?.[0];
@@ -180,8 +188,6 @@ export function researchExport(tables, cohort) {
     ],
     isMatrixDecision,
   );
-  // A clip view names no topic, but one of the vector pack's own templates is a vector clip. Vector
-  // reveals play worked_solution, which matrices play too, so those are all kept.
   const views = exportTable(
     'scene_views',
     [
@@ -194,7 +200,7 @@ export function researchExport(tables, cohort) {
       'duration_ms',
       'created_at',
     ],
-    (row) => !VECTOR_TEMPLATE_IDS.has(row.template),
+    isMatrixView,
   );
   const hints = exportTable('hint_events', ['item_ref', 'level', 'created_at'], ofMatrixItem);
   // Only the matrix test is wired into the app (docs/VECTORS.md §6.1).

@@ -7,9 +7,9 @@ vi.hoisted(() => {
 
 import type { Db } from 'mongodb';
 import { CONFIG } from '@/lib/config';
-import { storeAnswer } from '@/lib/core/answerJson';
-import { currentItem } from '@/lib/director/items';
-import { sceneOfChosen } from '@/lib/director/scene';
+import { restoreAnswer, storeAnswer } from '@/lib/core/answerJson';
+import { currentItem, rebuildItem } from '@/lib/director/items';
+import { sceneOfChosen, sceneOrNull, workedRequest } from '@/lib/director/scene';
 import { newProfile } from '@/lib/director/turn';
 import type { Profile } from '@/lib/director/types';
 import { createStore } from '@/lib/server/store';
@@ -17,6 +17,7 @@ import { processActions, type LearnerRow, type SyncStore } from '@/lib/server/sy
 import { misconceptionAnswer } from '@/lib/sim/answers';
 import { applyAction, type LearnerAction } from '@/lib/sync/actions';
 import type { QueuedAction } from '@/lib/sync/types';
+import type { SceneSpec } from '@/lib/topics/types';
 import { researchExport, VECTOR_TEMPLATES } from './research-export.mjs';
 import { exportBeforeVectors } from './research-export.frozen.mjs';
 import { matrixRef, type Row, type Tables } from './research-export.fixtures';
@@ -80,14 +81,28 @@ function learner(id: string) {
     queue.push({ seq, action });
     profile = applyAction(profile, action).profile;
   };
+  /** What SessionScreen sends for a clip watched to the end. */
+  const watch = (spec: SceneSpec | null) => {
+    if (!spec) return;
+    clips += 1;
+    dispatch({
+      type: 'scene_view',
+      view: {
+        template: spec.template,
+        purpose: spec.purpose,
+        beatsTotal: spec.beats.length,
+        beatsSeen: spec.beats.length,
+        replays: 0,
+        skipped: false,
+        durationMs: 15_000 + 1_000 * clips,
+      },
+    });
+  };
   return {
     queue,
     profile: () => profile,
     start: () => dispatch({ type: 'start' }),
-    /**
-     * Each clip of the pending turn as settle() walks it, with what SessionScreen sends: the view of
-     * the clip, watched to the end, then on to the next.
-     */
+    /** Each clip of the pending turn as settle() walks it, viewed and then let go, and on. */
     settle() {
       while (profile.pending) {
         const [scene] = profile.pending.turn.scenes;
@@ -95,24 +110,21 @@ function learner(id: string) {
           dispatch({ type: 'finish_turn' });
           return;
         }
-        const spec = sceneOfChosen(scene);
-        if (spec) {
-          clips += 1;
-          dispatch({
-            type: 'scene_view',
-            view: {
-              template: spec.template,
-              purpose: spec.purpose,
-              beatsTotal: spec.beats.length,
-              beatsSeen: spec.beats.length,
-              replays: 0,
-              skipped: false,
-              durationMs: 15_000 + 1_000 * clips,
-            },
-          });
-        }
+        watch(sceneOfChosen(scene));
         dispatch({ type: 'finish_scene' });
       }
+    },
+    /** "ดูวิธีทำ" on the answer just sent, which has to be a wrong one. */
+    showWorked() {
+      const closed = profile.pending?.closed;
+      const item = closed && rebuildItem(closed.ref);
+      if (!closed || !item || closed.outcome.classification.type === 'correct') {
+        throw new Error('no wrong answer to see the solution of');
+      }
+      const answer = restoreAnswer(closed.answer);
+      const request = workedRequest(item, answer, closed.outcome.classification);
+      watch(sceneOrNull(request));
+      dispatch({ type: 'note_worked', request });
     },
     /** Wrong answers show the item's first misconception, when it has one. */
     answer(wrong: boolean) {
@@ -182,12 +194,17 @@ describe('a student who goes on to vectors', () => {
     const student = learner(STUDENT);
     const app = server(db, student.profile());
 
+    /** Answers, opening the solution of the first wrong one, and going on through every clip. */
+    const work = (answers: boolean[]) =>
+      answers.forEach((wrong, index) => {
+        student.answer(wrong);
+        if (index === 0) student.showWorked();
+        student.settle();
+      });
+
     student.start();
     student.settle();
-    for (const wrong of [true, false, true, false, false]) {
-      student.answer(wrong);
-      student.settle();
-    }
+    work([true, false, true, false, false]);
     student.hint();
     await app.send(student.queue.splice(0));
     const copied = (tables: Tables) =>
@@ -197,10 +214,7 @@ describe('a student who goes on to vectors', () => {
     student.learnVectors();
     student.start();
     student.settle();
-    for (const wrong of [true, false, true, false]) {
-      student.answer(wrong);
-      student.settle();
-    }
+    work([true, false, true, false]);
     student.hint();
     await app.send(student.queue.splice(0));
     // The server worked it all out again from the same actions.
@@ -216,10 +230,17 @@ describe('a student who goes on to vectors', () => {
     for (const { candidates } of vectorDecisions) {
       for (const { next } of candidates as Row[]) expect((next as Row).skill).toMatch(/^v_/);
     }
-    expect(switched.rows.scene_views.length).toBeGreaterThan(0);
-    const vectorClips = rows.scene_views.slice(switched.rows.scene_views.length);
-    expect(vectorClips.length).toBeGreaterThan(0);
-    for (const { template } of vectorClips) expect(VECTOR_TEMPLATES).toContain(template);
+    // Each clip names the topic it was played in. Both topics' solutions play worked_solution.
+    const clipsOf = (views: Row[]) => views.map(({ topic, template }) => [topic, template]);
+    const matrixClips = clipsOf(switched.rows.scene_views);
+    const vectorClips = clipsOf(rows.scene_views.slice(switched.rows.scene_views.length));
+    expect(matrixClips).toContainEqual(['matrix', 'worked_solution']);
+    for (const [topic] of matrixClips) expect(topic).toBe('matrix');
+    expect(vectorClips).toContainEqual(['vector', 'worked_solution']);
+    for (const [topic, template] of vectorClips) {
+      expect(topic).toBe('vector');
+      expect([...VECTOR_TEMPLATES, 'worked_solution']).toContain(template);
+    }
     const profile = app.profile();
     expect(Object.keys(profile.skills).filter((id) => id.startsWith('v_'))).not.toEqual([]);
     expect(Object.keys(profile.misconceptions).filter((id) => /^V\d\d_/.test(id))).not.toEqual([]);

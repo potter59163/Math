@@ -247,6 +247,42 @@ describe.skipIf(!uri)('on a real MongoDB', () => {
     });
   });
 
+  describe('clip views', () => {
+    it('logs each with the topic the student is on, under the names the export reads', async () => {
+      const { id } = await student();
+      const view = {
+        template: 'cell_by_cell' as const,
+        purpose: 'remediate' as const,
+        beatsTotal: 6,
+        beatsSeen: 4,
+        replays: 1,
+        skipped: false,
+        durationMs: 30_500,
+      };
+      await processActions({
+        store,
+        userId: id,
+        deviceId: 'device-a',
+        actions: [{ seq: 1, action: { type: 'scene_view', view } }],
+      });
+      const row = await db
+        .collection('scene_views')
+        .findOne({ user_id: id }, { projection: { _id: 0 } });
+      expect(row).toEqual({
+        user_id: id,
+        topic: 'matrix',
+        template: 'cell_by_cell',
+        purpose: 'remediate',
+        beats_total: 6,
+        beats_seen: 4,
+        replays: 1,
+        skipped: false,
+        duration_ms: 30_500,
+        created_at: expect.any(Date),
+      });
+    });
+  });
+
   describe('tests', () => {
     const taken = { phase: 'pre', form: 'A', score: 1, total: 2, startedAt: AT } as const;
 
@@ -362,6 +398,7 @@ describe.skipIf(!uri)('on a real MongoDB', () => {
             skipped: false,
             durationMs: 1,
           },
+          topic: 'matrix',
         },
       ]);
       await store.saveAssessment(id, {

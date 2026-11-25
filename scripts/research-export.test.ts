@@ -231,22 +231,26 @@ const matrixCandidates = fc.array(
   { maxLength: 4 },
 );
 
-/** As `writeLogs` stores a clip view. */
-const viewOf = (template: fc.Arbitrary<string>) =>
-  record({
-    _id: id,
-    user_id: user,
-    template,
-    purpose: fc.constantFrom('intro', 'concept', 'remediate', 'request', 'reveal'),
-    beats_total: fc.nat(8),
-    beats_seen: fc.nat(8),
-    replays: fc.nat(3),
-    skipped: fc.boolean(),
-    duration_ms: fc.nat(90_000),
-    created_at: day,
-  });
+/** As `writeLogs` stores a clip view. A row from before views named their topic has none. */
+const viewOf = (topic: string, template: fc.Arbitrary<string>, optional = ['topic']) =>
+  record(
+    {
+      _id: id,
+      user_id: user,
+      topic: fc.constant(topic),
+      template,
+      purpose: fc.constantFrom('intro', 'concept', 'remediate', 'request', 'reveal'),
+      beats_total: fc.nat(8),
+      beats_seen: fc.nat(8),
+      replays: fc.nat(3),
+      skipped: fc.boolean(),
+      duration_ms: fc.nat(90_000),
+      created_at: day,
+    },
+    optional,
+  );
 
-const sceneView = viewOf(fc.constantFrom(...MATRIX_TEMPLATES));
+const sceneView = viewOf('matrix', fc.constantFrom(...MATRIX_TEMPLATES));
 
 const hintOf = (ref: fc.Arbitrary<Row | null>) =>
   record({ _id: id, user_id: user, item_ref: ref, level: level, created_at: day });
@@ -398,6 +402,15 @@ const vectorDecision = decisionOf(
   [],
 );
 
+/**
+ * A vector clip: in a template of the vector pack's own, or a solution, whose template matrices play
+ * too, so that only the topic it names tells it apart.
+ */
+const vectorView = fc.oneof(
+  viewOf('vector', fc.constantFrom(...VECTOR_TEMPLATES)),
+  viewOf('vector', fc.constant('worked_solution'), []),
+);
+
 /** Somewhere to put each one: a row's place among the others, or an entry's place in its map. */
 const placed = <T>(what: fc.Arbitrary<T>, maxLength: number) =>
   fc.array(fc.tuple(fc.nat(), what), { maxLength });
@@ -406,7 +419,7 @@ const placed = <T>(what: fc.Arbitrary<T>, maxLength: number) =>
 const vectorWork = fc.record({
   attempts: placed(attemptOf(vectorRef), 6),
   decisions: placed(vectorDecision, 6),
-  views: placed(viewOf(fc.constantFrom(...VECTOR_TEMPLATES)), 4),
+  views: placed(vectorView, 4),
   hints: placed(hintOf(vectorRef), 4),
   skills: placed(fc.tuple(fc.nat(), fc.constantFrom(...VECTOR_SKILLS), skillState), 6),
   misconceptions: placed(fc.tuple(fc.nat(), fc.constantFrom(...V_CODES), misconceptionState), 6),
@@ -499,13 +512,14 @@ describe('the research export', () => {
       ['items_done', '6', '4'],
       ['skills_reached', '5', '3'],
       ['skills_mastered', '2', '1'],
-      ['scenes_viewed', '5', '3'],
+      ['scenes_viewed', '6', '3'],
       ['hints_used', '4', '3'],
+      ['reveals', '2', '1'],
       ['misconceptions_resolved', '3', '2'],
       ['median_items_to_resolve', '3', '4.5'],
       ['llm_decisions', '2', '1'],
       ['fallback_rate', String(4 / 7), '0.5'],
-      ['minutes_in_app', '3.9', '2.3'],
+      ['minutes_in_app', '4.1', '2.3'],
     ]) {
       expect([column, wideCell(before, 'S-1', column)]).toEqual([column, counted]);
       expect([column, wideCell(after, 'S-1', column)]).toEqual([column, kept]);
@@ -532,6 +546,18 @@ describe('the research export', () => {
     const attempts = researchExport(tables).files.get('attempts.csv') ?? '';
     expect(attempts).toContain('S-1,5,"{""skill"":""det2"",""difficulty"":1,""seed"":9,""gv"":2}"');
     expect(wideCell(researchExport(tables).files, 'S-1', 'items_done')).toBe('4');
+  });
+
+  it('keeps a clip view that names matrices, as the server logs them now, to the byte', () => {
+    const tables = matrixClass();
+    const named = {
+      ...tables,
+      scene_views: tables.scene_views.map((row, index) =>
+        index % 2 === 0 ? { ...row, topic: 'matrix' } : row,
+      ),
+    };
+    expect(named.scene_views.filter((row) => row.topic === 'matrix')).toHaveLength(3);
+    expect(outputOf(researchExport(named))).toEqual(outputOf(exportBeforeVectors(tables)));
   });
 
   it('has a pre/post column for every misconception of the matrix catalog, in its order', () => {

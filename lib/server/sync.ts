@@ -11,6 +11,7 @@ import {
 } from '@/lib/sync/actions';
 import type { QueuedAction, SyncResponse } from '@/lib/sync/types';
 import type { Item, ItemRef } from '@/lib/core/types';
+import { activeTopicOf, type TopicId } from '@/lib/topics';
 
 // Applies a device's queued actions to the server's copy of a student. Written against `SyncStore` so
 // that its rules can be tested without a database, and against the real one in lib/server/store.ts.
@@ -35,7 +36,8 @@ export type LogEntry =
   | { kind: 'decision'; turn: NextTurn }
   | { kind: 'session' }
   | { kind: 'hint'; itemRef: ItemRef | null; level: number }
-  | { kind: 'scene_view'; view: SceneViewLog };
+  /** A clip's template does not always tell its topic: both topics' solutions play worked_solution. */
+  | { kind: 'scene_view'; view: SceneViewLog; topic: TopicId };
 
 export interface SyncStore {
   loadLearner(userId: string): Promise<LearnerRow | null>;
@@ -110,7 +112,9 @@ function logsOf(
         : [];
     }
     case 'scene_view':
-      return [{ kind: 'scene_view', view: action.view }];
+      // Every clip a student is shown is of the topic they are on, which only set_topic changes, and
+      // the actions come in the order the device took them.
+      return [{ kind: 'scene_view', view: action.view, topic: activeTopicOf(before.student) }];
     default:
       return [];
   }

@@ -631,9 +631,12 @@ export function withVectors(): Tables {
         }),
       ],
     }),
+    // A view names the topic the student is on. The remediation is one from before views named it, which
+    // only its template tells, and the solution plays the template matrices use too.
     scene_views: among(tables.scene_views, {
       2: [
         sceneView('acct-a', 10, '10:00:30', {
+          topic: 'vector',
           template: 'quantity_sort',
           purpose: 'intro',
           beats_total: 6,
@@ -648,9 +651,11 @@ export function withVectors(): Tables {
           replays: 1,
           duration_ms: 28_000,
         }),
+        sceneView('acct-a', 12, '10:04:00', { topic: 'vector' }),
       ],
       4: [
         sceneView('acct-b', 10, '10:00:40', {
+          topic: 'vector',
           template: 'quantity_sort',
           purpose: 'intro',
           beats_total: 6,

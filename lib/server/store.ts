@@ -245,6 +245,7 @@ export function createStore(db: Db): AppStore {
             await logged('scene_view', () =>
               db.collection('scene_views').insertOne({
                 user_id: userId,
+                topic: entry.topic,
                 template: view.template,
                 purpose: view.purpose,
                 beats_total: view.beatsTotal,
