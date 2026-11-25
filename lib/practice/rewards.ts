@@ -1,6 +1,7 @@
 import { CONFIG } from '@/lib/config';
 import { isUnitPassed } from '@/lib/learner/progress';
 import type { HintLevel, LearnerProfile, UnitId } from '@/lib/learner/types';
+import { enabledTopics, packOf, packOfUnit } from '@/lib/topics';
 
 /** SPEC §11. A wrong answer earns nothing, and the item is closed once it is sent. */
 export function xpFor(correct: boolean, hintLevel: HintLevel): number {
@@ -28,7 +29,11 @@ export type Badge = { kind: 'unit'; unit: UnitId } | { kind: 'fixed' };
 export function badgesOf(
   profile: Pick<LearnerProfile, 'student' | 'skills' | 'misconceptions'>,
 ): Badge[] {
-  const units = [...profile.student.units]
+  // Each switched-on topic's own open units. Stored `student.units` are matrix units, so a vector unit a
+  // trial stored there as well is walked once, by the vector pack.
+  const units = enabledTopics()
+    .map(packOf)
+    .flatMap((pack) => pack.openUnits(profile.student).filter((unit) => packOfUnit(unit) === pack))
     .sort((a, b) => a - b)
     .filter((unit) => isUnitPassed(profile, unit))
     .map((unit): Badge => ({ kind: 'unit', unit }));

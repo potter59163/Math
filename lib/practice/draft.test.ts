@@ -1,6 +1,7 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { classify } from '@/lib/core/classify';
+import { Rational } from '@/lib/core/rational';
 import type { Answer, Item, Level } from '@/lib/core/types';
 import { generate } from '@/lib/topics/matrix/generators';
 import { SKILLS, levelsOf, type SkillId } from '@/lib/topics/matrix/skills';
@@ -288,4 +289,93 @@ describe('draftFromAnswer', () => {
       }
     },
   );
+
+  /** draftFromAnswer before √ boxes took the form a student writes: each value as its own toString. */
+  function draftBefore(item: DraftItem, answer: Answer): Draft {
+    const draft = emptyDraft(item);
+    switch (answer.kind) {
+      case 'matrix':
+        return { ...draft, cells: answer.value.flat().map((cell) => cell.toString()) };
+      case 'scalar':
+      case 'surd':
+        return { ...draft, cells: [answer.value.toString()] };
+      case 'vector':
+        return { ...draft, cells: answer.value.map((part) => part.toString()) };
+      case 'dims':
+        return { ...draft, cells: [String(answer.rows), String(answer.cols)] };
+      case 'choice':
+        return { ...draft, choice: answer.id };
+      case 'undefined':
+        return { ...draft, isUndefined: true };
+    }
+  }
+
+  const combos = SKILLS.flatMap(({ id }) =>
+    levelsOf(id).map((level): [SkillId, Level] => [id, level]),
+  );
+
+  it('fills the boxes of a matrix item as before, for its key and every mistake it diagnoses', () => {
+    fc.assert(
+      fc.property(fc.constantFrom(...combos), fc.nat(2 ** 31 - 1), ([skill, difficulty], seed) => {
+        const item = generate({ skill, difficulty, seed });
+        const answers = [
+          item.correct,
+          ...item.diagnostics.flatMap(({ answer }) =>
+            answer.kind === 'any_matrix' ? [] : [answer],
+          ),
+        ];
+        for (const answer of answers) {
+          expect(draftFromAnswer(item, answer)).toEqual(draftBefore(item, answer));
+        }
+      }),
+      { numRuns: 1000 },
+    );
+  });
+
+  const rational = fc
+    .tuple(fc.integer({ min: -1e9, max: 1e9 }), fc.integer({ min: 1, max: 1e9 }))
+    .map(([n, d]) => Rational.of(n, d));
+  type Sent = { item: DraftItem; answer: Answer };
+  /** Any answer a matrix item takes, with any values, on an item of a kind that takes it. */
+  const sent: fc.Arbitrary<Sent> = fc.oneof(
+    fc
+      .tuple(fc.integer({ min: 1, max: 4 }), fc.integer({ min: 1, max: 4 }))
+      .chain(([rows, cols]) =>
+        fc.tuple(
+          fc.constantFrom('matrix' as const, 'matrix_or_undefined' as const),
+          fc.array(fc.array(rational, { minLength: cols, maxLength: cols }), {
+            minLength: rows,
+            maxLength: rows,
+          }),
+        ),
+      )
+      .map(([kind, value]): Sent => ({
+        item: { kind, grid: { rows: value.length, cols: value[0].length } },
+        answer: { kind: 'matrix', value },
+      })),
+    fc
+      .tuple(fc.constantFrom('scalar' as const, 'cell' as const), rational)
+      .map(([kind, value]): Sent => ({ item: { kind }, answer: { kind: 'scalar', value } })),
+    fc
+      .tuple(
+        fc.constantFrom('dims' as const, 'dims_or_undefined' as const),
+        fc.integer({ min: 1, max: 999 }),
+        fc.integer({ min: 1, max: 999 }),
+      )
+      .map(([kind, rows, cols]): Sent => ({
+        item: { kind },
+        answer: { kind: 'dims', rows, cols },
+      })),
+    fc.string().map((id): Sent => ({ item: { kind: 'choice' }, answer: { kind: 'choice', id } })),
+    fc.constantFrom(MAYBE, DIMS).map((item): Sent => ({ item, answer: { kind: 'undefined' } })),
+  );
+
+  it('fills matrix, number, dims and choice boxes as before, whatever the values', () => {
+    fc.assert(
+      fc.property(sent, ({ item, answer }) => {
+        expect(draftFromAnswer(item, answer)).toEqual(draftBefore(item, answer));
+      }),
+      { numRuns: 1000 },
+    );
+  });
 });
