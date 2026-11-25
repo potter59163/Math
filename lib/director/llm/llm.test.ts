@@ -347,10 +347,19 @@ describe('llmConfig', () => {
     expect(llmConfig({ LLM_PROVIDER: 'anthropic' })).toBeNull();
     expect(llmConfig({ LLM_PROVIDER: 'gemini', LLM_API_KEY: 'k' })).toBeNull();
   });
-  it('reads what is set, with a fast model and the 4 s limit by default', () => {
+  it('reads what is set, with Claude Sonnet 5.5, no thinking and the 4 s limit by default', () => {
+    // Potter moved the tutor from Claude Haiku 5.5 to Claude Sonnet 5.5 on 25 Nov 2026 (DECISIONS).
     const config = llmConfig({ LLM_PROVIDER: 'anthropic', LLM_API_KEY: 'k' });
-    expect(config?.model).toBe('claude-haiku-5-5');
+    expect(config?.model).toBe('claude-sonnet-5-5');
     expect(config?.timeoutMs).toBe(4000);
+    expect(config?.thinking).toBe('off');
+    expect(
+      llmConfig({ LLM_PROVIDER: 'anthropic', LLM_API_KEY: 'k', LLM_THINKING: 'adaptive' })
+        ?.thinking,
+    ).toBe('adaptive');
+    expect(
+      llmConfig({ LLM_PROVIDER: 'anthropic', LLM_API_KEY: 'k', LLM_THINKING: 'lots' })?.thinking,
+    ).toBe('off');
     expect(
       llmConfig({
         LLM_PROVIDER: 'anthropic',

@@ -149,3 +149,77 @@ describe('the answer from Claude', () => {
     expect(broken).toHaveBeenCalledOnce();
   });
 });
+
+// Claude Sonnet 5.5 refuses `thinking: disabled`, and only it accepts `between_tools`: the wrong one is a
+// 400 on every call, which the students would only ever see as the rules (DECISIONS, 25 Nov 2026).
+describe('the request to Claude Sonnet 5.5', () => {
+  const SONNET = { ...CONFIG, model: 'claude-sonnet-5-5' };
+  const answer = message([{ type: 'text', text: '{}' }]);
+
+  it('turns thinking off with between_tools, at low effort, through the fallback beta', async () => {
+    const network = answering(answer);
+    await createProvider(SONNET).completeJson(ARGS);
+    expect(network.mock.calls[0][0].toString()).toMatch(/\/v1\/messages(\?beta=true)?$/);
+    expect(new Headers(network.mock.calls[0][1].headers).get('anthropic-beta')).toContain(
+      'server-side-fallback-2026-07-01',
+    );
+    const body = sentBody(network);
+    expect(body).toMatchObject({
+      model: 'claude-sonnet-5-5',
+      thinking: { type: 'between_tools' },
+      fallbacks: 'default',
+      output_config: { effort: 'low', format: { type: 'json_schema' } },
+      system: [{ type: 'text', text: 'be brief', cache_control: { type: 'ephemeral' } }],
+      messages: [{ role: 'user', content: '{"item":1}' }],
+    });
+    expect(body.thinking).toEqual({ type: 'between_tools' });
+    for (const refused of ['temperature', 'top_p', 'top_k', 'tool_choice']) {
+      expect(body).not.toHaveProperty(refused);
+    }
+  });
+
+  it('leaves thinking out, so adaptive, when asked to', async () => {
+    const network = answering(answer);
+    await createProvider({ ...SONNET, thinking: 'adaptive' }).completeJson(ARGS);
+    expect(sentBody(network)).not.toHaveProperty('thinking');
+  });
+
+  it('never sends between_tools to another model, nor disabled to Sonnet 5.5', async () => {
+    const haiku = answering(answer);
+    await createProvider(CONFIG).completeJson(ARGS);
+    expect(sentBody(haiku).thinking).toEqual({ type: 'disabled' });
+
+    const sonnet = answering(answer);
+    await createProvider(SONNET).completeJson(ARGS);
+    expect(sentBody(sonnet).thinking).not.toEqual({ type: 'disabled' });
+  });
+
+  it('sends the same schema the structured outputs accept', async () => {
+    const network = answering(answer);
+    await createProvider(SONNET).completeJson(ARGS);
+    const { output_config: output } = sentBody(network) as {
+      output_config: { format: { schema: unknown } };
+    };
+    const refused = ['minLength', 'maxLength', 'minItems', 'maxItems', 'minimum', 'maximum'];
+    everyNode(output.format.schema, (node) => {
+      for (const keyword of refused) expect(node).not.toHaveProperty(keyword);
+    });
+  });
+
+  it('finds the answer after a fallback block, and still fails on a refusal', async () => {
+    answering(
+      message([
+        {
+          type: 'fallback',
+          from: { model: 'claude-sonnet-5-5' },
+          to: { model: 'claude-sonnet-5' },
+        },
+        { type: 'text', text: '{"choice":"c2"}' },
+      ]),
+    );
+    expect(await createProvider(SONNET).completeJson(ARGS)).toBe('{"choice":"c2"}');
+
+    answering(message([{ type: 'text', text: '{}' }], 'refusal'));
+    await expect(createProvider(SONNET).completeJson(ARGS)).rejects.toThrow('refused');
+  });
+});
