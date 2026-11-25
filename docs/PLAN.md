@@ -196,7 +196,7 @@ Potter เลือกเพิ่มทั้งที่ใกล้วัน�
 - [ ] Potter ฟังเสียงและดูคลิปที่ `/preview/clip` (แท็บเวกเตอร์)
 - [ ] ครูคณิตตรวจ VECTORS §2, §4 และข้อความ `// TODO(review)` ใน `lib/content/th.vector.ts`
 - [ ] merge เข้า main, deploy, แล้วตั้ง `NEXT_PUBLIC_TOPICS=matrix,vector` บน Vercel (server ต้องขึ้นก่อนเปิดสวิตช์)
-- [ ] test กับ MongoDB จริง (`TEST_MONGODB_URI=… npm test`)
+- [x] test กับ MongoDB จริง (`TEST_MONGODB_URI=… npm test`): `lib/server` 78 ตัวผ่าน
 - [ ] Potter แก้โปสเตอร์และ proposal ใน `submission/` ให้บอกว่ามีสองหัวข้อ
 
 ## หลังส่งงาน (ก่อน 14 ม.ค. ถ้าผ่านรอบคัดเลือก)
