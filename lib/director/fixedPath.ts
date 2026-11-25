@@ -33,10 +33,24 @@ export function fixedStepAt(
   return { skill: skill.id, level };
 }
 
-/** One path, from the number of items done. `attempt` is missing when the session starts. */
+/**
+ * The items answered in one topic: how far along its path a student is. Not `itemsDone`, which
+ * counts every topic, so that a student who switches starts the new topic at its beginning and
+ * comes back to the old one where they left it. With one topic only the two are equal, since
+ * every answer adds one to each and the pre-test adds to neither.
+ */
+export function itemsDoneIn(profile: Pick<LearnerProfile, 'skills'>, topic: TopicId): number {
+  return packOf(topic).skills.reduce(
+    (sum, { id }) => sum + (profile.skills[id]?.attempts.length ?? 0),
+    0,
+  );
+}
+
+/** One path, from the items done in its topic. `attempt` is missing when the session starts. */
 export function fixedCandidates(profile: LearnerProfile, attempt?: AttemptContext): Candidate[] {
   const pack = packOf(activeTopicOf(profile.student));
-  const { skill, level } = fixedStepAt(pack.openUnits(profile.student), profile.itemsDone, pack.id);
+  const units = pack.openUnits(profile.student);
+  const { skill, level } = fixedStepAt(units, itemsDoneIn(profile, pack.id), pack.id);
   const next: NextStep = { skill, level, purpose: 'practice' };
 
   const wrong = attempt && attempt.outcome.classification.type !== 'correct';

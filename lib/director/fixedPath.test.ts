@@ -4,8 +4,9 @@ import type { Student, UnitId } from '@/lib/learner/types';
 import { misconceptionAnswer, unknownAnswer } from '@/lib/sim/answers';
 import { answerItem, openItem, settle } from '@/lib/sim/drive';
 import { SKILLS } from '@/lib/topics/matrix/skills';
+import { generate as generateVector } from '@/lib/topics/vector/generators';
 import { fixedCandidates, fixedStepAt } from './fixedPath';
-import { startSession } from './rules';
+import { startSession, submitAttempt } from './rules';
 import { newProfile } from './turn';
 import type { ChosenScene, Profile } from './types';
 
@@ -152,5 +153,19 @@ describe('a student on the fixed path', () => {
     });
     expect(turn.mode).toBe('fixed');
     expect(turn.pathStep.note).toBe('');
+  });
+
+  it('is not moved along by items answered in another topic', () => {
+    // Five vector answers from when vectors were on. They are off in this file, so this student is
+    // back on matrices and has done none of them.
+    let profile = newProfile({ ...student([1, 2, 3, 4, 5]), activeTopic: 'vector' });
+    for (let seed = 0; seed < 5; seed += 1) {
+      const item = generateVector({ skill: 'v_quantity', difficulty: 1, seed });
+      const event = { item, answer: item.correct, hintLevel: 0 as const, at: 0, timeMs: 1 };
+      ({ profile } = submitAttempt(profile, event, 'fixed'));
+    }
+    expect(profile.itemsDone).toBe(5);
+    const [only] = fixedCandidates(profile);
+    expect(only.next).toMatchObject({ skill: 'dim', level: 1 });
   });
 });

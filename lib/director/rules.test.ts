@@ -9,6 +9,7 @@ import { misconceptionAnswer, slipAnswer, unknownAnswer } from '@/lib/sim/answer
 import { answerItem, openItem, settle } from '@/lib/sim/drive';
 import { generate } from '@/lib/topics/matrix/generators';
 import type { GenerateRequest, MatrixItem, MisconceptionId } from '@/lib/topics/matrix/types';
+import { generate as generateVector } from '@/lib/topics/vector/generators';
 import { afterAttemptCandidates } from './candidates';
 import { currentItem, drawItem } from './items';
 import { MAX_NOTE_UNITS } from './pathStep';
@@ -87,6 +88,47 @@ describe('startSession', () => {
     const a = startSession(newProfile(student()));
     const b = startSession(newProfile({ ...student(), id: 'ABC123-8' }));
     expect(a.current?.ref.seed).not.toBe(b.current?.ref.seed);
+  });
+});
+
+describe('a session start once vectors are switched off again', () => {
+  // NEXT_PUBLIC_TOPICS is unset here, as in production, so CONFIG.topics is ['matrix']. This
+  // student chose vectors while they were on and left a vector item open.
+  const vectorItem = generateVector({ skill: 'v_quantity', difficulty: 1, seed: 1 });
+  const onVectors = (): Profile => ({
+    ...newProfile({ ...student(), activeTopic: 'vector' }),
+    current: { ref: vectorItem.ref, hintLevel: 0 },
+  });
+  // Its answer sent, with the feedback still on screen and the next vector item drawn.
+  const answered = (): Profile =>
+    submitAttempt(onVectors(), {
+      item: vectorItem,
+      answer: unknownAnswer(vectorItem),
+      hintLevel: 0,
+      at: 0,
+      timeMs: 1,
+    }).profile;
+
+  it('lets go of the vector item and opens the first matrix item', () => {
+    const { profile, turn } = beginSession(onVectors());
+    expect(turn?.next).toMatchObject({ topic: 'matrix', skill: 'dim', difficulty: 1 });
+    expect(currentItem(settle(profile))?.ref).toEqual(turn?.next);
+  });
+
+  it('lets go of the feedback and the next item of a vector answer, but keeps the answer', () => {
+    const before = answered();
+    expect(before.pending?.closed?.ref.topic).toBe('vector');
+    expect(before.current?.ref.topic).toBe('vector');
+    const { profile, turn } = beginSession(before);
+    expect(turn?.next?.topic).toBe('matrix');
+    expect(profile.pending?.closed).toBeUndefined();
+    expect(profile.itemsDone).toBe(1);
+    expect(profile.skills.v_quantity?.attempts).toHaveLength(1);
+  });
+
+  it('does the same on the fixed path', () => {
+    const { turn } = beginSession(answered(), 'fixed');
+    expect(turn?.next).toMatchObject({ topic: 'matrix', skill: 'dim', difficulty: 1 });
   });
 });
 

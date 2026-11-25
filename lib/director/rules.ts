@@ -2,6 +2,7 @@ import { storeAnswer } from '@/lib/core/answerJson';
 import { applyAttempt, openMisconceptions } from '@/lib/learner/profile';
 import type { AttemptEvent, AttemptOutcome } from '@/lib/learner/types';
 import type { Item } from '@/lib/core/types';
+import { activeTopicOf } from '@/lib/topics';
 import type { SkillId } from '@/lib/topics/types';
 import {
   afterAttemptCandidates,
@@ -13,7 +14,7 @@ import {
 import { fixedCandidates } from './fixedPath';
 import { currentItem } from './items';
 import { ruleMessage } from './messages';
-import { commitTurn, type TutorWords } from './turn';
+import { commitTurn, dropOtherTopics, type TutorWords } from './turn';
 import type {
   Candidate,
   CandidateId,
@@ -35,21 +36,28 @@ const modeOf = (condition: Condition): TurnMode => (condition === 'fixed' ? 'fix
 
 /**
  * session_start. An item already open or a turn not finished carries on, with no new decision, so a
- * reload changes nothing. The turn is what /api/session/start sends back.
+ * reload changes nothing. One from a topic the student is no longer learning, as when vectors are
+ * switched off again, is let go first, as a switch of topic does. The turn is what
+ * /api/session/start sends back.
  */
 export function beginSession(
   profile: Profile,
   condition: Condition = 'adaptive',
 ): { profile: Profile; turn: NextTurn | null } {
-  if (profile.pending || currentItem(profile)) return { profile, turn: null };
-  const candidates =
-    condition === 'fixed' ? fixedCandidates(profile) : sessionStartCandidates(profile);
-  return commitTurn(profile, {
+  const here = dropOtherTopics(profile, activeTopicOf(profile.student));
+  if (here.pending || currentItem(here)) return { profile: here, turn: null };
+  const candidates = condition === 'fixed' ? fixedCandidates(here) : sessionStartCandidates(here);
+  return commitTurn(here, {
     trigger: 'session_start',
     mode: modeOf(condition),
     candidates,
     choice: chooseByRules(candidates).id,
   });
+}
+
+/** Something is open in a topic the student has left, which a session start would let go. */
+export function openInOtherTopic(profile: Profile): boolean {
+  return dropOtherTopics(profile, activeTopicOf(profile.student)) !== profile;
 }
 
 export function startSession(profile: Profile, condition: Condition = 'adaptive'): Profile {
