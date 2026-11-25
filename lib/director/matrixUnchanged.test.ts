@@ -177,6 +177,16 @@ const moveArb: fc.Arbitrary<Move> = fc.oneof(
   },
 );
 
+/**
+ * `offered` came later: the items a decision could have opened, kept so the server pays XP only for
+ * those (lib/server/sync.ts). No student sees it, and it goes with the open item it was offered with.
+ */
+function withoutOffered(profile: Profile): Profile {
+  const copy = { ...profile };
+  delete copy.offered;
+  return copy;
+}
+
 /** Everything the change touches, old against new, on one profile with matrix items only. */
 function expectAsBefore(profile: Profile): void {
   // What the fixed path now counts by: on matrix items only, every item done is a matrix answer.
@@ -192,7 +202,8 @@ function expectAsBefore(profile: Profile): void {
   }
   for (const topic of TOPICS) {
     const { profile: switched } = applyAction(profile, { type: 'set_topic', topic });
-    expect(switched).toEqual(withTopicBefore(profile, topic));
+    expect(withoutOffered(switched)).toEqual(withoutOffered(withTopicBefore(profile, topic)));
+    if (!switched.current) expect(switched.offered).toBeUndefined();
   }
 }
 
@@ -304,6 +315,7 @@ describe('openInOtherTopic and dropOtherTopics', () => {
     expect(dropOtherTopics(onlyTurn, 'vector')).toEqual({
       ...onlyTurn,
       current: undefined,
+      offered: undefined,
       pending: undefined,
     });
   });
