@@ -6,12 +6,24 @@ import { useEffect, useSyncExternalStore } from 'react';
 import { LinkButton } from '@/components/ui/Button';
 import { CONFIG } from '@/lib/config';
 import { th } from '@/lib/content/th';
+import { fillTokens } from '@/lib/core/tokens';
 import { cohortFromLink } from '@/lib/sync/types';
+import { enabledTopics, packOf } from '@/lib/topics';
 import { NotebookDemo } from './NotebookDemo';
 import { GoogleButton } from './SignInButtons';
 import { useLearner } from './useLearner';
 
 const [taglineLead, taglineRest] = th.home.tagline.split(' ');
+
+/** "ตอนนี้เรียนเมทริกซ์และเวกเตอร์ได้แล้ว": the topics switched on, so it is never out of date. */
+function openingLine(): string {
+  const names = enabledTopics().map((topic) => packOf(topic).titleTh);
+  const topics =
+    names.length > 1
+      ? `${names.slice(0, -1).join(' ')}${th.home.topicJoin}${names.at(-1)}`
+      : names[0];
+  return fillTokens(th.home.opening, { topics });
+}
 
 const COHORT_KEY = 'math:cohort';
 
@@ -59,33 +71,33 @@ export function Landing() {
           <span className="block">{taglineLead}</span>
           <span className="block">{taglineRest}</span>
         </p>
-        <p className="mt-1 text-sm text-muted">{th.home.opening}</p>
+        <p className="mt-1 text-sm text-muted">{openingLine()}</p>
       </header>
 
       <NotebookDemo className="my-10 md:col-start-2 md:row-span-3 md:row-start-1 md:my-0" />
 
-      <div className="mt-auto flex flex-col gap-1 md:col-start-1 md:mt-8">
+      {/* Holds its height while the device works out who is here, so no button flips or jumps. */}
+      <div className="mt-auto flex min-h-28 flex-col justify-end gap-2 md:col-start-1 md:mt-8">
         {failed && (
           <p role="alert" className="text-sm text-warn">
             {th.home.loginFailed}
           </p>
         )}
-        {phase === 'ready' ? (
-          <LinkButton href="/learn" className="w-full">
+        {phase === 'loading' ? null : phase === 'ready' ? (
+          <LinkButton href="/learn" className="w-full motion-safe:animate-fade">
             {th.home.continue}
           </LinkButton>
         ) : (
-          <>
+          <div className="flex flex-col gap-2 motion-safe:animate-fade">
             {configured && <GoogleButton />}
             <LinkButton
               href="/welcome?guest=1"
-              variant={configured ? 'quiet' : 'primary'}
+              variant={configured ? 'secondary' : 'primary'}
               className="w-full"
-              size={configured ? 'md' : 'lg'}
             >
               {th.home.tryFirst}
             </LinkButton>
-          </>
+          </div>
         )}
       </div>
 

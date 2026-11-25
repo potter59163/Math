@@ -361,6 +361,21 @@ describe.skipIf(!uri)('on a real MongoDB', () => {
       ]);
       expect(await store.weeklyLeaderboard(WEEK, 1)).toHaveLength(1);
     });
+
+    it('keeps a class board to the students of that class link', async () => {
+      const inClass = await student({ ...ACCOUNT, displayName: 'ห้องเอ' }, 'ห้องA');
+      const otherClass = await student({ ...ACCOUNT, displayName: 'ห้องบี' }, 'ห้องB');
+      const noClass = await student({ ...ACCOUNT, displayName: 'ไม่มีห้อง' });
+      await earned(inClass.id, 30);
+      await earned(otherClass.id, 40);
+      await earned(noClass.id, 50);
+
+      const board = await store.weeklyLeaderboard(WEEK, 10, 'ห้องA');
+      expect(board.map(({ display_name }) => display_name)).toEqual(['ห้องเอ']);
+      expect(await store.cohortOf(inClass.id)).toBe('ห้องA');
+      expect(await store.cohortOf(noClass.id)).toBeNull();
+      expect(JSON.stringify(board)).not.toContain('ห้องA');
+    });
   });
 
   describe('deleting an account', () => {

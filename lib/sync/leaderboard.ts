@@ -1,4 +1,4 @@
-import type { AvatarId, LeaderboardEntry, LeaderboardResponse } from './types';
+import type { AvatarId, BoardScope, LeaderboardEntry, LeaderboardResponse } from './types';
 
 // The weekly board. A new week starts on Monday at midnight in Thailand, so nobody stays out of reach
 // for long, and a student who just started can still get on it.
@@ -6,8 +6,11 @@ import type { AvatarId, LeaderboardEntry, LeaderboardResponse } from './types';
 const BANGKOK_OFFSET_MS = 7 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-/** How far down the board is shown. Whoever is below it still sees their own place. */
-export const SHOWN_ON_BOARD = 50;
+/**
+ * How far down the board is shown. Whoever is below it sees their own place with the one above and the
+ * one below, instead of the whole class above them (Potter's choice, 25 Nov 2026).
+ */
+export const SHOWN_ON_BOARD = 10;
 
 export function weekStartOf(now: number): string {
   const local = new Date(now + BANGKOK_OFFSET_MS);
@@ -29,6 +32,7 @@ export function rankEntries(
   userId: string,
   weekStart: string,
   hidden: boolean,
+  board: { scope: BoardScope; hasClass: boolean } = { scope: 'all', hasClass: false },
 ): LeaderboardResponse {
   let rank = 0;
   let lastXp = Number.POSITIVE_INFINITY;
@@ -45,10 +49,17 @@ export function rankEntries(
       isMe: row.user_id === userId,
     };
   });
+  const mine = entries.findIndex(({ isMe }) => isMe);
   return {
     weekStart,
+    ...board,
     entries: entries.slice(0, SHOWN_ON_BOARD),
-    me: entries.find(({ isMe }) => isMe) ?? null,
+    // Below the top: this student with the place just above and just below, none of it repeated.
+    around:
+      mine >= SHOWN_ON_BOARD
+        ? entries.slice(Math.max(SHOWN_ON_BOARD, mine - 1), mine + 2)
+        : [],
+    me: mine >= 0 ? entries[mine] : null,
     hidden,
   };
 }

@@ -54,13 +54,25 @@ export function BoltIcon(props: IconProps) {
   );
 }
 
+/** The streak. The inner flame is cut out, so a grey one still reads as fire and not as a drop. */
 export function FlameIcon(props: IconProps) {
   return (
     <Icon {...props}>
       <path
-        d="M12 3c1 3.5 5 5.5 5 10.5a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5.3 1.5 1 2.5 2 3 0-3-.5-6 1-9z"
+        d="M12 3c1 3.5 5 5.5 5 10.5a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5.3 1.5 1 2.5 2 3 0-3-.5-6 1-9zm0 10.2c1 1 1.9 2.1 1.9 3.4a1.9 1.9 0 0 1-3.8 0c0-1.2.9-2.3 1.9-3.4z"
         fill="currentColor"
+        fillRule="evenodd"
+        stroke="none"
       />
+    </Icon>
+  );
+}
+
+/** A skill the pre-test showed is known: one right answer passes it. */
+export function FastForwardIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4 6.5l7 5.5-7 5.5zM12.5 6.5l7 5.5-7 5.5z" fill="currentColor" />
     </Icon>
   );
 }

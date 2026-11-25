@@ -1,4 +1,4 @@
-import { BoltIcon, FlameIcon } from '@/components/ui/Icons';
+import { BoltIcon } from '@/components/ui/Icons';
 import { th } from '@/lib/content/th';
 import { fillTokens } from '@/lib/core/tokens';
 
@@ -7,10 +7,15 @@ interface StatBadgesProps {
   combo: number;
 }
 
-// Each number keeps a fixed width, so going from 90 to 100 XP cannot push the header around.
+/** One right answer is not yet a run, so the combo shows from the second. */
+const COMBO_FROM = 2;
+
+// Each number keeps a fixed width, so going from 90 to 100 XP or growing a combo cannot push the header
+// around. The flame belongs to the day streak on the other pages, so the combo is written "×3".
 export function StatBadges({ xp, combo }: StatBadgesProps) {
+  const showCombo = combo >= COMBO_FROM;
   return (
-    <div className="flex shrink-0 items-center gap-1.5 font-matrix text-sm font-semibold tabular-nums">
+    <div className="flex shrink-0 items-center gap-2 font-matrix text-sm font-semibold tabular-nums">
       <span
         role="img"
         aria-label={fillTokens(th.common.xpLabel, { xp: String(xp) })}
@@ -22,13 +27,15 @@ export function StatBadges({ xp, combo }: StatBadgesProps) {
         </span>
       </span>
       <span
-        role="img"
-        aria-label={fillTokens(th.common.comboLabel, { combo: String(combo) })}
-        className={`inline-flex items-center gap-0.5 ${combo > 0 ? 'text-flame' : 'text-muted'}`}
+        role={showCombo ? 'img' : undefined}
+        aria-label={
+          showCombo ? fillTokens(th.common.comboLabel, { combo: String(combo) }) : undefined
+        }
+        aria-hidden={showCombo ? undefined : true}
+        className={`inline-block min-w-[3.5ch] text-right text-flame ${showCombo ? '' : 'invisible'}`}
       >
-        <FlameIcon className="size-4" />
-        <span key={combo} className="inline-block min-w-[2ch] motion-safe:animate-pop">
-          {combo}
+        <span key={combo} className="inline-block motion-safe:animate-pop">
+          ×{combo}
         </span>
       </span>
     </div>

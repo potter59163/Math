@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { th } from '@/lib/content/th';
 import { generate } from '@/lib/topics/matrix/generators';
 import { CATALOG } from '@/lib/topics/matrix/misconceptions';
-import { MAX_NOTE_UNITS, noteFor, pathStepFor, stripNote } from './pathStep';
+import { MAX_NOTE_UNITS, noteFor, pathStepFor, stripKind, stripNote } from './pathStep';
 import type { PathKind, PathStep, PendingTurn } from './types';
 
 const KINDS = Object.keys(th.pathNotes) as PathKind[];
@@ -78,6 +78,25 @@ describe('stripNote', () => {
   it('goes back to the reason for the item after "ไม่เข้าใจ"', () => {
     const path = [step('review', 'b'), step('request', noteFor('request'))];
     expect(stripNote({ path })).toBe('b');
+  });
+});
+
+describe('stripKind', () => {
+  const step = (kind: PathKind): PathStep => ({ kind, skill: 'dim', level: 2, note: kind });
+  const probe = generate({ skill: 'mult', difficulty: 1, seed: 1, target: 'M09_MULT_ELEMENTWISE' });
+  const open = { ref: probe.ref, hintLevel: 0 as const };
+
+  it('names the kind of the step whose note is shown', () => {
+    expect(stripKind({ path: [] })).toBeNull();
+    expect(stripKind({ path: [step('start'), step('skip_clip')] })).toBe('skip_clip');
+    expect(stripKind({ path: [step('pretest_probe'), step('request')] })).toBe('pretest_probe');
+  });
+
+  it('follows the note to the probe once a compare clip has played', () => {
+    expect(stripKind({ path: [step('remediate')], current: open })).toBe('probe');
+    expect(
+      stripKind({ path: [step('remediate')], pending: {} as PendingTurn, current: open }),
+    ).toBe('remediate');
   });
 });
 

@@ -2,8 +2,11 @@ import { th } from '@/lib/content/th';
 import { fillTokens } from '@/lib/core/tokens';
 import { boxText } from '@/lib/practice/draft';
 
-/** How a box looks once the item is closed. */
-export type ClosedTone = 'correct' | 'neutral' | 'slip';
+/**
+ * How a box looks once the item is closed. `wrong` keeps the student's own blue writing and puts the
+ * red pen under it, as a teacher marks a page; it never shows what the right value was.
+ */
+export type ClosedTone = 'correct' | 'neutral' | 'slip' | 'wrong';
 
 interface AnswerBoxProps {
   text: string;
@@ -24,6 +27,7 @@ function textSize(length: number): string {
 function surface(active: boolean, closedTone?: ClosedTone): string {
   if (closedTone === 'correct') return 'border-good bg-good-soft text-good';
   if (closedTone === 'slip') return 'border-warn bg-warn-soft text-warn';
+  if (closedTone === 'wrong') return 'border-warn bg-surface text-brand';
   if (closedTone === 'neutral') return 'border-line bg-sunken text-brand';
   return active ? 'border-brand bg-brand-soft text-brand' : 'border-edge bg-surface text-brand';
 }
@@ -47,9 +51,15 @@ export function AnswerBox({
       aria-label={shown ? fillTokens(th.session.box.filled, { label, value: shown }) : label}
       onClick={onSelect}
       onFocus={onSelect}
-      className={`flex touch-manipulation items-center justify-center rounded-lg border-2 font-hand font-medium transition-colors select-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand ${sizeClass} ${textSize(shown.length)} ${surface(active, closedTone)}`}
+      className={`relative flex touch-manipulation items-center justify-center rounded-lg border-2 font-hand font-medium transition-colors select-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand ${sizeClass} ${textSize(shown.length)} ${surface(active, closedTone)}`}
     >
       {shown}
+      {closedTone === 'wrong' && shown && (
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-2 bottom-1.5 h-0.5 -rotate-3 rounded-full bg-warn"
+        />
+      )}
       {active && !closedTone && (
         <span
           aria-hidden="true"

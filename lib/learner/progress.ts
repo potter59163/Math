@@ -29,6 +29,17 @@ export const inOpenUnit = (profile: Pick<LearnerProfile, 'student'>, id: SkillId
 export const hasPassed = (profile: Pick<LearnerProfile, 'skills'>, id: SkillId): boolean =>
   profile.skills[id]?.passed === true;
 
+/**
+ * Items answered in one topic. Every topic adds to the one `itemsDone`, so a student who has only done
+ * matrices has done nothing in vectors yet, which is what the lessons page must say on that tab.
+ */
+export function itemsDoneIn(profile: Pick<LearnerProfile, 'skills'>, topic: TopicId): number {
+  return packOf(topic).skills.reduce(
+    (sum, { id }) => sum + (profile.skills[id]?.attempts.length ?? 0),
+    0,
+  );
+}
+
 /** A prereq in a closed unit counts as passed (SPEC §3). Prereqs never leave their own topic. */
 export function isUnlocked(profile: Progress, id: SkillId): boolean {
   return skillOf(id).prereq.every(

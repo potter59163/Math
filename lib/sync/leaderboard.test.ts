@@ -41,4 +41,30 @@ describe('rankEntries', () => {
   it('has no place for a student with none this week', () => {
     expect(rankEntries([row('a', 5)], 'b', 'w', false).me).toBeNull();
   });
+
+  it('shows the top, and below it only the student with the places just above and below', () => {
+    const rows = Array.from({ length: 30 }, (_, n) => row(`u${n}`, 1000 - n));
+    const board = rankEntries(rows, 'u19', 'w', false);
+    expect(board.entries.map(({ rank }) => rank)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    expect(board.around.map(({ rank }) => rank)).toEqual([19, 20, 21]);
+    expect(board.around[1].isMe).toBe(true);
+  });
+
+  it('repeats no one between the top and the places around the student', () => {
+    const rows = Array.from({ length: 20 }, (_, n) => row(`u${n}`, 1000 - n));
+    const justBelow = rankEntries(rows, `u${SHOWN_ON_BOARD}`, 'w', false);
+    expect(justBelow.around.map(({ rank }) => rank)).toEqual([
+      SHOWN_ON_BOARD + 1,
+      SHOWN_ON_BOARD + 2,
+    ]);
+    expect(rankEntries(rows, 'u19', 'w', false).around.map(({ rank }) => rank)).toEqual([19, 20]);
+    expect(rankEntries(rows, 'u3', 'w', false).around).toEqual([]);
+  });
+
+  it('says which board it is, and never which class', () => {
+    const board = rankEntries([row('a', 5)], 'a', 'w', false, { scope: 'class', hasClass: true });
+    expect(board.scope).toBe('class');
+    expect(board.hasClass).toBe(true);
+    expect(rankEntries([row('a', 5)], 'a', 'w', false).scope).toBe('all');
+  });
 });

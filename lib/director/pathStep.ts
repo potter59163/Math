@@ -16,19 +16,29 @@ export function noteFor(kind: PathKind, misconception?: MisconceptionId): string
   );
 }
 
+type OnScreen = Pick<Profile, 'path' | 'pending' | 'current'>;
+
 /**
- * What the strip says now: why the thing on screen is there. One decision has one note, but a compare
- * clip is followed by a probe, and "ไม่เข้าใจ" goes back to the item it left, whose reason still holds.
+ * Why the thing on screen is there. One decision has one note, but a compare clip is followed by a
+ * probe, and "ไม่เข้าใจ" goes back to the item it left, whose reason still holds.
  */
-export function stripNote({
-  path,
-  pending,
-  current,
-}: Pick<Profile, 'path' | 'pending' | 'current'>): string {
+function stripStep({ path, pending, current }: OnScreen): { kind: PathKind; note: string } | null {
   const last = path.findLast(({ kind }) => kind !== 'request');
-  if (!last) return '';
+  if (!last) return null;
   const target = current?.ref.target;
-  return last.kind === 'remediate' && !pending && target ? noteFor('probe', target) : last.note;
+  return last.kind === 'remediate' && !pending && target
+    ? { kind: 'probe', note: noteFor('probe', target) }
+    : last;
+}
+
+/** What the strip says now. */
+export function stripNote(profile: OnScreen): string {
+  return stripStep(profile)?.note ?? '';
+}
+
+/** The kind of step the strip's note is about, which the strip labels when it came from the pre-test. */
+export function stripKind(profile: OnScreen): PathKind | null {
+  return stripStep(profile)?.kind ?? null;
 }
 
 export function pathStepFor(
