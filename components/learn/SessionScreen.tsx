@@ -2,11 +2,14 @@
 
 import Link from 'next/link';
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
+import { Affixed } from '@/components/input/Affixed';
 import { AnswerBox, type ClosedTone } from '@/components/input/AnswerBox';
 import { ChoiceButtons } from '@/components/input/ChoiceButtons';
 import { DimsInput } from '@/components/input/DimsInput';
 import { Keypad } from '@/components/input/Keypad';
 import { MatrixInput } from '@/components/input/MatrixInput';
+import { VectorInput } from '@/components/input/VectorInput';
+import { componentsOf } from '@/components/topics';
 import { Button } from '@/components/ui/Button';
 import { BulbIcon, CheckIcon } from '@/components/ui/Icons';
 import { learner, useLearner, useRequiredProfile } from '@/components/app/useLearner';
@@ -14,7 +17,7 @@ import { LazyScene, preloadScenes } from '@/components/scenes/LazyScene';
 import type { SceneView } from '@/components/scenes/playerState';
 import { sfx } from '@/lib/client/sfx';
 import { soundFor } from '@/lib/practice/rewards';
-import { th, type ChoiceKey } from '@/lib/content/th';
+import { th } from '@/lib/content/th';
 import { restoreAnswer, storeAnswer } from '@/lib/core/answerJson';
 import { fillTokens } from '@/lib/core/tokens';
 import type { Answer, Item } from '@/lib/core/types';
@@ -38,6 +41,7 @@ import {
   pickChoice,
   pressKey,
   readiness,
+  takesRoot,
   toggleUndefined,
   type Direction,
   type Draft,
@@ -47,6 +51,7 @@ import {
 import { hintAt, type Hint } from '@/lib/practice/hints';
 import { actionFromKey } from '@/lib/practice/keyboard';
 import { activeTopicOf, packOf, skillOf, unitOf } from '@/lib/topics';
+import { simplifiedForm } from '@/lib/topics/vector/display';
 import type { SceneSpec, SkillId } from '@/lib/topics/types';
 import { FeedbackCard } from './FeedbackCard';
 import { HintBubble } from './HintBubble';
@@ -308,6 +313,11 @@ function ItemScreen({
 
   const skill = skillOf(item.ref.skill);
   const answered = closed ? answeredLine(item, draft) : '';
+  // A right √8 is shown as 2√2 too (docs/VECTORS.md §3.3). Only what was typed here can tell.
+  const simplified =
+    closed?.outcome.classification.type === 'correct' && takesRoot(item)
+      ? simplifiedForm(draft.cells, closed.answer)
+      : null;
 
   /**
    * R1 and friends: what the director chose plays now, and the next item comes after it. With the tutor
@@ -420,6 +430,11 @@ function ItemScreen({
                 outcome={closed.outcome}
                 topic={packOf(item.ref.topic).id}
                 turn={closed.turn}
+                note={
+                  simplified
+                    ? fillTokens(th.vector.feedback.simplified, { value: simplified })
+                    : undefined
+                }
                 thinking={llm && thinking}
                 waiting={waiting}
                 onNext={() => void goOn()}
@@ -433,6 +448,7 @@ function ItemScreen({
                 </div>
                 <ChoiceButtons
                   options={item.options ?? []}
+                  topic={item.ref.topic}
                   selected={draft.choice}
                   onPick={(id) => edit((current) => pickChoice(current, id))}
                 />
@@ -463,6 +479,7 @@ function ItemScreen({
                 </div>
                 <Keypad
                   digitsOnly={item.kind === 'dims' || item.kind === 'dims_or_undefined'}
+                  withRoot={takesRoot(item)}
                   sendReady={state.ready}
                   onKey={press}
                   onSend={send}
@@ -564,7 +581,17 @@ function AnswerBoxes({ item, draft, outcome, onSelect }: AnswerBoxesProps) {
   if (item.kind === 'dims' || item.kind === 'dims_or_undefined') {
     return <DimsInput draft={draft} closedTone={closedTone} onSelect={onSelect} />;
   }
-  return (
+  if (item.kind === 'vector') {
+    return (
+      <VectorInput
+        draft={draft}
+        closedTone={closedTone}
+        wrongCell={classification?.type === 'slip' ? classification.cell : undefined}
+        onSelect={onSelect}
+      />
+    );
+  }
+  const box = (
     <AnswerBox
       text={draft.cells[0]}
       label={th.session.box.answer}
@@ -574,6 +601,8 @@ function AnswerBoxes({ item, draft, outcome, onSelect }: AnswerBoxesProps) {
       onSelect={() => onSelect(0)}
     />
   );
+  const affix = componentsOf(item.ref.topic).answerAffix?.(item);
+  return affix ? <Affixed affix={affix}>{box}</Affixed> : box;
 }
 
 function issueText(issue: NotReadyReason, isChoice: boolean): string {
@@ -585,6 +614,6 @@ function answeredLine(item: Item, draft: Draft): string {
   const option = item.options?.find(({ id }) => id === draft.choice);
   const answer = draft.isUndefined
     ? th.session.undefined
-    : option && th.choices[option.labelKey as ChoiceKey];
+    : option && packOf(item.ref.topic).copy.choiceLabel(option.labelKey);
   return answer ? fillTokens(th.session.yourAnswer, { answer }) : '';
 }

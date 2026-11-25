@@ -1,5 +1,5 @@
 import { CONFIG } from '@/lib/config';
-import { th, type WorkedKey } from '@/lib/content/th';
+import { th, type ChoiceKey, type WorkedKey } from '@/lib/content/th';
 import { fillTokens } from '@/lib/core/tokens';
 import type { Item, ItemRef } from '@/lib/core/types';
 import type { TopicPack, WorkedLine } from '@/lib/topics/types';
@@ -114,6 +114,8 @@ export const matrixPack: TopicPack = {
   },
 
   copy: {
+    prompt: (item) => fillTokens(th.prompts[asMatrix(item).prompt.key], item.prompt.params),
+    choiceLabel: (labelKey) => th.choices[labelKey as ChoiceKey],
     misconceptionShort: (id) => th.misconceptionShort[id as MisconceptionId],
     misconceptionHint: (id) => th.hints[id as MisconceptionId],
     misconceptionFeedback: (id, variant) => {

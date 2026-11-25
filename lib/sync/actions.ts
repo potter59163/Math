@@ -105,7 +105,23 @@ export function applyAction(
       return { profile: { ...profile, student: { ...profile.student, theme: action.theme } } };
     case 'set_topic':
       return isRegisteredTopic(action.topic)
-        ? { profile: { ...profile, student: { ...profile.student, activeTopic: action.topic } } }
+        ? { profile: withTopic(profile, action.topic) }
         : { profile };
   }
+}
+
+/**
+ * The student's topic, and nothing left open from another one: an item on screen or a decision still
+ * to play would otherwise take them straight back to the topic they just left. What they answered is
+ * already in the model, so only the next step is let go.
+ */
+function withTopic(profile: Profile, topic: TopicId): Profile {
+  const { current, pending, ...rest } = profile;
+  const pendingTopic = pending && (pending.closed?.ref.topic ?? pending.turn.next?.topic);
+  return {
+    ...rest,
+    student: { ...profile.student, activeTopic: topic },
+    ...(current && current.ref.topic === topic && { current }),
+    ...(pending && (pendingTopic === undefined || pendingTopic === topic) && { pending }),
+  };
 }

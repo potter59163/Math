@@ -1,5 +1,6 @@
 import { CONFIG } from '@/lib/config';
 import { matrixPack } from './matrix/pack';
+import { vectorPack } from './vector/pack';
 import type {
   MisconceptionId,
   SkillId,
@@ -16,7 +17,7 @@ import type {
 export type * from './types';
 
 /** Registration order is the order topics are offered in, and matrices come first. */
-const PACKS: readonly TopicPack[] = [matrixPack];
+const PACKS: readonly TopicPack[] = [matrixPack, vectorPack];
 
 /** What a student learns until they choose otherwise, and what every profile from before topics means. */
 export const DEFAULT_TOPIC: TopicId = 'matrix';

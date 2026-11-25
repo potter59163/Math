@@ -7,7 +7,7 @@ import { fillTokens } from '@/lib/core/tokens';
 import type { NextTurn } from '@/lib/director/types';
 import type { AttemptOutcome } from '@/lib/learner/types';
 import { feedbackFor } from '@/lib/practice/feedback';
-import { DEFAULT_TOPIC, misconceptionShortOf, skillOf } from '@/lib/topics';
+import { DEFAULT_TOPIC, misconceptionShortOf, skillOf, unitOf } from '@/lib/topics';
 import type { TopicId } from '@/lib/topics/types';
 
 interface FeedbackCardProps {
@@ -16,6 +16,8 @@ interface FeedbackCardProps {
   topic?: TopicId;
   /** What the director chose next. It names the main button. */
   turn: NextTurn;
+  /** A line under the feedback, such as the simplest form of a right answer. */
+  note?: string;
   /** The tutor may still answer, and its words would replace the ones shown. */
   thinking: boolean;
   /** The student pressed on and is waiting for it. */
@@ -38,6 +40,7 @@ export function FeedbackCard({
   outcome,
   topic = DEFAULT_TOPIC,
   turn,
+  note,
   thinking,
   waiting,
   onNext,
@@ -78,6 +81,7 @@ export function FeedbackCard({
 
       <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
         {feedback.detail && <p>{feedback.detail}</p>}
+        {note && <p>{note}</p>}
         <TutorBubble message={turn.message} thinking={thinking} />
         {resolved && (
           <p className="font-semibold">
@@ -94,7 +98,7 @@ export function FeedbackCard({
         )}
         {unitPassed && (
           <p className="font-semibold">
-            {fillTokens(th.session.unitPassed, { unit: String(unitPassed) })}
+            {fillTokens(th.session.unitPassed, { unit: unitOf(unitPassed).label })}
           </p>
         )}
         {allPassed && <p className="font-semibold">{th.session.allDone}</p>}
