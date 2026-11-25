@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { LinkButton } from '@/components/ui/Button';
 import { ArrowRightIcon, CheckIcon, CrossIcon, PlayIcon } from '@/components/ui/Icons';
+import { KeepWords } from '@/components/ui/KeepWords';
 import { th } from '@/lib/content/th';
 import { fillTokens } from '@/lib/core/tokens';
 import { pretestSummaryOf, type PretestSummary } from '@/lib/learner/pretest';
@@ -105,10 +106,12 @@ interface PretestReportProps {
   topic: TopicId;
   /** False on a fixed path, which does not use the pre-test (RESEARCH §2): the score alone is true there. */
   usesPretest: boolean;
+  /** Called as the student goes on into the path, which is this topic's. */
+  onEnter?: () => void;
 }
 
 /** After the pre-test: what is known, what คิว will check first, and where the path starts. */
-export function PretestReport({ profile, score, topic, usesPretest }: PretestReportProps) {
+export function PretestReport({ profile, score, topic, usesPretest, onEnter }: PretestReportProps) {
   const summary = pretestSummaryOf(profile, topic);
   const { known, caught, toLearn, start } = summary;
   const nothing = known.length === 0 && caught.length === 0;
@@ -191,14 +194,14 @@ export function PretestReport({ profile, score, topic, usesPretest }: PretestRep
       <Footer>
         {usesPretest && (
           <p className="rounded-lg bg-marker-soft px-3 py-2 text-sm">
-            {start ? startLine(start) : th.report.allPassed}
+            <KeepWords text={start ? startLine(start) : th.report.allPassed} />
           </p>
         )}
-        <LinkButton href="/learn/session" className="w-full">
+        <LinkButton href="/learn/session" onClick={onEnter} className="w-full">
           <PlayIcon className="size-4" />
           {th.report.begin}
         </LinkButton>
-        <LinkButton href="/learn" variant="quiet" size="md" className="w-full">
+        <LinkButton href="/learn" onClick={onEnter} variant="quiet" size="md" className="w-full">
           {th.report.toMap}
         </LinkButton>
       </Footer>

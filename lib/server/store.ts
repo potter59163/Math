@@ -1,13 +1,26 @@
 import { randomUUID } from 'node:crypto';
 import { MongoServerError, type Db, type ObjectId } from 'mongodb';
 import type { Profile } from '@/lib/director/types';
-import type { AssessmentPhase, AssessmentStatus } from '@/lib/sync/assessment';
+import { ASSESSED_TOPIC, type AssessmentPhase, type AssessmentStatus } from '@/lib/sync/assessment';
 import type { BoardRow } from '@/lib/sync/leaderboard';
 import type { Account, AccountUpdate, AvatarId } from '@/lib/sync/types';
+import type { TopicId } from '@/lib/topics/types';
 import type { LogEntry, SyncStore } from './sync';
 
-/** A form of the matrix pre/post test, 'A' or 'B' (lib/topics/matrix/assessment.ts). */
+/** A form of a topic's pre/post test, 'A' or 'B' (lib/topics/<topic>/assessment.ts). */
 type FormId = string;
+
+/**
+ * Where each topic's tests are kept. The matrix rows are the research data, which
+ * scripts/research-export.mjs reads under these names, and they stay exactly where they were. Another
+ * topic's rows sit beside them, so neither a vector test nor going back to an older version of the app
+ * can touch them: one collection for both would need a new unique index, which an older version would
+ * fail to build once a student had taken both.
+ */
+const TEST_TABLES: Record<TopicId, { tests: string; responses: string }> = {
+  matrix: { tests: 'assessments', responses: 'assessment_responses' },
+  vector: { tests: 'vector_assessments', responses: 'vector_assessment_responses' },
+};
 
 // Every query here takes a user id that the route has already checked (lib/server/auth.ts). The field
 // names are what scripts/export-data.mjs writes out and analysis/analyze.py reads, so keep them.
@@ -46,11 +59,13 @@ export async function ensureIndexes(db: Db): Promise<void> {
     db.collection('decisions').createIndexes([{ key: { user_id: 1, created_at: 1 } }]),
     db.collection('scene_views').createIndexes([{ key: { user_id: 1, created_at: 1 } }]),
     db.collection('hint_events').createIndexes([{ key: { user_id: 1, created_at: 1 } }]),
-    // The one row each student may have for a phase: a second submit is not a second chance.
-    db.collection('assessments').createIndexes([{ key: { user_id: 1, phase: 1 }, unique: true }]),
-    db
-      .collection('assessment_responses')
-      .createIndexes([{ key: { assessment_id: 1, item_no: 1 }, unique: true }]),
+    ...Object.values(TEST_TABLES).flatMap(({ tests, responses }) => [
+      // The one row each student may have for a phase: a second submit is not a second chance.
+      db.collection(tests).createIndexes([{ key: { user_id: 1, phase: 1 }, unique: true }]),
+      db
+        .collection(responses)
+        .createIndexes([{ key: { assessment_id: 1, item_no: 1 }, unique: true }]),
+    ]),
   ]);
 }
 
@@ -117,6 +132,8 @@ export interface AssessmentResponseRow {
 }
 
 export interface NewAssessment {
+  /** Whose test: the matrix one, the research's, unless said otherwise. */
+  topic?: TopicId;
   phase: AssessmentPhase;
   form: FormId;
   score: number;
@@ -135,7 +152,8 @@ export interface AppStore extends SyncStore {
   deleteAccount(userId: string): Promise<void>;
   attemptsSince(userId: string, since: string): Promise<number>;
   llmCallsSince(userId: string, since: string): Promise<number>;
-  assessmentScores(userId: string): Promise<AssessmentStatus>;
+  /** This student's scores on one topic's tests, the matrix ones unless said otherwise. */
+  assessmentScores(userId: string, topic?: TopicId): Promise<AssessmentStatus>;
   /** False when this student has already taken this test. */
   saveAssessment(userId: string, assessment: NewAssessment): Promise<boolean>;
   /**
@@ -183,7 +201,7 @@ interface AssessmentDoc {
 export function createStore(db: Db): AppStore {
   const profiles = db.collection<ProfileDoc>('profiles');
   const learners = db.collection<LearnerDoc>('learner_profiles');
-  const assessments = db.collection<AssessmentDoc>('assessments');
+  const testsOf = (topic: TopicId) => db.collection<AssessmentDoc>(TEST_TABLES[topic].tests);
   const attempts = db.collection('attempts');
   const decisions = db.collection('decisions');
 
@@ -321,15 +339,18 @@ export function createStore(db: Db): AppStore {
     async deleteAccount(userId) {
       // Nothing cascades here, so this is the list of everything about a student. The sign-in goes last:
       // if a step fails the student is still signed in, and deleting again finishes the job.
-      const taken = await assessments
-        .find({ user_id: userId }, { projection: { _id: 1 } })
-        .toArray();
-      await db
-        .collection('assessment_responses')
-        .deleteMany({ assessment_id: { $in: taken.map(({ _id }) => _id) } });
+      for (const topic of Object.keys(TEST_TABLES) as TopicId[]) {
+        const taken = await testsOf(topic)
+          .find({ user_id: userId }, { projection: { _id: 1 } })
+          .toArray();
+        await db
+          .collection(TEST_TABLES[topic].responses)
+          .deleteMany({ assessment_id: { $in: taken.map(({ _id }) => _id) } });
+      }
+      const tests = Object.values(TEST_TABLES).map(({ tests: name }) => name);
       await Promise.all(
-        ['assessments', 'attempts', 'decisions', 'scene_views', 'hint_events', 'sessions'].map(
-          (name) => db.collection(name).deleteMany({ user_id: userId }),
+        [...tests, 'attempts', 'decisions', 'scene_views', 'hint_events', 'sessions'].map((name) =>
+          db.collection(name).deleteMany({ user_id: userId }),
         ),
       );
       await Promise.all([learners.deleteOne({ _id: userId }), profiles.deleteOne({ _id: userId })]);
@@ -349,8 +370,8 @@ export function createStore(db: Db): AppStore {
       });
     },
 
-    async assessmentScores(userId) {
-      const taken = await assessments.find({ user_id: userId }).toArray();
+    async assessmentScores(userId, topic = ASSESSED_TOPIC) {
+      const taken = await testsOf(topic).find({ user_id: userId }).toArray();
       const of = (phase: AssessmentPhase) => {
         const row = taken.find((entry) => entry.phase === phase);
         return row ? { score: row.score, total: row.total } : null;
@@ -358,10 +379,13 @@ export function createStore(db: Db): AppStore {
       return { pre: of('pre'), post: of('post') };
     },
 
-    async saveAssessment(userId, { phase, form, score, total, startedAt, responses }) {
+    async saveAssessment(
+      userId,
+      { topic = ASSESSED_TOPIC, phase, form, score, total, startedAt, responses },
+    ) {
       const id = randomUUID();
       try {
-        await assessments.insertOne({
+        await testsOf(topic).insertOne({
           _id: id,
           user_id: userId,
           phase,
@@ -377,9 +401,11 @@ export function createStore(db: Db): AppStore {
       }
       await logged('assessment responses', () =>
         db
-          .collection('assessment_responses')
+          .collection(TEST_TABLES[topic].responses)
           .insertMany(responses.map((row) => ({ ...row, assessment_id: id }))),
       );
+      // The profile's forms are the research's, which the export reads: the matrix ones alone.
+      if (topic !== ASSESSED_TOPIC) return true;
       await logged('assessment form', () =>
         profiles.updateOne(
           { _id: userId },

@@ -310,6 +310,34 @@ describe.skipIf(!uri)('on a real MongoDB', () => {
       expect(row).toMatchObject({ form_pre: 'A', form_post: 'B' });
     });
 
+    it('keeps the vector tests apart from the matrix ones, which are the research data', async () => {
+      const { id } = await student();
+      const vector = { ...taken, topic: 'vector', form: 'B', score: 3, total: 14 } as const;
+      expect(await store.saveAssessment(id, { ...taken, responses: RESPONSES })).toBe(true);
+      expect(await store.saveAssessment(id, { ...vector, responses: RESPONSES })).toBe(true);
+      expect(await store.saveAssessment(id, { ...vector, score: 9, responses: RESPONSES })).toBe(
+        false,
+      );
+
+      expect(await store.assessmentScores(id)).toEqual({ pre: { score: 1, total: 2 }, post: null });
+      expect(await store.assessmentScores(id, 'vector')).toEqual({
+        pre: { score: 3, total: 14 },
+        post: null,
+      });
+      expect(await countOf('assessments', id)).toBe(1);
+      expect(await countOf('vector_assessments', id)).toBe(1);
+      const sat = await db.collection('vector_assessments').findOne({ user_id: id });
+      const answersIn = (name: string) =>
+        db.collection(name).countDocuments({ assessment_id: sat?._id });
+      expect(await answersIn('vector_assessment_responses')).toBe(2);
+      expect(await answersIn('assessment_responses')).toBe(0);
+
+      // The forms the research export reads stay the matrix ones.
+      const row = await db.collection<{ _id: string }>('profiles').findOne({ _id: id });
+      expect(row).toMatchObject({ form_pre: 'A' });
+      expect(row).not.toHaveProperty('form_post');
+    });
+
     it('keeps every answer under its test, and no copies', async () => {
       const { id } = await student();
       await store.saveAssessment(id, { ...taken, responses: RESPONSES });
@@ -386,6 +414,7 @@ describe.skipIf(!uri)('on a real MongoDB', () => {
       'scene_views',
       'hint_events',
       'assessments',
+      'vector_assessments',
     ];
 
     async function studentWithEverything(sub: string) {
@@ -424,6 +453,15 @@ describe.skipIf(!uri)('on a real MongoDB', () => {
         startedAt: AT,
         responses: RESPONSES,
       });
+      await store.saveAssessment(id, {
+        topic: 'vector',
+        phase: 'pre',
+        form: 'B',
+        score: 1,
+        total: 2,
+        startedAt: AT,
+        responses: RESPONSES,
+      });
       const token = await auth.startSession(id);
       return { id, token, auth };
     }
@@ -437,12 +475,18 @@ describe.skipIf(!uri)('on a real MongoDB', () => {
       const responsesOf = (assessmentId: unknown) =>
         db.collection('assessment_responses').countDocuments({ assessment_id: assessmentId });
       expect(await responsesOf(assessment?._id)).toBe(2);
+      const vectorTest = await db.collection('vector_assessments').findOne({ user_id: id });
+      const vectorResponsesOf = (assessmentId: unknown) =>
+        db
+          .collection('vector_assessment_responses')
+          .countDocuments({ assessment_id: assessmentId });
+      expect(await vectorResponsesOf(vectorTest?._id)).toBe(2);
 
       await store.deleteAccount(id);
 
       // Every collection there is, so a new one cannot be forgotten here.
       const collections = await db.listCollections().toArray();
-      expect(collections.length).toBeGreaterThanOrEqual(11);
+      expect(collections.length).toBeGreaterThanOrEqual(13);
       for (const { name } of collections) {
         const left = await db
           .collection<{ _id: string; user_id?: string }>(name)
@@ -450,6 +494,7 @@ describe.skipIf(!uri)('on a real MongoDB', () => {
         expect(left, name).toBe(0);
       }
       expect(await responsesOf(assessment?._id)).toBe(0);
+      expect(await vectorResponsesOf(vectorTest?._id)).toBe(0);
       expect(await auth.userOfSession(token)).toBeNull();
 
       for (const name of EVERYWHERE) expect(await countOf(name, other.id), name).toBeGreaterThan(0);

@@ -36,8 +36,10 @@ import {
 import { actionFromKey } from '@/lib/practice/keyboard';
 import {
   ASSESSED_TOPIC,
-  assessedItemsDone,
+  minutesFor,
+  testApi,
   testBlock,
+  testedItemsDone,
   type AssessmentAnswer,
   type AssessmentForm,
   type AssessmentPhase,
@@ -45,7 +47,8 @@ import {
   type AssessmentScore,
   type AssessmentStatus,
 } from '@/lib/sync/assessment';
-import { packOf } from '@/lib/topics';
+import { activeTopicOf, packOf } from '@/lib/topics';
+import type { TopicId } from '@/lib/topics/types';
 import { Mascot } from './Mascot';
 import { PosttestReport, PretestReport } from './TestReport';
 import { learner, useLearner, useRequiredProfile } from './useLearner';
@@ -64,9 +67,6 @@ type Stage =
 
 const DIRECTIONS: readonly string[] = ['left', 'right', 'up', 'down'];
 
-/** RESEARCH §4: 14 items in about 20 minutes. */
-const minutesFor = (items: number) => Math.round((items * 10) / 7);
-
 /**
  * The answers given so far, kept in this tab until the test is sent, so a reload or a locked phone does
  * not throw away twenty minutes. The same form and the same start time carry on; nothing is marked here.
@@ -78,7 +78,11 @@ interface InProgress {
   answers: AssessmentAnswer[];
 }
 
-const progressKey = (phase: AssessmentPhase, student: string) => `math:test:${phase}:${student}`;
+/** The matrix test keeps the key it always had, so a test begun before the vector one opened carries on. */
+const progressKey = (topic: TopicId, phase: AssessmentPhase, student: string) =>
+  topic === ASSESSED_TOPIC
+    ? `math:test:${phase}:${student}`
+    : `math:test:${topic}:${phase}:${student}`;
 
 function readProgress(key: string, form: AssessmentForm): InProgress | null {
   try {
@@ -272,11 +276,11 @@ function MaybeAffixed({
 }
 
 /** The post-test result, beside the pre-test's score when there is one. */
-function PosttestDone({ score }: { score: AssessmentScore }) {
+function PosttestDone({ score, topic }: { score: AssessmentScore; topic: TopicId }) {
   const [pre, setPre] = useState<AssessmentScore | null | undefined>(undefined);
   useEffect(() => {
     let live = true;
-    void fetch('/api/assessment/status')
+    void fetch(testApi('status', topic))
       .then((response) => (response.ok ? (response.json() as Promise<AssessmentStatus>) : null))
       .then((status) => {
         if (live) setPre(status?.pre ?? null);
@@ -287,9 +291,9 @@ function PosttestDone({ score }: { score: AssessmentScore }) {
     return () => {
       live = false;
     };
-  }, []);
+  }, [topic]);
   if (pre === undefined) return <LoadingScreen />;
-  return <PosttestReport score={score} pre={pre} topic={ASSESSED_TOPIC} />;
+  return <PosttestReport score={score} pre={pre} topic={topic} />;
 }
 
 function Notice({ mood, children }: { mood?: 'oops' | 'thinking'; children: ReactNode }) {
@@ -301,19 +305,26 @@ function Notice({ mood, children }: { mood?: 'oops' | 'thinking'; children: Reac
   );
 }
 
-export function TestScreen({ phase }: { phase: AssessmentPhase }) {
+export function TestScreen({
+  phase,
+  topic = ASSESSED_TOPIC,
+}: {
+  phase: AssessmentPhase;
+  /** Whose test: the matrix one, the research's, unless the address names another (`?topic=`). */
+  topic?: TopicId;
+}) {
   const profile = useRequiredProfile();
   const { mode, account } = useLearner();
   const [stage, setStage] = useState<Stage>({ name: 'loading' });
   const [answers, setAnswers] = useState<AssessmentAnswer[]>([]);
   // The refs of the form being taken, as the server sent them: what kept progress is matched against.
   const [formRefs, setFormRefs] = useState('');
-  const key = profile ? progressKey(phase, profile.student.id) : '';
+  const key = profile ? progressKey(topic, phase, profile.student.id) : '';
 
   useEffect(() => {
     if (mode !== 'account') return;
     let live = true;
-    void fetch(`/api/assessment/${phase}`)
+    void fetch(testApi(phase, topic))
       .then((response) => (response.ok ? (response.json() as Promise<AssessmentForm>) : null))
       .then((form) => {
         if (!live) return;
@@ -327,7 +338,7 @@ export function TestScreen({ phase }: { phase: AssessmentPhase }) {
     return () => {
       live = false;
     };
-  }, [phase, mode]);
+  }, [phase, mode, topic]);
 
   const items = useMemo(() => ('items' in stage ? stage.items : null), [stage]);
 
@@ -336,7 +347,7 @@ export function TestScreen({ phase }: { phase: AssessmentPhase }) {
     try {
       // The server counts practice from what it has received, so anything still queued goes first.
       await learner.flush();
-      const response = await fetch(`/api/assessment/${phase}`, {
+      const response = await fetch(testApi(phase, topic), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ startedAt, answers: all }),
@@ -374,22 +385,28 @@ export function TestScreen({ phase }: { phase: AssessmentPhase }) {
     );
   }
   if (stage.name === 'done') {
-    if (phase === 'post') return <PosttestDone score={stage.result} />;
+    if (phase === 'post') return <PosttestDone score={stage.result} topic={topic} />;
     // A fixed path does not use the pre-test, and a result that never reached the profile has nothing
     // true to say about the path: both show the score alone.
-    const marked = hasPretestMarks(profile, ASSESSED_TOPIC) || stage.result.score === 0;
+    const marked = hasPretestMarks(profile, topic) || stage.result.score === 0;
     return (
       <PretestReport
         profile={profile}
         score={stage.result}
-        topic={ASSESSED_TOPIC}
+        topic={topic}
         usesPretest={account?.condition !== 'fixed' && marked}
+        // Its buttons lead into this topic's path, whichever tab was open before.
+        onEnter={() => {
+          if (activeTopicOf(profile.student) !== topic) {
+            learner.dispatch({ type: 'set_topic', topic });
+          }
+        }}
       />
     );
   }
 
   if (stage.name === 'intro') {
-    const practised = assessedItemsDone(profile);
+    const practised = testedItemsDone(profile, topic);
     const blocked = testBlock(phase, practised);
     if (blocked) {
       return (
@@ -398,6 +415,7 @@ export function TestScreen({ phase }: { phase: AssessmentPhase }) {
             {fillTokens(th.test.blocked[blocked], {
               n: String(CONFIG.postTestAfterItems),
               done: String(practised),
+              topic: packOf(topic).titleTh,
             })}
           </p>
           <LinkButton href="/learn" className="w-full">
@@ -413,7 +431,7 @@ export function TestScreen({ phase }: { phase: AssessmentPhase }) {
         <Mascot className="size-16 -rotate-3" />
         <div className="flex flex-col gap-1">
           <p className="text-sm text-muted">
-            {fillTokens(th.test.topic, { topic: packOf(ASSESSED_TOPIC).titleTh })}
+            {fillTokens(th.test.topic, { topic: packOf(topic).titleTh })}
           </p>
           <h1 className="text-3xl leading-snug font-semibold">
             <span className="marker">{th.test.titles[phase]}</span>

@@ -97,6 +97,7 @@
   - ผลในแอป: misconceptions_resolved, median_items_to_resolve
   - LLM: llm_decisions, fallback_rate
 - **ไม่มีชื่อเล่นใน export:** ใช้ alias เช่น S-17
+- **แบบทดสอบเวกเตอร์ไม่อยู่ใน export นี้ (ตั้งแต่ 25 พ.ย. 2569):** เก็บใน `vector_assessments` และ `vector_assessment_responses` แยกจากของเมทริกซ์ `npm run export` และ `research_wide.csv` จึงเป็นของเมทริกซ์อย่างเดียวเหมือนเดิม ถ้าจะใช้ผลเวกเตอร์ในงานวิจัย ต้องเพิ่มใน `scripts/research-export.mjs` และรายงานแยก เพราะคนละหัวข้อและไม่ได้อยู่ในแผนการทดลอง
 
 ## 6. การวิเคราะห์ (`analysis/analyze.py`, Python + pandas + scipy + matplotlib)
 1. **Descriptive:** n, ค่าเฉลี่ยและ SD ของ pre และ post (%)

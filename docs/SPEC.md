@@ -90,6 +90,7 @@ pilot เดิมเป็นฟิสิกส์ นักเรียน n=3
    - **ระหว่างทำ:** พิมพ์จากคีย์บอร์ดได้เหมือนหน้าฝึก · ปุ่ม "ข้ามข้อนี้" อยู่บนหัวจอ ห่างจากตัวเลือก · คำตอบที่ตอบแล้วเก็บในแท็บนั้นจนกว่าจะส่ง หน้ารีโหลดแล้วทำต่อข้อเดิมได้ (ฟอร์มเดิม เวลาเริ่มเดิม)
    - **หลังส่ง (หน้าผล):** คะแนน · เรื่องที่ทำได้แล้ว (เช็กเร็วข้อเดียว ไม่มีคลิปนำ ตาม §7.1) · จุดที่พลาดตามชื่อสั้นของความเข้าใจผิด (ข้อแรกของเรื่องนั้นเป็นข้อเช็ก) · เรื่องที่เรียนพร้อมคลิป · เริ่มที่ไหน
    - บอกเป็นรายเรื่อง ไม่บอกรายข้อ ไม่มีเฉลย · เส้นทางตายตัว (`fixed`) เห็นแค่คะแนน · กลับมาดูได้จากหน้าบทเรียนและโปรไฟล์ โดยเรื่องที่ผ่านและจุดที่แก้แล้วขึ้น ✓
+   - **แบบทดสอบเวกเตอร์ (`/test/pre?topic=vector`, `/test/post?topic=vector`, ตั้งแต่ 25 พ.ย. 2569):** หน้าเดียวกันและกติกาเดียวกัน แต่นับเฉพาะข้อเวกเตอร์ (ก่อนเรียนทำได้ก่อนฝึกเวกเตอร์ข้อแรก หลังเรียนเปิดเมื่อฝึกเวกเตอร์ครบ 10 ข้อ) · ชวนทำในแท็บเวกเตอร์แทนหน้า welcome จนกว่าจะฝึกข้อแรกหรือทำแล้ว · โปรไฟล์แยกแบบทดสอบตามเรื่อง · ของเมทริกซ์ยังอยู่ที่อยู่เดิม ข้อมูลเดิม และ welcome ชวนเหมือนเดิม
 4. **`/learn` (บทเรียน):**
    - การ์ด "คิวแนะนำ" บอกขั้นถัดไปจากข้อมูลของคนนั้น พร้อมเป้าหมายวันนี้และจำนวนวันติดกัน
    - แตะเรื่องบนเส้นทางเพื่อดูความแม่นและเลือกฝึกเรื่องที่เปิดแล้วได้
@@ -359,6 +360,8 @@ assessments(_id uuid, user_id, phase 'pre'|'post', form 'A'|'B', score, total, s
             unique(user_id, phase))
 assessment_responses(assessment_id, item_no, item_ref, answer null, correct,
                      misconception null, variant null, time_ms, unique(assessment_id, item_no))
+vector_assessments, vector_assessment_responses: รูปแบบเดียวกัน สำหรับแบบทดสอบเวกเตอร์
+  (แยก collection เพื่อไม่ให้แตะข้อมูลวิจัยของเมทริกซ์ และไม่ต้องเปลี่ยน unique index ของ assessments)
 ```
 index ทั้งหมดสร้างใน `ensureIndexes` (`lib/server/store.ts`) ตารางอันดับคือ aggregation ใน `weeklyLeaderboard`
 
@@ -375,7 +378,7 @@ index ทั้งหมดสร้างใน `ensureIndexes` (`lib/server/st
 | `POST /api/welcome` | {displayName, avatar, theme, consent: true, cohort?, guestProfile?} สร้างบัญชี |
 | `POST /api/sync` | {deviceId, actions: [{seq, action}]} ใช้ action แบบเดียวกับในเครื่อง regenerate และ classify เอง อัปเดต profile ถาม LLM เฉพาะคำตอบล่าสุด แล้ว log → {lastSeq, profile, turn} |
 | `GET /api/leaderboard` | ตารางสัปดาห์นี้ ไม่มี user id |
-| `GET /api/assessment/status` · `GET /api/assessment/[phase]` · `POST .../[phase]` | คะแนน · ฟอร์ม (เฉพาะ ItemRef) · ส่งคำตอบ ตรวจที่ server และตั้งค่าเส้นทางจาก pre-test |
+| `GET /api/assessment/status` · `GET /api/assessment/[phase]` · `POST .../[phase]` | คะแนน · ฟอร์ม (เฉพาะ ItemRef) · ส่งคำตอบ ตรวจที่ server และตั้งค่าเส้นทางจาก pre-test · ต่อท้าย `?topic=vector` สำหรับแบบทดสอบเวกเตอร์ ไม่ใส่คือของเมทริกซ์ |
 
 action ทั้งหมดอยู่ใน `lib/sync/actions.ts`: start, practice, hint, attempt, help, finish_scene, finish_turn, note_worked, scene_view, set_theme
 

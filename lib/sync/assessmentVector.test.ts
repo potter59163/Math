@@ -13,7 +13,16 @@ import type { Profile } from '@/lib/director/types';
 import { applyAttempt } from '@/lib/learner/profile';
 import { unknownAnswer } from '@/lib/sim/answers';
 import { packOf, packOfSkill, type SkillId, type TopicId } from '@/lib/topics';
-import { assessedItemsDone, testBlock } from './assessment';
+import {
+  assessedItemsDone,
+  isTestedTopic,
+  minutesFor,
+  testApi,
+  testBlock,
+  testedItemsDone,
+  testedTopics,
+  testPath,
+} from './assessment';
 
 // Every practice answer adds one to the single `itemsDone` of the profile, whatever its topic, and the
 // matrix pre/post-test must count only the matrix ones (RESEARCH §3).
@@ -106,5 +115,40 @@ describe('the matrix tests with vectors switched on', () => {
       }),
       { numRuns: 1000 },
     );
+  });
+});
+
+describe('the vector tests', () => {
+  it('are offered beside the matrix ones while vectors are on, and not otherwise', () => {
+    expect(testedTopics()).toEqual(['matrix', 'vector']);
+    expect(testedTopics(['matrix'])).toEqual(['matrix']);
+    expect(isTestedTopic('vector')).toBe(true);
+    expect(isTestedTopic('vector', ['matrix'])).toBe(false);
+    expect(isTestedTopic('physics')).toBe(false);
+    expect(isTestedTopic(undefined)).toBe(false);
+  });
+
+  it('count vector practice alone, while the matrix tests keep their own count', () => {
+    const mixed = practise(practise(student('vector'), 'dim', 3), 'v_quantity', 7);
+    expect(testedItemsDone(mixed, 'matrix')).toBe(assessedItemsDone(mixed));
+    expect(testedItemsDone(mixed, 'matrix')).toBe(3);
+    expect(testedItemsDone(mixed, 'vector')).toBe(7);
+    expect(testedItemsDone(null, 'vector')).toBe(0);
+    expect(testBlock('pre', testedItemsDone(mixed, 'vector'))).toBe('already_learning');
+    expect(testBlock('post', testedItemsDone(mixed, 'vector'))).toBe('too_early');
+    const enough = practise(mixed, 'v_quantity', CONFIG.postTestAfterItems - 7);
+    expect(testBlock('post', testedItemsDone(enough, 'vector'))).toBeNull();
+  });
+
+  it('keep the matrix test at the addresses it always had', () => {
+    expect(testPath('pre', 'matrix')).toBe('/test/pre');
+    expect(testPath('post', 'vector')).toBe('/test/post?topic=vector');
+    expect(testApi('pre', 'matrix')).toBe('/api/assessment/pre');
+    expect(testApi('status', 'matrix')).toBe('/api/assessment/status');
+    expect(testApi('status', 'vector')).toBe('/api/assessment/status?topic=vector');
+  });
+
+  it('take about twenty minutes for fourteen items, as RESEARCH §4 says', () => {
+    expect(minutesFor(14)).toBe(20);
   });
 });

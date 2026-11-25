@@ -4,7 +4,11 @@ import { describe, expect, it, vi } from 'vitest';
 // The route runs as on the server, for one signed-in student whose row is kept in memory.
 const server = vi.hoisted(() => {
   process.env.NEXT_PUBLIC_TOPICS = 'matrix,vector';
-  return { row: null as LearnerRow | null, saved: [] as NewAssessment[] };
+  return {
+    row: null as LearnerRow | null,
+    saved: [] as NewAssessment[],
+    scoresAsked: [] as string[],
+  };
 });
 
 vi.mock('@/lib/server/auth', () => ({
@@ -20,6 +24,10 @@ vi.mock('@/lib/server/store', () => ({
       server.saved.push(assessment);
       return true;
     },
+    assessmentScores: async (_userId: string, topic?: string) => {
+      server.scoresAsked.push(topic ?? 'matrix');
+      return { pre: null, post: null };
+    },
   }),
 }));
 
@@ -31,7 +39,7 @@ import type { NewAssessment } from '@/lib/server/store';
 import type { LearnerRow } from '@/lib/server/sync';
 import type { AssessmentPhase } from '@/lib/sync/assessment';
 import { packOfSkill, type SkillId } from '@/lib/topics';
-import { POST } from './route';
+import { GET, POST } from './route';
 
 const AT = 1_800_000_000_000;
 
@@ -55,11 +63,12 @@ function practise(profile: Profile, skill: SkillId, times: number): Profile {
 }
 
 /** Sends a test with every item skipped, which is enough to see whether the gate lets it in. */
-async function submit(phase: AssessmentPhase, profile: Profile) {
+async function submit(phase: AssessmentPhase, profile: Profile, topic?: string) {
   server.row = { profile, rev: 0, devices: {}, condition: 'adaptive' };
   server.saved = [];
+  const query = topic ? `?topic=${topic}` : '';
   const response = await POST(
-    new Request(`http://localhost/api/assessment/${phase}`, {
+    new Request(`http://localhost/api/assessment/${phase}${query}`, {
       method: 'POST',
       body: JSON.stringify({ startedAt: AT, answers: [] }),
     }),
@@ -101,5 +110,68 @@ describe('POST /api/assessment/[phase] with vectors switched on', () => {
     const { status, saved } = await submit('post', enough);
     expect(status).toBe(200);
     expect(saved.map(({ phase }) => phase)).toEqual(['post']);
+  });
+});
+
+describe('the vector tests', () => {
+  it('takes the vector pre-test after matrix practice, and leaves the matrix skills as they were', async () => {
+    const practised = practise(student(), 'dim', 3);
+    const { status, body, saved } = await submit('pre', practised, 'vector');
+    expect(status).toBe(200);
+    expect(saved.map(({ topic, phase }) => [topic, phase])).toEqual([['vector', 'pre']]);
+    expect(saved[0].responses).toHaveLength(14);
+    expect(
+      saved[0].responses.every(
+        ({ item_ref }) => (item_ref as { topic: string }).topic === 'vector',
+      ),
+    ).toBe(true);
+    expect(body.profile.skills.dim).toEqual(practised.skills.dim);
+  });
+
+  it('saves the matrix test as the matrix one, at the address it always had', async () => {
+    const { saved } = await submit('pre', student());
+    expect(saved.map(({ topic, phase }) => [topic, phase])).toEqual([['matrix', 'pre']]);
+  });
+
+  it('refuses the vector pre-test after one vector item', async () => {
+    const practised = practise(student(), 'v_quantity', 1);
+    expect(await submit('pre', practised, 'vector')).toMatchObject({
+      status: 409,
+      body: { error: 'already_learning' },
+      saved: [],
+    });
+  });
+
+  it('opens the vector post-test after ten vector items, whatever the matrix practice', async () => {
+    const matrixOnly = practise(student(), 'dim', CONFIG.postTestAfterItems);
+    expect(await submit('post', matrixOnly, 'vector')).toMatchObject({
+      status: 409,
+      body: { error: 'too_early' },
+    });
+    const both = practise(matrixOnly, 'v_quantity', CONFIG.postTestAfterItems);
+    const { status, saved } = await submit('post', both, 'vector');
+    expect(status).toBe(200);
+    expect(saved.map(({ topic, phase }) => [topic, phase])).toEqual([['vector', 'post']]);
+  });
+
+  it('knows no other topic', async () => {
+    expect(await submit('pre', student(), 'physics')).toMatchObject({
+      status: 404,
+      body: { error: 'no_such_test' },
+    });
+  });
+
+  it('serves the vector form and the vector scores when asked for them', async () => {
+    const get = (path: string, phase: string) =>
+      GET(new Request(`http://localhost${path}`), { params: Promise.resolve({ phase }) });
+    const form = await (await get('/api/assessment/pre?topic=vector', 'pre')).json();
+    expect(form.refs).toHaveLength(14);
+    expect(form.refs.every(({ topic }: { topic: string }) => topic === 'vector')).toBe(true);
+
+    server.scoresAsked = [];
+    await get('/api/assessment/status?topic=vector', 'status');
+    await get('/api/assessment/status', 'status');
+    expect(server.scoresAsked).toEqual(['vector', 'matrix']);
+    expect((await get('/api/assessment/status?topic=physics', 'status')).status).toBe(404);
   });
 });

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { LoadingScreen } from '@/components/learn/LoadingScreen';
 import { Button, LinkButton } from '@/components/ui/Button';
 import {
@@ -30,7 +30,16 @@ import {
   type UnitOnMap,
 } from '@/lib/learner/progress';
 import { recommendationFor } from '@/lib/learner/recommend';
-import { ASSESSED_TOPIC } from '@/lib/sync/assessment';
+import {
+  ASSESSED_TOPIC,
+  isTestedTopic,
+  minutesFor,
+  testApi,
+  testedItemsDone,
+  testLengthOf,
+  testPath,
+  type AssessmentStatus,
+} from '@/lib/sync/assessment';
 import {
   activeTopicOf,
   enabledTopics,
@@ -99,19 +108,80 @@ function DailyGoal({ done }: { done: number }) {
   );
 }
 
+/**
+ * Whether this topic's pre-test has been taken, asked of the server only while it could still be offered.
+ * Unknown until the answer comes, and then the offer stays up unless it was taken.
+ */
+function usePretestTaken(topic: TopicId, ask: boolean): boolean | undefined {
+  const [known, setKnown] = useState<{ topic: TopicId; taken: boolean } | null>(null);
+  useEffect(() => {
+    if (!ask) return;
+    let live = true;
+    void fetch(testApi('status', topic))
+      .then((response) => (response.ok ? (response.json() as Promise<AssessmentStatus>) : null))
+      .then((status) => {
+        if (live && status) setKnown({ topic, taken: status.pre !== null });
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [topic, ask]);
+  return known?.topic === topic ? known.taken : undefined;
+}
+
+/** The pre-test of a topic not begun, offered as the welcome screen offers the matrix one. */
+function PretestOffer({ profile, now, topic }: { profile: Profile; now: number; topic: TopicId }) {
+  const items = testLengthOf(topic);
+  return (
+    <section className="flex flex-col gap-3">
+      <div className="flex items-center gap-3">
+        <Mascot className="size-14 shrink-0 -rotate-3" mood="happy" />
+        <p className="font-hand text-lg leading-snug">
+          <Filled
+            template={th.learn.pretestOffer.title}
+            values={{ topic: packOf(topic).titleTh }}
+          />
+        </p>
+      </div>
+      <p className="-mt-1 text-sm text-muted">
+        <KeepWords
+          text={fillTokens(th.learn.pretestOffer.meta, {
+            n: String(items),
+            minutes: String(minutesFor(items)),
+          })}
+        />
+      </p>
+      <LinkButton href={testPath('pre', topic)} className="w-full">
+        {th.learn.pretestOffer.yes}
+      </LinkButton>
+      <LinkButton href="/learn/session" variant="secondary" className="w-full">
+        {th.learn.pretestOffer.no}
+      </LinkButton>
+      <DailyGoal done={itemsOn(profile.activity, now)} />
+    </section>
+  );
+}
+
 /** คิว's suggestion and the one yellow button of the page. */
 function ForYou({
   profile,
   now,
   topic,
   showReport,
+  offerTest,
 }: {
   profile: Profile;
   now: number;
   topic: TopicId;
   /** The pre-test left marks on this topic, so its result is worth a link. */
   showReport: boolean;
+  /** This topic's pre-test could still be taken here, if it has not been already. */
+  offerTest: boolean;
 }) {
+  const taken = usePretestTaken(topic, offerTest);
+  if (offerTest && taken !== true)
+    return <PretestOffer profile={profile} now={now} topic={topic} />;
   const recommendation = recommendationFor(profile);
   const label =
     recommendation.kind === 'done'
@@ -137,7 +207,7 @@ function ForYou({
       <DailyGoal done={itemsOn(profile.activity, now)} />
       {showReport && (
         <Link
-          href="/test/pre"
+          href={testPath('pre', topic)}
           className="-my-2 flex min-h-11 items-center text-sm font-medium text-brand underline"
         >
           {th.learn.pretestLink}
@@ -502,7 +572,14 @@ export function LessonsScreen() {
     .flatMap(({ skills }) => skills)
     .find(({ id }) => id === openSkill)?.status;
   const showReport =
-    mode === 'account' && shown.id === ASSESSED_TOPIC && hasPretestMarks(profile, shown.id);
+    mode === 'account' && isTestedTopic(shown.id) && hasPretestMarks(profile, shown.id);
+  // The research's test is offered by the welcome screen; another topic's is offered on its own tab.
+  const offerTest =
+    mode === 'account' &&
+    shown.id !== ASSESSED_TOPIC &&
+    isTestedTopic(shown.id) &&
+    testedItemsDone(profile, shown.id) === 0 &&
+    !hasPretestMarks(profile, shown.id);
 
   return (
     <div className="flex w-full flex-col">
@@ -526,7 +603,13 @@ export function LessonsScreen() {
               {th.learn.offline}
             </p>
           )}
-          <ForYou profile={profile} now={now} topic={shown.id} showReport={showReport} />
+          <ForYou
+            profile={profile}
+            now={now}
+            topic={shown.id}
+            showReport={showReport}
+            offerTest={offerTest}
+          />
           <MyPath steps={profile.path} topic={shown.id} />
           {mode === 'guest' && (
             <Link

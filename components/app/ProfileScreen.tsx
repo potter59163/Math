@@ -15,8 +15,16 @@ import { isQuickCheck } from '@/lib/learner/pretest';
 import { skillStateOf } from '@/lib/learner/profile';
 import { mapOf } from '@/lib/learner/progress';
 import { badgesOf, type Badge } from '@/lib/practice/rewards';
-import { assessedItemsDone, testBlock, type AssessmentStatus } from '@/lib/sync/assessment';
-import { allMisconceptions, misconceptionShortOf, skillOf } from '@/lib/topics';
+import {
+  testApi,
+  testBlock,
+  testedItemsDone,
+  testedTopics,
+  testPath,
+  type AssessmentStatus,
+} from '@/lib/sync/assessment';
+import { allMisconceptions, misconceptionShortOf, packOf, skillOf } from '@/lib/topics';
+import type { TopicId } from '@/lib/topics/types';
 import { Avatar } from './Avatar';
 import { unitPassedName } from './unitText';
 import { useLearner, useRequiredProfile } from './useLearner';
@@ -132,12 +140,15 @@ function badgeLabel(badge: Badge): string {
   return badge.kind === 'fixed' ? th.summary.badgeFixed : unitPassedName(badge.unit);
 }
 
-/** `practised` is what the tests count (assessedItemsDone), not every item done. */
-function Tests({ practised }: { practised: number }) {
+/**
+ * One topic's two tests. `practised` is what they count (testedItemsDone), not every item done, and
+ * `named` puts the topic above them once there is more than one.
+ */
+function Tests({ topic, practised, named }: { topic: TopicId; practised: number; named: boolean }) {
   const [status, setStatus] = useState<AssessmentStatus | null>(null);
   useEffect(() => {
     let live = true;
-    void fetch('/api/assessment/status')
+    void fetch(testApi('status', topic))
       .then((response) => (response.ok ? (response.json() as Promise<AssessmentStatus>) : null))
       .then((data) => {
         if (live) setStatus(data);
@@ -146,7 +157,7 @@ function Tests({ practised }: { practised: number }) {
     return () => {
       live = false;
     };
-  }, []);
+  }, [topic]);
 
   const line = (phase: 'pre' | 'post', label: string) => {
     const result = status?.[phase];
@@ -165,7 +176,7 @@ function Tests({ practised }: { practised: number }) {
             {/* What the pre-test changed is worth seeing again, with what has happened since. */}
             {phase === 'pre' && (
               <Link
-                href="/test/pre"
+                href={testPath('pre', topic)}
                 className="flex min-h-11 items-center text-sm font-medium text-brand underline"
               >
                 {th.profile.seeResult}
@@ -174,11 +185,14 @@ function Tests({ practised }: { practised: number }) {
           </span>
         ) : blocked ? (
           <span className="text-sm text-muted">
-            {fillTokens(th.profile.testBlocked[blocked], { n: String(CONFIG.postTestAfterItems) })}
+            {fillTokens(th.profile.testBlocked[blocked], {
+              n: String(CONFIG.postTestAfterItems),
+              topic: packOf(topic).titleTh,
+            })}
           </span>
         ) : (
           <LinkButton
-            href={`/test/${phase}`}
+            href={testPath(phase, topic)}
             variant="secondary"
             size="compact"
             className="text-sm"
@@ -193,6 +207,7 @@ function Tests({ practised }: { practised: number }) {
   const gain = status?.pre && status.post ? status.post.score - status.pre.score : null;
   return (
     <div>
+      {named && <h3 className="pt-2 text-sm font-semibold text-muted">{packOf(topic).titleTh}</h3>}
       <ul className="flex flex-col">
         {line('pre', th.profile.pre)}
         {line('post', th.profile.post)}
@@ -252,7 +267,14 @@ export function ProfileScreen() {
 
       {mode === 'account' && (
         <Section title={th.profile.tests}>
-          <Tests practised={assessedItemsDone(profile)} />
+          {testedTopics().map((topic, _, all) => (
+            <Tests
+              key={topic}
+              topic={topic}
+              named={all.length > 1}
+              practised={testedItemsDone(profile, topic)}
+            />
+          ))}
         </Section>
       )}
 

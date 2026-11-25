@@ -173,6 +173,13 @@ export const th = {
     markQuick: 'เช็กเร็ว',
     markCheck: 'เช็กก่อน',
     pretestLink: 'ดูผลแบบทดสอบก่อนเรียน',
+    // TODO(review) offered on a topic's tab until its first item, like the welcome screen's matrix offer.
+    pretestOffer: {
+      title: `ให้${CONFIG.tutorName}รู้จักคุณเรื่อง{{topic}}ก่อนไหม`,
+      meta: 'แบบทดสอบ {{n}} ข้อ ราว {{minutes}} นาที เรื่องที่ทำได้แล้ว จะข้ามคลิปให้',
+      yes: 'ทำแบบทดสอบ',
+      no: 'ข้ามไปเรียนเลย',
+    },
     sheetStart: 'เรียนเรื่องนี้',
     sheetContinue: 'เรียนต่อ',
     sheetAgain: 'ฝึกอีกรอบ',
@@ -243,8 +250,8 @@ export const th = {
     take: 'ทำเลย',
     testBlocked: {
       already_learning: 'ทำได้ก่อนเริ่มฝึกเท่านั้น',
-      // TODO(review) names the topic, since vector practice does not open the matrix post-test.
-      too_early: 'เปิดเมื่อฝึกเรื่องเมทริกซ์ครบ {{n}} ข้อ',
+      // TODO(review) names the topic: each topic's practice opens its own post-test.
+      too_early: 'เปิดเมื่อฝึกเรื่อง{{topic}}ครบ {{n}} ข้อ',
     },
     score: '{{score}}/{{total}} คะแนน',
     improved: 'ดีขึ้น {{points}} คะแนน',
@@ -365,10 +372,12 @@ export const th = {
   test: {
     titles: { pre: 'แบบทดสอบก่อนเรียน', post: 'แบบทดสอบหลังเรียน' },
     blocked: {
-      already_learning: 'แบบทดสอบก่อนเรียนต้องทำก่อนเริ่มฝึก คุณเริ่มไปแล้ว เรียนต่อได้เลย',
-      // TODO(review) names the topic, since {{done}} counts matrix items only and can be less than ข้อที่ทำ.
+      // TODO(review) names the topic: a student may have begun one topic and not the other.
+      already_learning:
+        'แบบทดสอบก่อนเรียนต้องทำก่อนเริ่มฝึกเรื่อง{{topic}} คุณเริ่มไปแล้ว เรียนต่อได้เลย',
+      // TODO(review) names the topic, since {{done}} counts that topic's items only and can be less than ข้อที่ทำ.
       too_early:
-        'แบบทดสอบหลังเรียนเปิดเมื่อฝึกเรื่องเมทริกซ์ครบ {{n}} ข้อ ตอนนี้ฝึกไปแล้ว {{done}} ข้อ',
+        'แบบทดสอบหลังเรียนเปิดเมื่อฝึกเรื่อง{{topic}}ครบ {{n}} ข้อ ตอนนี้ฝึกไปแล้ว {{done}} ข้อ',
     },
     intro: {
       pre: 'ทำเท่าที่ทำได้ ไม่มีใบ้และไม่บอกผลระหว่างทำ คะแนนนี้ไม่มีผลกับเกรด',
