@@ -27,7 +27,9 @@ export const CONFIG = {
   postTestAfterItems: 10,
   hintL2CountsAsWrong: true,
   llm: {
-    timeoutMs: 4000,
+    // Claude Sonnet 5.5 with adaptive thinking answered within 3.9 s for 95 calls in 100 in the eval of
+    // 25 Nov 2026 (p50 3.0 s). Claude Haiku 5.5 kept within 4 s. AI_DIRECTOR §7.
+    timeoutMs: 5000,
     maxCandidates: 4,
     maxCallsPerMinutePerStudent: 20,
     // What the tutor is told in words, as "quick" or "slow", in place of a number it would copy.

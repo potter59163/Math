@@ -9,7 +9,7 @@ import { decideWithLlm, llmDecider } from './decide';
 import { buildDirectorInput } from './input';
 import { systemPrompt } from './prompt';
 import { RateLimitedError, type LlmProvider } from './providers';
-import { hasNumberInWords, validateDecision } from './validate';
+import { hasNumber, hasNumberInWords, validateDecision } from './validate';
 
 const AT = 1_800_000_000_000;
 
@@ -193,6 +193,8 @@ describe('hasNumberInWords', () => {
   // The vector topic's own words (docs/VECTORS.md): every model wrote them, and each was thrown away.
   it.each([
     'ยกกำลังสองแล้วบวกกัน',
+    'รวมค่ากำลังสองของแต่ละองค์ประกอบ',
+    'เอาสองแนวทแยงมาลบกัน',
     'อย่าลืมถอดรากที่สอง',
     'เวกเตอร์ในสองมิติ',
     'พิกัดสามมิติ',
@@ -205,7 +207,20 @@ describe('hasNumberInWords', () => {
     expect(hasNumberInWords(text)).toBe(false);
   });
 
+  // Counted things the item shows, and "one" meaning "a": seen in the eval, never an answer.
   it.each([
+    'เทียบเวกเตอร์สองตัว',
+    'เวกเตอร์สองเส้นนี้',
+    'ลำดับของสองตัวนี้สลับกัน',
+    'มีช่องหนึ่งคลาดไป',
+    'ข้ามไปขั้นหนึ่ง',
+  ])('leaves the count of what is on screen %s alone', (text) => {
+    expect(hasNumberInWords(text)).toBe(false);
+  });
+
+  it.each([
+    'อีกสองตัว',
+    'สลับสองช่องบนแนวทแยงหลัก',
     'คูณสอง',
     'ยกกำลังสองได้เก้า',
     'ได้สามแล้ว',
@@ -373,19 +388,17 @@ describe('llmConfig', () => {
     expect(llmConfig({ LLM_PROVIDER: 'anthropic' })).toBeNull();
     expect(llmConfig({ LLM_PROVIDER: 'gemini', LLM_API_KEY: 'k' })).toBeNull();
   });
-  it('reads what is set, with Claude Sonnet 5.5, no thinking and the 4 s limit by default', () => {
+  it('reads what is set, with Claude Sonnet 5.5, adaptive thinking and the 5 s limit by default', () => {
     // Potter moved the tutor from Claude Haiku 5.5 to Claude Sonnet 5.5 on 25 Nov 2026 (DECISIONS).
-    const config = llmConfig({ LLM_PROVIDER: 'anthropic', LLM_API_KEY: 'k' });
+    const key = { LLM_PROVIDER: 'anthropic', LLM_API_KEY: 'k' };
+    const config = llmConfig(key);
     expect(config?.model).toBe('claude-sonnet-5-5');
-    expect(config?.timeoutMs).toBe(4000);
-    expect(config?.thinking).toBe('off');
-    expect(
-      llmConfig({ LLM_PROVIDER: 'anthropic', LLM_API_KEY: 'k', LLM_THINKING: 'adaptive' })
-        ?.thinking,
-    ).toBe('adaptive');
-    expect(
-      llmConfig({ LLM_PROVIDER: 'anthropic', LLM_API_KEY: 'k', LLM_THINKING: 'lots' })?.thinking,
-    ).toBe('off');
+    expect(config?.timeoutMs).toBe(5000);
+    expect(config?.thinking).toBe('adaptive');
+    expect(llmConfig({ ...key, LLM_THINKING: 'off' })?.thinking).toBe('off');
+    expect(llmConfig({ ...key, LLM_THINKING: 'lots' })?.thinking).toBe('adaptive');
+    // Measured on Haiku: thinking took answers past the limit, so it stays off there.
+    expect(llmConfig({ ...key, LLM_MODEL: 'claude-haiku-5-5' })?.thinking).toBe('off');
     expect(
       llmConfig({
         LLM_PROVIDER: 'anthropic',
@@ -394,5 +407,50 @@ describe('llmConfig', () => {
         LLM_TIMEOUT_MS: '900',
       }),
     ).toMatchObject({ model: 'x', timeoutMs: 900 });
+  });
+});
+
+describe('hasNumber', () => {
+  it.each(['ตอนหา A⁻¹', 'ลองหา (AB)⁻¹ ทีละขั้น', 'B⁻¹A⁻¹ ไม่ใช่ A⁻¹B⁻¹'])(
+    'reads the inverse of a matrix in %s as a name',
+    (text) => {
+      expect(hasNumber(text)).toBe(false);
+    },
+  );
+
+  it.each(['k²', 'ได้ 5', 'x¹', '⁻¹ อย่างเดียว', 'A⁻¹ ได้ ๓', 'ช่องหนึ่งได้สิบ', 'สองคูณสาม'])(
+    'still finds the number in %s',
+    (text) => {
+      expect(hasNumber(text)).toBe(true);
+    },
+  );
+});
+
+describe('a token used as a name', () => {
+  // Filled in, "อินเวอร์สของ {{aCell}}" reads "the inverse of 5" (eval of 25 Nov 2026).
+  const { candidates } = prepared();
+  const checkMessage = (message: string) =>
+    validateDecision({
+      text: decision({ message }),
+      candidates,
+      allowedTokens: ['aCell', 'k', 'det', 'dimsA', 'studentAnswer'],
+      revealAllowed: true,
+    });
+
+  it.each([
+    'สูตรอินเวอร์สของ {{aCell}} ขาดขั้นสลับ',
+    'เมทริกซ์ {{k}} เกือบถูกแล้ว',
+    'det ของ {{det}} ถูกแล้ว',
+  ])('rejects %s', (message) => {
+    expect(checkMessage(message)).toMatchObject({ ok: false, reason: 'token_violation' });
+  });
+
+  it.each([
+    'สูตรอินเวอร์สของ A ขาดขั้นสลับ',
+    'เมทริกซ์ {{dimsA}} มีกี่แถว',
+    'ช่องนี้ของ A คือ {{aCell}}',
+    'ลองดูช่องที่เป็น {{aCell}} อีกที',
+  ])('accepts %s', (message) => {
+    expect(checkMessage(message).ok).toBe(true);
   });
 });

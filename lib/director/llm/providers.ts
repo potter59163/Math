@@ -88,7 +88,7 @@ export function createProvider({ apiKey, model, thinking = 'off' }: LlmConfig): 
         system: system(prompt),
         messages: [{ role: 'user', content: user }],
         // Measured on Claude Haiku 5.5: thinking tripled the output and took answers with a clip past the
-        // 4 s limit, for a short choice among candidates the rules have already vetted.
+        // time limit, for a short choice among candidates the rules have already vetted.
         ...(thinking === 'off' ? { thinking: { type: 'disabled' as const } } : {}),
         output_config: { effort: 'low', format },
       },
