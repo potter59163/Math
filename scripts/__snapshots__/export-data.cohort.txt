@@ -1,0 +1,51 @@
+--- mkdir exports ---
+--- exports/attempts.csv ---
+alias,seq,item_ref,skill,difficulty,kind,target,answer,classification,misconception,variant,wrong_cells,time_ms,hint_level,xp,created_at
+S-1,1,"{""topic"":""matrix"",""skill"":""dim"",""difficulty"":1,""seed"":101,""gv"":2}",dim,1,dims,,"{""kind"":""dims"",""rows"":2,""cols"":3}",correct,,,,8200,0,10,2026-11-13T02:31:00.000Z
+S-1,2,"{""topic"":""matrix"",""skill"":""mult"",""difficulty"":2,""seed"":7,""target"":""M09_MULT_ELEMENTWISE"",""gv"":2}",mult,2,matrix,M09_MULT_ELEMENTWISE,"{""kind"":""matrix"",""value"":[[""2"",""0""],[""-3/2"",""4""]]}",misconception,M09_MULT_ELEMENTWISE,,,41000,1,0,2026-11-13T02:33:00.000Z
+S-1,4,"{""topic"":""matrix"",""skill"":""addsub"",""difficulty"":1,""seed"":55,""gv"":2}",addsub,1,matrix,,"{""kind"":""matrix"",""value"":[[""1"",""2""],[""3"",""5""]]}",slip,,,"[[2,2]]",15000,0,2,2026-11-13T02:37:00.000Z
+S-1,5,"{""skill"":""det2"",""difficulty"":1,""seed"":9,""gv"":2}",det2,1,scalar,,"{""kind"":""scalar"",""value"":""-7""}",misconception,M12_DET2_FORMULA,sum,,12500,0,0,2026-11-13T02:40:00.000Z
+S-2,1,"{""topic"":""matrix"",""skill"":""det2"",""difficulty"":1,""seed"":31,""gv"":2}",det2,1,scalar,,"{""kind"":""scalar"",""value"":""11""}",unknown,,,,52000,2,0,2026-11-13T02:35:00.000Z
+--- exports/decisions.csv ---
+alias,trigger,mode,candidates,choice,message,path_note,narration,reason,latency_ms,fallback_reason,created_at
+S-1,session_start,rules,"[{""id"":""c1"",""rule"":""start"",""score"":1,""next"":{""skill"":""dim"",""level"":1,""purpose"":""practice""},""ruleReason"":""เริ่มบทแรก"",""stepKind"":""concept"",""scene"":{""template"":""dimension_match"",""beats"":[""grid"",""count"",""name""]}}]",c1,,ฝึกอีกข้อให้แม่นขึ้น,,start,,disabled,2026-11-13T02:30:00.000Z
+S-1,after_attempt,llm,"[{""id"":""c1"",""rule"":""R1"",""score"":0.9,""next"":{""skill"":""mult"",""level"":2,""purpose"":""probe"",""target"":""M09_MULT_ELEMENTWISE""},""ruleReason"":""เจอ \""คูณทีละช่อง\"" ครั้งแรก, มีคลิปแก้"",""stepKind"":""remediate"",""scene"":{""template"":""cell_by_cell"",""beats"":[""setup"",""cell"",""compare""]},""misconception"":""M09_MULT_ELEMENTWISE""},{""id"":""c2"",""rule"":""R5"",""score"":0.8,""next"":{""skill"":""mult"",""level"":1,""purpose"":""practice""},""ruleReason"":""ฝึกต่อในระดับเดิม"",""stepKind"":""same_level""}]",c1,"ดูคลิปนี้ก่อนนะ แล้ว ""ลองใหม่"" อีกที",พาดูคลิปนี้เพราะเมื่อกี้คูณทีละช่อง,"{""compare"":""ดูแถวนี้, แล้วคูณกับหลักนี้""}","R1, scene first",1830,,2026-11-13T02:33:00.000Z
+S-1,after_attempt,rules,"[{""id"":""c1"",""rule"":""R5"",""score"":0.8,""next"":{""skill"":""addsub"",""level"":1,""purpose"":""practice""},""ruleReason"":""ฝึกต่อในระดับเดิม"",""stepKind"":""same_level""},{""id"":""c2"",""rule"":""R5"",""score"":0.8,""next"":{""skill"":""scalar"",""level"":1,""purpose"":""practice""},""ruleReason"":""ฝึกต่อในระดับเดิม"",""stepKind"":""same_level""}]",c1,,ฝึกอีกข้อให้แม่นขึ้น,,R5,4000,timeout,2026-11-13T02:37:00.000Z
+S-1,after_attempt,rules,"[{""id"":""c1"",""rule"":""R5"",""score"":0.8,""next"":{""skill"":""det2"",""level"":1,""purpose"":""practice""},""ruleReason"":""ฝึกต่อในระดับเดิม"",""stepKind"":""same_level""}]",c1,,ฝึกอีกข้อให้แม่นขึ้น,,R5,,generator,2026-11-13T02:40:00.000Z
+S-2,session_start,fixed,"[{""id"":""c1"",""rule"":""fixed"",""score"":1,""next"":{""skill"":""dim"",""level"":1,""purpose"":""practice""},""ruleReason"":""ฝึกต่อในระดับเดิม"",""stepKind"":""concept""}]",c1,,ฝึกอีกข้อให้แม่นขึ้น,,fixed,,,2026-11-13T02:31:00.000Z
+--- exports/scene_views.csv ---
+alias,template,purpose,beats_total,beats_seen,replays,skipped,duration_ms,created_at
+S-1,dimension_match,intro,5,5,0,false,21000,2026-11-13T02:31:00.000Z
+S-1,cell_by_cell,remediate,6,4,1,false,30500,2026-11-13T02:34:00.000Z
+S-1,worked_solution,reveal,3,3,0,false,12000,2026-11-13T02:38:00.000Z
+S-2,dimension_match,intro,5,0,0,true,1500,2026-11-13T02:32:00.000Z
+--- exports/hint_events.csv ---
+alias,item_ref,level,created_at
+S-1,"{""topic"":""matrix"",""skill"":""mult"",""difficulty"":2,""seed"":7,""target"":""M09_MULT_ELEMENTWISE"",""gv"":2}",1,2026-11-13T02:32:30.000Z
+S-1,"{""topic"":""matrix"",""skill"":""mult"",""difficulty"":2,""seed"":7,""target"":""M09_MULT_ELEMENTWISE"",""gv"":2}",2,2026-11-13T02:32:50.000Z
+S-1,,1,2026-11-13T02:39:00.000Z
+--- exports/assessments.csv ---
+alias,id,phase,form,score,total,started_at,submitted_at
+S-1,asm-a-pre,pre,A,6,14,2026-11-13T02:06:00.000Z,2026-11-13T02:24:00.000Z
+S-1,asm-a-post,post,B,11,14,2026-11-13T03:30:00.000Z,2026-11-13T03:49:00.000Z
+S-2,asm-b-pre,pre,B,4,14,2026-11-13T02:06:00.000Z,2026-11-13T02:24:00.000Z
+--- exports/assessment_responses.csv ---
+assessment_id,item_no,item_ref,answer,correct,misconception,variant,time_ms
+asm-a-pre,1,"{""topic"":""matrix"",""skill"":""dim"",""difficulty"":1,""seed"":901,""gv"":2}","{""kind"":""scalar"",""value"":""0""}",false,M01_DIM_SWAP,,30000
+asm-a-pre,2,"{""topic"":""matrix"",""skill"":""mult"",""difficulty"":1,""seed"":902,""gv"":2}","{""kind"":""scalar"",""value"":""0""}",false,M09_MULT_ELEMENTWISE,cells,30000
+asm-a-pre,3,"{""topic"":""matrix"",""skill"":""addsub"",""difficulty"":1,""seed"":903,""gv"":2}","{""kind"":""scalar"",""value"":""0""}",false,M04_ADD_DIM_MISMATCH,,30000
+asm-a-pre,4,"{""topic"":""matrix"",""skill"":""det2"",""difficulty"":1,""seed"":904,""gv"":2}","{""kind"":""scalar"",""value"":""0""}",true,,,
+asm-a-post,1,"{""topic"":""matrix"",""skill"":""dim"",""difficulty"":1,""seed"":901,""gv"":2}","{""kind"":""scalar"",""value"":""0""}",false,M01_DIM_SWAP,,30000
+asm-a-post,2,"{""topic"":""matrix"",""skill"":""mult"",""difficulty"":1,""seed"":902,""gv"":2}","{""kind"":""scalar"",""value"":""0""}",true,,,30000
+asm-b-pre,1,"{""topic"":""matrix"",""skill"":""det2"",""difficulty"":1,""seed"":901,""gv"":2}","{""kind"":""scalar"",""value"":""0""}",false,M12_DET2_FORMULA,sum,30000
+--- exports/learner_profiles.csv ---
+alias,profile
+S-1,"{""student"":{""units"":[1,2,3],""theme"":""game""},""counter"":9,""xp"":140,""combo"":0,""bestCombo"":3,""itemsDone"":4,""skills"":{""dim"":{""pKnown"":0.96,""level"":1,""attempts"":[{""level"":1,""countsCorrect"":true,""clean"":true,""timeMs"":8200}],""passed"":true,""wrongStreak"":0,""stuck"":false,""lastSeen"":1},""mult"":{""pKnown"":0.42,""level"":2,""attempts"":[{""level"":1,""countsCorrect"":false,""clean"":false,""timeMs"":41000}],""passed"":false,""wrongStreak"":1,""stuck"":false,""lastSeen"":2},""addsub"":{""pKnown"":0.42,""level"":1,""attempts"":[{""level"":1,""countsCorrect"":false,""clean"":false,""timeMs"":15000}],""passed"":false,""wrongStreak"":1,""stuck"":false,""lastSeen"":3},""det2"":{""pKnown"":0.42,""level"":1,""attempts"":[],""passed"":false,""wrongStreak"":1,""stuck"":false,""lastSeen"":0,""pretestCorrect"":false}},""misconceptions"":{""M09_MULT_ELEMENTWISE"":{""status"":""resolved"",""count"":2,""fixStreak"":2,""scenesSeen"":1,""openedAtItem"":2,""openedAtMs"":1794536400000,""lastCaughtAtItem"":2,""rewarded"":true,""itemsToResolve"":3,""msToResolve"":240000},""M01_DIM_SWAP"":{""status"":""active"",""count"":1,""fixStreak"":0,""scenesSeen"":1,""openedAtItem"":0,""openedAtMs"":1794536400000,""lastCaughtAtItem"":4,""rewarded"":false,""fromPretest"":true},""M12_DET2_FORMULA"":{""status"":""resolved"",""count"":1,""fixStreak"":2,""scenesSeen"":1,""openedAtItem"":0,""openedAtMs"":1794536400000,""lastCaughtAtItem"":0,""rewarded"":true,""itemsToResolve"":6,""msToResolve"":300000,""relapses"":1,""fromPretest"":true}},""clipsSeen"":[""dim"",""mult""],""lastReviewAt"":0,""path"":[{""kind"":""remediate"",""skill"":""mult"",""level"":2,""note"":""พาดูคลิปนี้เพราะเมื่อกี้คูณทีละช่อง""}],""current"":{""ref"":{""topic"":""matrix"",""skill"":""mult"",""difficulty"":2,""seed"":12,""target"":""M09_MULT_ELEMENTWISE"",""gv"":2},""hintLevel"":0},""activity"":[{""day"":""2026-11-13"",""items"":4,""xp"":140}]}"
+S-2,"{""student"":{""units"":[1,2,3,4,5]},""counter"":2,""xp"":0,""combo"":0,""bestCombo"":0,""itemsDone"":1,""skills"":{""det2"":{""pKnown"":0.42,""level"":1,""attempts"":[{""level"":1,""countsCorrect"":false,""clean"":false,""timeMs"":52000}],""passed"":false,""wrongStreak"":1,""stuck"":false,""lastSeen"":1}},""misconceptions"":{""M12_DET2_FORMULA"":{""status"":""suspected"",""count"":1,""fixStreak"":0,""scenesSeen"":0,""openedAtItem"":0,""openedAtMs"":1794536400000,""lastCaughtAtItem"":0,""rewarded"":false,""fromPretest"":true}},""clipsSeen"":[""dim""],""lastReviewAt"":0,""path"":[]}"
+--- exports/research_wide.csv ---
+alias,condition,form_pre,form_post,pre_score,pre_total,pre_pct,post_score,post_total,post_pct,units_enabled,minutes_in_app,items_done,skills_reached,skills_mastered,scenes_viewed,hints_used,reveals,misconceptions_resolved,median_items_to_resolve,llm_decisions,fallback_rate,pre_M01,pre_M02,pre_M03,pre_M04,pre_M05,pre_M07,pre_M08,pre_M09,pre_M10,pre_M11,pre_M12,pre_M13,pre_M14,pre_M15,pre_M18,pre_M19,pre_M20,pre_M21,post_M01,post_M02,post_M03,post_M04,post_M05,post_M07,post_M08,post_M09,post_M10,post_M11,post_M12,post_M13,post_M14,post_M15,post_M18,post_M19,post_M20,post_M21
+S-1,adaptive,A,B,6,14,42.857142857142854,11,14,78.57142857142857,3,2.3,4,3,1,3,3,1,2,4.5,1,0.5,1,0,0,,0,0,0,1,0,0,0,0,0,,,0,0,0,1,0,0,,0,0,0,0,0,0,0,0,0,,,0,0,0
+S-2,fixed,B,,4,14,28.571428571428573,,,,5,0.9,1,1,0,1,0,0,0,,0,0,0,0,0,,0,0,0,0,0,0,1,0,0,,,0,0,0,,,,,,,,,,,,,,,,,,
+--- closed ---
+--- printed ---
+Exported 2 students from m5-1 to exports/

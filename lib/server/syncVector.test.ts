@@ -1,3 +1,4 @@
+import fc from 'fast-check';
 import { describe, expect, it, vi } from 'vitest';
 
 // Vectors are switched on for this file only, as NEXT_PUBLIC_TOPICS=matrix,vector does on the server.
@@ -14,6 +15,7 @@ import { finishScene, newProfile } from '@/lib/director/turn';
 import type { Profile } from '@/lib/director/types';
 import { misconceptionAnswer } from '@/lib/sim/answers';
 import type { QueuedAction } from '@/lib/sync/types';
+import type { TemplateId } from '@/lib/topics';
 import type { VectorItem } from '@/lib/topics/vector/types';
 import { syncRequest } from './schemas';
 import { processActions, type LearnerRow, type LogEntry, type SyncStore } from './sync';
@@ -198,5 +200,79 @@ describe('a vector attempt through the server', () => {
       ),
     );
     expect(syncRequest.safeParse(body).success).toBe(true);
+  });
+});
+
+describe('a clip view through the server', () => {
+  const view = (template: TemplateId, purpose: 'intro' | 'remediate' | 'reveal' = 'reveal') => ({
+    type: 'scene_view' as const,
+    view: {
+      template,
+      purpose,
+      beatsTotal: 4,
+      beatsSeen: 4,
+      replays: 0,
+      skipped: false,
+      durationMs: 12_000,
+    },
+  });
+
+  it('names the topic the student is on, which only set_topic changes', async () => {
+    const profile = settled(startSession(newProfile({ id: 'm1', units: [1, 2, 3, 4, 5] })));
+    const { store, logs } = jsonStore(profile);
+    const actions: QueuedAction['action'][] = [
+      view('worked_solution'),
+      { type: 'set_topic', topic: 'vector' },
+      view('quantity_sort', 'intro'),
+      // A vector solution plays the template matrices use too: only the topic tells them apart.
+      view('worked_solution'),
+      { type: 'set_topic', topic: 'matrix' },
+      view('cell_by_cell', 'remediate'),
+    ];
+    await processActions({
+      store,
+      userId: 'm1',
+      deviceId: 'device-a',
+      actions: actions.map((action, index) => ({ seq: index + 1, action })),
+      decide: null,
+    });
+    expect(
+      logs.flatMap((entry) =>
+        entry.kind === 'scene_view' ? [[entry.view.template, entry.topic]] : [],
+      ),
+    ).toEqual([
+      ['worked_solution', 'matrix'],
+      ['quantity_sort', 'vector'],
+      ['worked_solution', 'vector'],
+      ['cell_by_cell', 'matrix'],
+    ]);
+  });
+
+  it('names matrices for every student who has not gone on to vectors', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.subarray([1, 2, 3, 4, 5], { minLength: 1 }),
+        fc.constantFrom(undefined, 'matrix' as const),
+        fc.constantFrom<TemplateId>('dimension_match', 'cell_by_cell', 'sarrus', 'worked_solution'),
+        async (units, activeTopic, template) => {
+          const student = { id: 'm1', units, ...(activeTopic && { activeTopic }) };
+          const { store, logs } = jsonStore(newProfile(student));
+          const seen = view(template);
+          await processActions({
+            store,
+            userId: 'm1',
+            deviceId: 'device-a',
+            actions: [
+              { seq: 1, action: { type: 'start' } },
+              { seq: 2, action: seen },
+            ],
+            decide: null,
+          });
+          expect(logs.filter(({ kind }) => kind === 'scene_view')).toEqual([
+            { kind: 'scene_view', view: seen.view, topic: 'matrix' },
+          ]);
+        },
+      ),
+    );
   });
 });

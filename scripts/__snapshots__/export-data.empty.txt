@@ -1,0 +1,18 @@
+--- mkdir exports ---
+--- exports/attempts.csv ---
+alias,seq,item_ref,skill,difficulty,kind,target,answer,classification,misconception,variant,wrong_cells,time_ms,hint_level,xp,created_at
+--- exports/decisions.csv ---
+alias,trigger,mode,candidates,choice,message,path_note,narration,reason,latency_ms,fallback_reason,created_at
+--- exports/scene_views.csv ---
+alias,template,purpose,beats_total,beats_seen,replays,skipped,duration_ms,created_at
+--- exports/hint_events.csv ---
+alias,item_ref,level,created_at
+--- exports/assessments.csv ---
+alias,id,phase,form,score,total,started_at,submitted_at
+--- exports/assessment_responses.csv ---
+assessment_id,item_no,item_ref,answer,correct,misconception,variant,time_ms
+--- exports/learner_profiles.csv ---
+alias,profile
+--- closed ---
+--- printed ---
+Exported 0 students to exports/

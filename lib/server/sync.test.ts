@@ -1,10 +1,15 @@
+import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { storeAnswer } from '@/lib/core/answerJson';
-import { currentItem } from '@/lib/director/items';
+import { restoreAnswer, storeAnswer } from '@/lib/core/answerJson';
+import { currentItem, rebuildItem } from '@/lib/director/items';
 import { startSession } from '@/lib/director/rules';
+import { sceneOfChosen, sceneOrNull, workedRequest } from '@/lib/director/scene';
 import { finishScene, newProfile } from '@/lib/director/turn';
 import type { Condition, Profile } from '@/lib/director/types';
+import { misconceptionAnswer, slipAnswer } from '@/lib/sim/answers';
+import { applyAction, type LearnerAction } from '@/lib/sync/actions';
 import type { QueuedAction } from '@/lib/sync/types';
+import type { SceneSpec } from '@/lib/topics/types';
 import type { MatrixItem } from '@/lib/topics/matrix/types';
 import {
   NoLearnerError,
@@ -80,6 +85,89 @@ const input = (store: SyncStore, actions: QueuedAction[], decide: Decide | null 
   actions,
   decide,
 });
+
+type Move = 'right' | 'wrong' | 'worked' | 'hint' | 'help';
+
+/**
+ * What a device sends as a student goes through a session the way SessionScreen takes them: every clip
+ * the director plays is viewed and then let go, and "ดูวิธีทำ" opens the solution after a wrong answer.
+ */
+function sessionOf(units: number[], moves: readonly Move[]): QueuedAction[] {
+  let profile = newProfile({ id: 'u1', units });
+  const actions: QueuedAction[] = [];
+  const send = (action: LearnerAction) => {
+    actions.push({ seq: actions.length + 1, action });
+    const result = applyAction(profile, action);
+    profile = result.profile;
+    return result;
+  };
+  const watch = (spec: SceneSpec | null) => {
+    if (!spec) return;
+    const view = {
+      template: spec.template,
+      purpose: spec.purpose,
+      beatsTotal: spec.beats.length,
+      beatsSeen: (actions.length % spec.beats.length) + 1,
+      replays: actions.length % 2,
+      skipped: actions.length % 3 === 0,
+      durationMs: 1_000 * actions.length,
+    };
+    send({ type: 'scene_view', view });
+  };
+  const goOn = () => {
+    while (profile.pending) {
+      const [scene] = profile.pending.turn.scenes;
+      if (!scene) {
+        send({ type: 'finish_turn' });
+        return;
+      }
+      watch(sceneOfChosen(scene));
+      send({ type: 'finish_scene' });
+    }
+  };
+
+  send({ type: 'start' });
+  goOn();
+  let helps = 0;
+  for (const move of moves) {
+    const item = currentItem(profile);
+    if (!item) break;
+    if (move === 'hint') {
+      send({ type: 'hint' });
+    } else if (move === 'help') {
+      const [scene] = send({ type: 'help', ref: item.ref, nth: helps++ }).turn?.scenes ?? [];
+      watch(scene ? sceneOrNull(scene.request) : null);
+    } else {
+      const diagnostic = item.diagnostics[0];
+      const answer =
+        move === 'right'
+          ? item.correct
+          : ((diagnostic && misconceptionAnswer(item, diagnostic.id)) ?? slipAnswer(item));
+      const at = AT + actions.length;
+      const hintLevel = profile.current?.hintLevel ?? 0;
+      send({
+        type: 'attempt',
+        ref: item.ref,
+        answer: storeAnswer(answer),
+        hintLevel,
+        timeMs: 9,
+        at,
+      });
+      const closed = profile.pending?.closed;
+      const closedItem = closed && rebuildItem(closed.ref);
+      // The button is there after a wrong answer only.
+      const wrong = closed && closed.outcome.classification.type !== 'correct';
+      if (move === 'worked' && closed && closedItem && wrong) {
+        const { classification } = closed.outcome;
+        const request = workedRequest(closedItem, restoreAnswer(closed.answer), classification);
+        watch(sceneOrNull(request));
+        send({ type: 'note_worked', request });
+      }
+      goOn();
+    }
+  }
+  return actions;
+}
 
 describe('processActions', () => {
   it('applies an answer, does its own XP, and logs the attempt with its decision', async () => {
@@ -224,5 +312,38 @@ describe('processActions', () => {
       'scene_view',
       'hint',
     ]);
+  });
+});
+
+describe('a clip view', () => {
+  const move = fc.constantFrom<Move>('right', 'wrong', 'worked', 'hint', 'help');
+
+  it('is logged as it always was, now naming matrices, whatever a matrix student does', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.subarray([1, 2, 3, 4, 5], { minLength: 1 }),
+        fc.array(move, { maxLength: 8 }),
+        async (units, moves) => {
+          const actions = sessionOf(units, moves);
+          const viewed = fakeStore(newProfile({ id: 'u1', units }));
+          await processActions(input(viewed, actions));
+          const unviewed = fakeStore(newProfile({ id: 'u1', units }));
+          const others = actions.filter(({ action }) => action.type !== 'scene_view');
+          await processActions(input(unviewed, others));
+
+          // The entry a view always made, { kind, view }, with the topic the student is on.
+          expect(viewed.logs.filter(({ kind }) => kind === 'scene_view')).toEqual(
+            actions.flatMap(({ action }) =>
+              action.type === 'scene_view'
+                ? [{ kind: 'scene_view', view: action.view, topic: 'matrix' }]
+                : [],
+            ),
+          );
+          // And a view still changes nothing else, in the log or in the student.
+          expect(viewed.logs.filter(({ kind }) => kind !== 'scene_view')).toEqual(unviewed.logs);
+          expect(viewed.row?.profile).toEqual(unviewed.row?.profile);
+        },
+      ),
+    );
   });
 });
