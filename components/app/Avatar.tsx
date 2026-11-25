@@ -29,6 +29,31 @@ export function Avatar({ avatar, className = 'size-10 text-lg' }: AvatarProps) {
   );
 }
 
+/**
+ * A student's own picture where they have one, for their own eyes (their profile and settings), and
+ * their symbol otherwise. The leaderboard draws symbols only, with Avatar, so no face reaches anyone else.
+ */
+export function ProfilePicture({
+  avatar,
+  photoAt,
+  className = 'size-10 text-lg',
+}: {
+  avatar: AvatarId;
+  photoAt?: string;
+  className?: string;
+}) {
+  if (!photoAt) return <Avatar avatar={avatar} className={className} />;
+  return (
+    // The picture comes from a signed-in route that the image optimizer could not reach, so a plain img.
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={`/api/photo?v=${encodeURIComponent(photoAt)}`}
+      alt={th.settings.photo.alt}
+      className={`inline-block shrink-0 rounded-full object-cover ${className}`}
+    />
+  );
+}
+
 interface AvatarPickerProps {
   value: AvatarId;
   label: string;

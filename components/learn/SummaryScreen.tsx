@@ -6,11 +6,13 @@ import { recommendationCopy } from '@/components/app/recommendationText';
 import { unitPassedName } from '@/components/app/unitText';
 import { useRequiredProfile } from '@/components/app/useLearner';
 import { LinkButton } from '@/components/ui/Button';
+import { CountUp } from '@/components/ui/CountUp';
 import { BoltIcon, CheckIcon, FlameIcon } from '@/components/ui/Icons';
 import { Filled, KeepWords } from '@/components/ui/KeepWords';
 import { sfx } from '@/lib/client/sfx';
 import { CONFIG } from '@/lib/config';
 import { th } from '@/lib/content/th';
+import type { Profile } from '@/lib/director/types';
 import { dayOf, streakOf } from '@/lib/learner/activity';
 import { isOpen } from '@/lib/learner/misconceptionStatus';
 import { mapOf } from '@/lib/learner/progress';
@@ -18,8 +20,9 @@ import { recommendationFor } from '@/lib/learner/recommend';
 import { badgesOf, type Badge } from '@/lib/practice/rewards';
 import { allMisconceptions, misconceptionShortOf, skillOf } from '@/lib/topics';
 import { LoadingScreen } from './LoadingScreen';
+import { markStreakShown, StreakCelebration, streakShownToday } from './StreakCelebration';
 
-function Stat({ icon, label, value }: { icon?: ReactNode; label: string; value: string }) {
+function Stat({ icon, label, value }: { icon?: ReactNode; label: string; value: ReactNode }) {
   return (
     <div className="flex flex-col">
       <span className="flex items-center gap-1 font-matrix text-3xl leading-tight font-medium tabular-nums">
@@ -51,12 +54,35 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 export function SummaryScreen() {
   const profile = useRequiredProfile();
   const [now] = useState(() => Date.now());
-  const today = profile?.activity?.find(({ day }) => day === dayOf(now));
-  const didSome = (today?.items ?? 0) > 0;
-  useEffect(() => {
-    if (didSome) sfx.play('done');
-  }, [didSome]);
   if (!profile) return <LoadingScreen />;
+  return <Summary profile={profile} now={now} />;
+}
+
+function Summary({ profile, now }: { profile: Profile; now: number }) {
+  const today = profile.activity?.find(({ day }) => day === dayOf(now));
+  const didSome = (today?.items ?? 0) > 0;
+  const streak = streakOf(profile.activity, now);
+  // The day's first finish shows its flame before the summary, once a day on this device.
+  const [celebrating, setCelebrating] = useState(
+    () => didSome && !streakShownToday(profile.student.id, now),
+  );
+  useEffect(() => {
+    if (celebrating) markStreakShown(profile.student.id, now);
+  }, [celebrating, profile.student.id, now]);
+  useEffect(() => {
+    if (didSome && !celebrating) sfx.play('done');
+  }, [didSome, celebrating]);
+
+  if (celebrating) {
+    return (
+      <StreakCelebration
+        streak={streak}
+        activity={profile.activity ?? []}
+        now={now}
+        onDone={() => setCelebrating(false)}
+      />
+    );
+  }
 
   const items = today?.items ?? 0;
   const goal = CONFIG.dailyGoalItems;
@@ -86,16 +112,20 @@ export function SummaryScreen() {
       {didSome ? (
         <div className="flex flex-col gap-3 rounded-xl border-2 border-ink bg-surface p-4 shadow-[0_3px_0_var(--ink)]">
           <div className="grid grid-cols-3 gap-3">
-            <Stat label={th.summary.itemsToday} value={String(items)} />
+            <Stat label={th.summary.itemsToday} value={<CountUp value={items} />} />
             <Stat
               icon={<BoltIcon className="size-5 text-xp" />}
               label={th.summary.xpToday}
-              value={`+${today?.xp ?? 0}`}
+              value={
+                <>
+                  +<CountUp value={today?.xp ?? 0} />
+                </>
+              }
             />
             <Stat
               icon={<FlameIcon className="size-5 text-flame" />}
               label={th.summary.streak}
-              value={String(streakOf(profile.activity, now))}
+              value={<CountUp value={streak} />}
             />
           </div>
           <span
@@ -107,7 +137,7 @@ export function SummaryScreen() {
             className="h-3 overflow-hidden rounded-full border border-edge bg-canvas"
           >
             <span
-              className="block h-full origin-left bg-cta"
+              className="block h-full origin-left bg-cta motion-safe:animate-grow-x"
               style={{ transform: `scaleX(${Math.min(items, goal) / goal})` }}
             />
           </span>

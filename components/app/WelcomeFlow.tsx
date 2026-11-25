@@ -1,8 +1,9 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useId, useState, type ComponentType } from 'react';
-import { Button, LinkButton } from '@/components/ui/Button';
+import { Fragment, useEffect, useId, useState, type ComponentType } from 'react';
+import { Button } from '@/components/ui/Button';
 import {
   BagIcon,
   BallIcon,
@@ -11,17 +12,19 @@ import {
   GamepadIcon,
   MusicIcon,
 } from '@/components/ui/Icons';
+import { KeepWords } from '@/components/ui/KeepWords';
 import { th } from '@/lib/content/th';
 import { fillTokens } from '@/lib/core/tokens';
 import type { ThemeId } from '@/lib/learner/types';
-import { assessedItemsDone, testBlock } from '@/lib/sync/assessment';
 import { MAX_DISPLAY_NAME, THEMES, type AvatarId } from '@/lib/sync/types';
+import { activeTopicOf, enabledTopics, packOf } from '@/lib/topics';
+import type { TopicId } from '@/lib/topics/types';
 import { AvatarPicker } from './Avatar';
 import { savedCohort } from './Landing';
 import { Mascot } from './Mascot';
 import { learner, useLearner } from './useLearner';
 
-type Step = 'name' | 'theme' | 'consent' | 'pretest';
+type Step = 'name' | 'theme' | 'topic';
 
 const THEME_ICON: Record<ThemeId, ComponentType<{ className?: string }>> = {
   shop: BagIcon,
@@ -43,12 +46,18 @@ export function ThemePicker({ value, onPick }: { value: ThemeId; onPick(theme: T
             role="radio"
             aria-checked={theme === value}
             onClick={() => onPick(theme)}
-            className={`flex min-h-14 items-center gap-3 rounded-xl border-2 px-4 text-left font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+            className={`flex min-h-14 items-center gap-3 rounded-xl border-2 px-4 py-2 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
               theme === value ? 'border-ink bg-marker-soft' : 'border-edge bg-surface'
             }`}
           >
             <Icon className="size-6 shrink-0" />
-            <span className="flex-1">{th.themes[theme].name}</span>
+            <span className="flex flex-1 flex-col">
+              <span className="font-medium">{th.themes[theme].name}</span>
+              {/* What the clips count in this theme, so the choice means something before it is made. */}
+              <span className="text-sm text-muted">
+                {th.scenes.intro.stories[theme].labels.cols.join(' ')}
+              </span>
+            </span>
             {theme === value && <CheckIcon className="size-5 shrink-0" />}
           </button>
         );
@@ -57,53 +66,170 @@ export function ThemePicker({ value, onPick }: { value: ThemeId; onPick(theme: T
   );
 }
 
-function Steps({ at }: { at: number }) {
+/** The numbers of the sample table, the same in every theme: only the names change. */
+const SAMPLE: readonly (readonly number[])[] = [
+  [12, 8, 5],
+  [9, 14, 6],
+];
+
+/**
+ * A theme as the clips tell it: the table that the first unit's opening clip draws, with this theme's own
+ * names, at the board where clips are taught.
+ */
+export function ThemeExample({ theme }: { theme: ThemeId }) {
+  const { labels, u1 } = th.scenes.intro.stories[theme];
+  return (
+    <figure className="board flex flex-col gap-2 rounded-xl px-4 py-3">
+      <p className="text-xs text-muted">{th.welcome.themeExample}</p>
+      <table className="w-full table-fixed text-center font-hand tabular-nums">
+        <thead>
+          <tr>
+            <td className="w-1/4" />
+            {labels.cols.map((col) => (
+              <th key={col} scope="col" className="pb-1 text-sm font-normal text-muted">
+                {col}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {labels.rows.map((row, index) => (
+            <tr key={row}>
+              <th scope="row" className="text-left text-sm font-normal text-muted">
+                {row}
+              </th>
+              {(SAMPLE[index] ?? []).map((value, column) => (
+                <td key={column} className="text-xl text-ink">
+                  {value}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <figcaption className="text-sm">
+        <KeepWords text={u1.blocks} />
+      </figcaption>
+    </figure>
+  );
+}
+
+/** Which topic to begin with, each with its units, so the choice is made knowing what is in it. */
+function TopicPicker({
+  topics,
+  value,
+  onPick,
+}: {
+  topics: readonly TopicId[];
+  value: TopicId;
+  onPick(topic: TopicId): void;
+}) {
+  return (
+    <div role="radiogroup" aria-label={th.welcome.topicTitle} className="flex flex-col gap-3">
+      {topics.map((topic) => {
+        const { titleTh, noteTh, units } = packOf(topic);
+        const selected = topic === value;
+        return (
+          <button
+            key={topic}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            onClick={() => onPick(topic)}
+            className={`flex flex-col gap-1 rounded-xl border-2 px-4 py-3 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+              selected ? 'border-ink bg-marker-soft' : 'border-edge bg-surface'
+            }`}
+          >
+            <span className="flex items-baseline gap-2">
+              <span className="text-xl font-semibold">{titleTh}</span>
+              <span className="text-sm text-muted">{noteTh}</span>
+              {selected && <CheckIcon className="ml-auto size-5 shrink-0 self-center" />}
+            </span>
+            {/* Each unit's title stays whole: a title broken across lines reads as two units. */}
+            <span className="text-sm text-muted">
+              {units.map((unit, index) => (
+                <Fragment key={unit.id}>
+                  {index > 0 && ' · '}
+                  <span className="whitespace-nowrap">{unit.titleTh}</span>
+                </Fragment>
+              ))}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function Steps({ at, total }: { at: number; total: number }) {
   return (
     <div
       role="img"
-      aria-label={fillTokens(th.welcome.step, { n: String(at), total: '3' })}
+      aria-label={fillTokens(th.welcome.step, { n: String(at), total: String(total) })}
       className="flex gap-1.5"
     >
-      {[1, 2, 3].map((step) => (
+      {Array.from({ length: total }, (_, index) => (
         <span
-          key={step}
-          className={`h-1.5 flex-1 rounded-full ${step <= at ? 'bg-ink' : 'bg-line'}`}
+          key={index}
+          className={`h-1.5 flex-1 rounded-full ${index < at ? 'bg-ink' : 'bg-line'}`}
         />
       ))}
     </div>
   );
 }
 
-/** The first visit: for an account a name, a theme and consent, and for a guest only the theme. */
+/**
+ * The first visit. An account gives a name and a symbol, a guest neither; both pick how the clips tell
+ * their stories and, when more than one topic is on, where to begin. The lessons page then offers that
+ * topic's pre-test. Consent is the line above the last button, and the privacy page is one tap away.
+ */
 export function WelcomeFlow() {
   const { phase, mode } = useLearner();
   const router = useRouter();
   const guest = useSearchParams().has('guest');
+  const topics = enabledTopics();
   const [step, setStep] = useState<Step>('name');
   const [name, setName] = useState('');
   const [avatar, setAvatar] = useState<AvatarId>('bracket');
   const [theme, setTheme] = useState<ThemeId>('shop');
-  const [agreed, setAgreed] = useState(false);
+  const [topic, setTopic] = useState<TopicId>(topics[0]);
   const [saving, setSaving] = useState(false);
   const [failed, setFailed] = useState(false);
   const nameId = useId();
   const noteId = `${nameId}-note`;
 
   const asGuest = guest && phase !== 'needs_welcome';
-
-  // Whoever has nothing to do here moves on. A student finishing just now stays for the last step.
-  useEffect(() => {
-    if (step === 'pretest' || saving) return;
-    if (phase === 'signed_out' && !guest) router.replace('/');
-    if (phase === 'ready' && mode === 'account') router.replace('/learn');
-  }, [phase, mode, guest, step, saving, router]);
-
-  const shown = asGuest ? 'theme' : step;
-  const stepNumber = { name: 1, theme: 2, consent: 3, pretest: 3 }[shown];
+  const steps: Step[] = [
+    ...(asGuest ? [] : (['name'] as const)),
+    'theme',
+    ...(topics.length > 1 ? (['topic'] as const) : []),
+  ];
+  const shown = steps.includes(step) ? step : steps[0];
+  const at = steps.indexOf(shown);
+  const last = at === steps.length - 1;
   const trimmed = name.trim();
   const tooLong = trimmed.length > MAX_DISPLAY_NAME;
 
+  // Whoever has nothing to do here moves on.
+  useEffect(() => {
+    if (saving) return;
+    if (phase === 'signed_out' && !guest) router.replace('/');
+    if (phase === 'ready' && mode === 'account') router.replace('/learn');
+  }, [phase, mode, guest, saving, router]);
+
+  /** The lessons page opens on the topic chosen here, with that topic's pre-test on offer. */
+  const enterTopic = () => {
+    const student = learner.getState().profile?.student;
+    if (student && activeTopicOf(student) !== topic) learner.dispatch({ type: 'set_topic', topic });
+  };
+
   const finish = async () => {
+    if (asGuest) {
+      learner.startGuest(theme);
+      enterTopic();
+      router.replace('/learn');
+      return;
+    }
     setSaving(true);
     setFailed(false);
     const cohort = savedCohort();
@@ -113,15 +239,59 @@ export function WelcomeFlow() {
       theme,
       ...(cohort && { cohort }),
     });
+    if (done) {
+      enterTopic();
+      router.replace('/learn');
+    }
     setSaving(false);
     if (!done) setFailed(true);
-    // Whoever practised matrices as a guest has no start left for the pre-test to measure, and moves on.
-    else if (!testBlock('pre', assessedItemsDone(learner.getState().profile))) setStep('pretest');
   };
+
+  const footer = (canGoOn: boolean) => (
+    <div className="mt-auto flex flex-col gap-3">
+      {last && !asGuest && (
+        <p className="text-sm text-muted">
+          <KeepWords text={th.welcome.consentLine} />{' '}
+          <Link
+            href="/privacy"
+            target="_blank"
+            rel="noopener"
+            className="font-medium text-brand underline"
+          >
+            {th.welcome.privacyLink}
+          </Link>
+        </p>
+      )}
+      {last && failed && (
+        <p role="alert" className="text-sm text-warn">
+          {th.welcome.failed}
+        </p>
+      )}
+      <div className="flex gap-2">
+        {at > 0 && (
+          <Button variant="secondary" onClick={() => setStep(steps[at - 1])}>
+            {th.common.back}
+          </Button>
+        )}
+        <Button
+          className="flex-1"
+          aria-disabled={!canGoOn || saving}
+          aria-busy={saving}
+          onClick={() => {
+            if (!canGoOn || saving) return;
+            if (last) void finish();
+            else setStep(steps[at + 1]);
+          }}
+        >
+          {last ? th.welcome.start : th.common.next}
+        </Button>
+      </div>
+    </div>
+  );
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-6 px-5 py-6">
-      {!asGuest && shown !== 'pretest' && <Steps at={stepNumber} />}
+      {steps.length > 1 && <Steps at={at + 1} total={steps.length} />}
 
       {shown === 'name' && (
         <section className="flex flex-1 flex-col gap-5 motion-safe:animate-rise">
@@ -153,15 +323,7 @@ export function WelcomeFlow() {
             <h2 className="font-sans font-medium">{th.welcome.avatarTitle}</h2>
             <AvatarPicker value={avatar} label={th.welcome.avatarTitle} onPick={setAvatar} />
           </div>
-          <Button
-            className="mt-auto w-full"
-            aria-disabled={trimmed.length === 0 || tooLong}
-            onClick={() => {
-              if (trimmed.length > 0 && !tooLong) setStep('theme');
-            }}
-          >
-            {th.common.next}
-          </Button>
+          {footer(trimmed.length > 0 && !tooLong)}
         </section>
       )}
 
@@ -175,84 +337,24 @@ export function WelcomeFlow() {
             </div>
           </div>
           <ThemePicker value={theme} onPick={setTheme} />
-          <div className="mt-auto flex gap-2">
-            {!asGuest && (
-              <Button variant="secondary" onClick={() => setStep('name')}>
-                {th.common.back}
-              </Button>
-            )}
-            <Button
-              className="flex-1"
-              onClick={() => {
-                if (asGuest) {
-                  learner.startGuest(theme);
-                  router.replace('/learn');
-                } else setStep('consent');
-              }}
-            >
-              {asGuest ? th.welcome.start : th.common.next}
-            </Button>
-          </div>
+          <ThemeExample theme={theme} />
+          {footer(true)}
         </section>
       )}
 
-      {shown === 'consent' && (
-        <section className="flex flex-1 flex-col gap-4 motion-safe:animate-rise">
-          <h1 className="text-2xl font-semibold">{th.welcome.consentTitle}</h1>
-          <p>{th.welcome.consentIntro}</p>
-          <ul className="flex flex-col gap-2">
-            {th.welcome.consentItems.map((item) => (
-              <li key={item} className="flex gap-2 text-sm">
-                <CheckIcon className="mt-1 size-4 shrink-0 text-brand" />
-                {item}
-              </li>
-            ))}
-          </ul>
-          <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border-2 border-edge bg-surface px-4 py-2 font-medium">
-            <input
-              type="checkbox"
-              checked={agreed}
-              onChange={(event) => setAgreed(event.target.checked)}
-              className="size-5 accent-[var(--brand)]"
-            />
-            {th.welcome.consentAgree}
-          </label>
-          {failed && (
-            <p role="alert" className="text-sm text-warn">
-              {th.welcome.failed}
-            </p>
-          )}
-          <div className="mt-auto flex gap-2">
-            <Button variant="secondary" onClick={() => setStep('theme')}>
-              {th.common.back}
-            </Button>
-            <Button
-              className="flex-1"
-              aria-disabled={!agreed || saving}
-              aria-busy={saving}
-              onClick={() => {
-                if (agreed && !saving) void finish();
-              }}
-            >
-              {th.welcome.consentNext}
-            </Button>
+      {shown === 'topic' && (
+        <section className="flex flex-1 flex-col gap-5 motion-safe:animate-rise">
+          <div className="flex items-center gap-3">
+            <Mascot className="size-14 shrink-0 -rotate-3" mood="cheer" />
+            <div className="flex flex-col gap-1">
+              <h1 className="text-2xl leading-snug font-semibold">{th.welcome.topicTitle}</h1>
+              <p className="text-sm text-muted">
+                <KeepWords text={th.welcome.topicHelp} />
+              </p>
+            </div>
           </div>
-        </section>
-      )}
-
-      {shown === 'pretest' && (
-        <section className="flex flex-1 flex-col gap-4 motion-safe:animate-rise">
-          <Mascot className="size-20 -rotate-3" mood="cheer" />
-          <h1 className="text-3xl leading-snug font-semibold">{th.welcome.pretestTitle}</h1>
-          <p className="text-muted">{th.welcome.pretestBody}</p>
-          <div className="mt-auto flex flex-col gap-2">
-            <LinkButton href="/test/pre" className="w-full">
-              {th.welcome.pretestYes}
-            </LinkButton>
-            <LinkButton href="/learn" variant="secondary" className="w-full">
-              {th.welcome.pretestNo}
-            </LinkButton>
-          </div>
+          <TopicPicker topics={topics} value={topic} onPick={setTopic} />
+          {footer(true)}
         </section>
       )}
     </main>

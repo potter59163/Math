@@ -93,6 +93,8 @@ export interface Learner {
   /** The first sign-in: consent, name and theme. Carries over any guest progress on this device. */
   finishWelcome(input: Omit<WelcomeRequest, 'guestProfile' | 'consent'>): Promise<boolean>;
   updateAccount(update: AccountUpdate): Promise<boolean>;
+  /** The student's own photo was set (when) or removed (null) through /api/photo. */
+  photoChanged(photoAt: string | null): void;
   /** Forgets this device's copy. The caller signs out first. */
   forgetDevice(): void;
   deleteAccount(): Promise<boolean>;
@@ -392,6 +394,15 @@ export function createLearner(env: LearnerEnv): Learner {
       } catch {
         return false;
       }
+    },
+
+    photoChanged: (photoAt) => {
+      const id = state.profile?.student.id;
+      if (!state.account || !id) return;
+      const account: Account = { ...state.account, photoAt: photoAt ?? undefined };
+      if (!photoAt) delete account.photoAt;
+      writeJson(accountKey(id), account);
+      setState({ account });
     },
 
     forgetDevice: () => {

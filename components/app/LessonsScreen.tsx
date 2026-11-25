@@ -31,7 +31,6 @@ import {
 } from '@/lib/learner/progress';
 import { recommendationFor } from '@/lib/learner/recommend';
 import {
-  ASSESSED_TOPIC,
   isTestedTopic,
   minutesFor,
   testApi,
@@ -130,7 +129,7 @@ function usePretestTaken(topic: TopicId, ask: boolean): boolean | undefined {
   return known?.topic === topic ? known.taken : undefined;
 }
 
-/** The pre-test of a topic not begun, offered as the welcome screen offers the matrix one. */
+/** The pre-test of a topic not begun yet, offered before its first item. */
 function PretestOffer({ profile, now, topic }: { profile: Profile; now: number; topic: TopicId }) {
   const items = testLengthOf(topic);
   return (
@@ -573,10 +572,9 @@ export function LessonsScreen() {
     .find(({ id }) => id === openSkill)?.status;
   const showReport =
     mode === 'account' && isTestedTopic(shown.id) && hasPretestMarks(profile, shown.id);
-  // The research's test is offered by the welcome screen; another topic's is offered on its own tab.
+  // Each topic's pre-test is offered on its own tab until its first item: the welcome only picks the topic.
   const offerTest =
     mode === 'account' &&
-    shown.id !== ASSESSED_TOPIC &&
     isTestedTopic(shown.id) &&
     testedItemsDone(profile, shown.id) === 0 &&
     !hasPretestMarks(profile, shown.id);

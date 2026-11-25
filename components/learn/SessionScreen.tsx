@@ -179,7 +179,10 @@ function SessionLoop({ profile }: { profile: Profile }) {
       hintLevel,
       ...time,
     });
-    if (outcome) sfx.play(soundFor(outcome.classification.type === 'correct', next.combo));
+    if (outcome) {
+      const milestone = Boolean(outcome.skillPassed || outcome.unitPassed || outcome.resolved);
+      sfx.play(soundFor(outcome.classification.type === 'correct', next.combo, milestone));
+    }
     if (outcome?.classification.type !== 'correct') preloadFormula();
   };
 

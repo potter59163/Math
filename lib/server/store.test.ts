@@ -354,6 +354,29 @@ describe.skipIf(!uri)('on a real MongoDB', () => {
     });
   });
 
+  describe('a profile photo', () => {
+    const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 4]);
+
+    it('is kept for its student alone, said on the account, and gone once removed', async () => {
+      const { id } = await student();
+      const other = await student();
+      expect(await store.loadPhoto(id)).toBeNull();
+      expect(await store.loadAccount(id)).not.toHaveProperty('photoAt');
+
+      const at = await store.savePhoto(id, { type: 'image/jpeg', data: JPEG });
+      const kept = await store.loadPhoto(id);
+      expect(kept?.type).toBe('image/jpeg');
+      expect(new Uint8Array(kept?.data ?? [])).toEqual(JPEG);
+      expect(kept?.at).toBe(at);
+      expect(await store.loadAccount(id)).toMatchObject({ photoAt: at });
+      expect(await store.loadPhoto(other.id)).toBeNull();
+
+      await store.deletePhoto(id);
+      expect(await store.loadPhoto(id)).toBeNull();
+      expect(await store.loadAccount(id)).not.toHaveProperty('photoAt');
+    });
+  });
+
   describe('the leaderboard', () => {
     // A week of its own, far from every other test's answers.
     const WEEK = '2099-01-05T17:00:00.000Z';
@@ -453,6 +476,10 @@ describe.skipIf(!uri)('on a real MongoDB', () => {
         startedAt: AT,
         responses: RESPONSES,
       });
+      await store.savePhoto(id, {
+        type: 'image/jpeg',
+        data: new Uint8Array([0xff, 0xd8, 0xff, 0xe0]),
+      });
       await store.saveAssessment(id, {
         topic: 'vector',
         phase: 'pre',
@@ -486,7 +513,7 @@ describe.skipIf(!uri)('on a real MongoDB', () => {
 
       // Every collection there is, so a new one cannot be forgotten here.
       const collections = await db.listCollections().toArray();
-      expect(collections.length).toBeGreaterThanOrEqual(13);
+      expect(collections.length).toBeGreaterThanOrEqual(14);
       for (const { name } of collections) {
         const left = await db
           .collection<{ _id: string; user_id?: string }>(name)
@@ -499,7 +526,10 @@ describe.skipIf(!uri)('on a real MongoDB', () => {
 
       for (const name of EVERYWHERE) expect(await countOf(name, other.id), name).toBeGreaterThan(0);
       expect(await other.auth.userOfSession(other.token)).toBe(other.id);
-      expect(await store.loadAccount(other.id)).toEqual(ACCOUNT);
+      expect(await store.loadAccount(other.id)).toEqual({
+        ...ACCOUNT,
+        photoAt: expect.any(String),
+      });
     });
 
     it('makes a new student of whoever signs in with that Google account again', async () => {

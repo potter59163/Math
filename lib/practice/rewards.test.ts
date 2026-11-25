@@ -14,6 +14,12 @@ describe('soundFor', () => {
     expect(soundFor(false, CONFIG.sound.streakEvery)).toBe('wrong');
   });
 
+  it('sounds a milestone over any run, and never on a wrong answer', () => {
+    expect(soundFor(true, 1, true)).toBe('done');
+    expect(soundFor(true, CONFIG.sound.streakEvery, true)).toBe('done');
+    expect(soundFor(false, 0, true)).toBe('wrong');
+  });
+
   it('marks every so many right answers in a row', () => {
     expect(soundFor(true, CONFIG.sound.streakEvery)).toBe('streak');
     expect(soundFor(true, CONFIG.sound.streakEvery * 2)).toBe('streak');

@@ -18,8 +18,17 @@ export function comboAfter(combo: number, correct: boolean, hintLevel: HintLevel
 }
 
 /** What an answer sounds like. A run of right answers gets its own sound every so often. */
-export function soundFor(correct: boolean, combo: number): 'correct' | 'wrong' | 'streak' {
+/**
+ * The sound of an answer. A milestone (a skill or a unit passed, a mistake fixed) sounds like one, over
+ * any combo; a wrong answer never does.
+ */
+export function soundFor(
+  correct: boolean,
+  combo: number,
+  milestone = false,
+): 'correct' | 'wrong' | 'streak' | 'done' {
   if (!correct) return 'wrong';
+  if (milestone) return 'done';
   return combo > 0 && combo % CONFIG.sound.streakEvery === 0 ? 'streak' : 'correct';
 }
 

@@ -1,10 +1,11 @@
 import { randomUUID } from 'node:crypto';
-import { MongoServerError, type Db, type ObjectId } from 'mongodb';
+import { Binary, MongoServerError, type Db, type ObjectId } from 'mongodb';
 import type { Profile } from '@/lib/director/types';
 import { ASSESSED_TOPIC, type AssessmentPhase, type AssessmentStatus } from '@/lib/sync/assessment';
 import type { BoardRow } from '@/lib/sync/leaderboard';
 import type { Account, AccountUpdate, AvatarId } from '@/lib/sync/types';
 import type { TopicId } from '@/lib/topics/types';
+import type { PhotoType } from './photo';
 import type { LogEntry, SyncStore } from './sync';
 
 /** A form of a topic's pre/post test, 'A' or 'B' (lib/topics/<topic>/assessment.ts). */
@@ -163,6 +164,11 @@ export interface AppStore extends SyncStore {
   weeklyLeaderboard(weekStart: string, maxRows: number, cohort?: string): Promise<BoardRow[]>;
   /** The class link this student came in through, which is compared on the server and never sent. */
   cohortOf(userId: string): Promise<string | null>;
+  /** Keeps this student's photo in place of any earlier one, and says when. */
+  savePhoto(userId: string, photo: { type: PhotoType; data: Uint8Array }): Promise<string>;
+  /** This student's own photo, which is only ever served back to them (app/api/photo). */
+  loadPhoto(userId: string): Promise<{ type: PhotoType; data: Uint8Array; at: string } | null>;
+  deletePhoto(userId: string): Promise<void>;
 }
 
 interface ProfileDoc {
@@ -175,6 +181,8 @@ interface ProfileDoc {
   cohort?: string;
   form_pre?: FormId;
   form_post?: FormId;
+  /** When the student's own photo was last set, which also tells the browser to fetch it again. */
+  photo_at?: Date;
   created_at: Date;
   updated_at: Date;
 }
@@ -184,6 +192,14 @@ interface LearnerDoc {
   profile: unknown;
   rev: number;
   devices: Record<string, number>;
+  updated_at: Date;
+}
+
+interface PhotoDoc {
+  _id: string;
+  type: PhotoType;
+  data: Binary;
+  size: number;
   updated_at: Date;
 }
 
@@ -202,6 +218,7 @@ export function createStore(db: Db): AppStore {
   const profiles = db.collection<ProfileDoc>('profiles');
   const learners = db.collection<LearnerDoc>('learner_profiles');
   const testsOf = (topic: TopicId) => db.collection<AssessmentDoc>(TEST_TABLES[topic].tests);
+  const photos = db.collection<PhotoDoc>('photos');
   const attempts = db.collection('attempts');
   const decisions = db.collection('decisions');
 
@@ -293,6 +310,7 @@ export function createStore(db: Db): AppStore {
         avatar: row.avatar as AvatarId,
         showOnLeaderboard: row.show_on_leaderboard,
         condition: row.condition,
+        ...(row.photo_at && { photoAt: row.photo_at.toISOString() }),
       };
     },
 
@@ -353,7 +371,11 @@ export function createStore(db: Db): AppStore {
           db.collection(name).deleteMany({ user_id: userId }),
         ),
       );
-      await Promise.all([learners.deleteOne({ _id: userId }), profiles.deleteOne({ _id: userId })]);
+      await Promise.all([
+        learners.deleteOne({ _id: userId }),
+        profiles.deleteOne({ _id: userId }),
+        photos.deleteOne({ _id: userId }),
+      ]);
       await db.collection('auth_sessions').deleteMany({ user_id: userId });
       await db.collection<{ _id: string }>('users').deleteOne({ _id: userId });
     },
@@ -413,6 +435,32 @@ export function createStore(db: Db): AppStore {
         ),
       );
       return true;
+    },
+
+    async savePhoto(userId, { type, data }) {
+      const at = new Date();
+      await photos.updateOne(
+        { _id: userId },
+        { $set: { type, data: new Binary(data), size: data.length, updated_at: at } },
+        { upsert: true },
+      );
+      await profiles.updateOne({ _id: userId }, { $set: { photo_at: at } });
+      return at.toISOString();
+    },
+
+    async loadPhoto(userId) {
+      const row = await photos.findOne({ _id: userId });
+      if (!row) return null;
+      return {
+        type: row.type,
+        data: new Uint8Array(row.data.read(0, row.data.length())),
+        at: row.updated_at.toISOString(),
+      };
+    },
+
+    async deletePhoto(userId) {
+      await photos.deleteOne({ _id: userId });
+      await profiles.updateOne({ _id: userId }, { $unset: { photo_at: '' } });
     },
 
     async cohortOf(userId) {

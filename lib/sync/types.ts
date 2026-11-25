@@ -27,6 +27,8 @@ export interface Account {
   avatar: AvatarId;
   showOnLeaderboard: boolean;
   condition: Condition;
+  /** When the student last set their own photo, which only they ever see. None means the symbol. */
+  photoAt?: string;
 }
 
 /** GET /api/me. `configured` is false until the server's keys are set, when only guest mode can work. */

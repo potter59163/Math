@@ -12,6 +12,7 @@ import { fillTokens } from '@/lib/core/tokens';
 import type { ThemeId } from '@/lib/learner/types';
 import { MAX_DISPLAY_NAME, type Account } from '@/lib/sync/types';
 import { AvatarPicker } from './Avatar';
+import { PhotoPicker } from './PhotoPicker';
 import { GoogleButton } from './SignInButtons';
 import { learner, useLearner, useRequiredProfile } from './useLearner';
 import { ThemePicker } from './WelcomeFlow';
@@ -104,6 +105,7 @@ function AccountSection({ account }: { account: Account }) {
           {saved ? th.common.saved : ''}
         </p>
       </div>
+      <PhotoPicker account={account} />
       <div className="flex flex-col gap-2">
         <h3 className="font-sans font-medium">{th.settings.avatar}</h3>
         <AvatarPicker

@@ -64,27 +64,17 @@ export const th = {
     themeTitle: 'ยกตัวอย่างเรื่องอะไรดี',
     // TODO(review) says why the theme is asked: the opening clips tell their story with it.
     themeHelp: 'คลิปเปิดแต่ละหน่วยจะเล่าโจทย์ด้วยเรื่องนี้ เปลี่ยนได้ในตั้งค่า',
-    consentTitle: 'ก่อนเริ่มเรียน',
-    consentIntro: 'แอปนี้เป็นส่วนหนึ่งของโครงงานนวัตกรรมของนักเรียน',
-    consentItems: [
-      'เก็บชื่อที่ตั้ง คำตอบ และเวลาที่ใช้ เพื่อปรับบทเรียนให้คุณ และวิเคราะห์แบบไม่ระบุตัวตนเพื่อส่งประกวด',
-      // TODO(review) the consent wording changed with sign-in: the app no longer receives an email.
-      'ล็อกอินด้วย Google แต่แอปไม่ได้รับอีเมลหรือชื่อจริงของคุณ',
-      'ข้อมูลบางส่วนที่ระบุตัวคุณไม่ได้จะส่งให้ AI (Claude ของบริษัท Anthropic) ช่วยเลือกบทเรียน',
-      'ไม่เก็บรูป เสียง หรือตำแหน่ง',
-      'ลบบัญชีเองได้ทุกเมื่อในตั้งค่า และข้อมูลทั้งหมดจะถูกลบภายใน 31 มี.ค. 2570',
-    ],
-    consentAgree: 'อ่านแล้วและยินยอม',
+    // TODO(review) labels the sample table under the themes: the first opening clip, in that theme.
+    themeExample: 'ตัวอย่างในคลิป',
+    // TODO(review) the topic is chosen before anything is taught, and can be changed on the lessons page.
+    topicTitle: 'อยากเริ่มเรียนเรื่องไหน',
+    topicHelp: 'เปลี่ยนได้ตลอด จากแท็บในหน้าบทเรียน',
+    // TODO(review) the one line that replaces the consent page (Potter, 25 Nov 2026), above the last
+    // button of the welcome, with the privacy page a tap away.
+    consentLine: 'เมื่อกดเริ่มเรียน แอปจะเก็บคำตอบของคุณ ไว้ปรับบทเรียนให้',
+    privacyLink: 'อ่านเรื่องความเป็นส่วนตัว',
     start: 'เริ่มเรียน',
-    // TODO(review) the consent step's button: the pre-test offer comes next, not a lesson.
-    consentNext: 'ยินยอมและไปต่อ',
     failed: 'บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง',
-    pretestTitle: `ให้${CONFIG.tutorName}รู้จักคุณก่อนไหม`,
-    // TODO(review) says what really happens: a known skill skips its clip and needs one right answer
-    // (SPEC §7.1), rather than being skipped outright.
-    pretestBody: `แบบทดสอบเรื่องเมทริกซ์ 14 ข้อ ราว 20 นาที เรื่องที่ทำได้แล้ว${CONFIG.tutorName}จะข้ามคลิปและเช็กแค่ข้อเดียว`,
-    pretestYes: 'ทำแบบทดสอบ',
-    pretestNo: 'ข้ามไปเรียนเลย',
   },
 
   // TODO(review): everything in this block.
@@ -263,6 +253,17 @@ export const th = {
     account: 'บัญชี',
     displayName: 'ชื่อที่แสดง',
     avatar: 'สัญลักษณ์',
+    // TODO(review) the student's own photo (Potter, 25 Nov 2026), seen by them alone.
+    photo: {
+      title: 'รูปโปรไฟล์',
+      upload: 'อัปโหลดรูป',
+      change: 'เปลี่ยนรูป',
+      remove: 'ลบรูป',
+      saving: 'กำลังอัปโหลด…',
+      note: 'รูปนี้เห็นแค่คุณ ในตารางอันดับ เพื่อนจะเห็นสัญลักษณ์',
+      failed: 'อัปโหลดไม่สำเร็จ ลองรูปอื่นหรือลองใหม่',
+      alt: 'รูปโปรไฟล์ของคุณ',
+    },
     showOnBoard: 'แสดงชื่อในตารางอันดับ',
     learning: 'การเรียน',
     theme: 'ยกตัวอย่างเรื่องอะไร',
@@ -293,15 +294,15 @@ export const th = {
       {
         title: 'เก็บอะไรบ้าง',
         // TODO(review) this page changed with sign-in and the database.
-        body: 'ชื่อที่คุณตั้ง รูปประจำตัวที่เลือก คำตอบ เวลาที่ใช้ การกดขอใบ้ และการดูคลิป เก็บในฐานข้อมูลบน MongoDB Atlas',
+        body: 'ชื่อที่คุณตั้ง รูปประจำตัวที่เลือก รูปโปรไฟล์ถ้าคุณอัปโหลดเอง คำตอบ เวลาที่ใช้ การกดขอใบ้ และการดูคลิป เก็บในฐานข้อมูลบน MongoDB Atlas',
       },
       {
         title: 'ไม่เก็บอะไร',
-        body: 'ไม่เก็บอีเมล ชื่อจริง หรือรูปจาก Google ไม่เก็บรูปถ่าย เสียง หรือตำแหน่ง',
+        body: 'ไม่เก็บอีเมล ชื่อจริง หรือรูปจาก Google ไม่เก็บเสียงหรือตำแหน่ง รูปโปรไฟล์ถูกย่อให้เล็กในเครื่องก่อนส่ง จึงไม่มีข้อมูลว่าถ่ายที่ไหนหรือเมื่อไร',
       },
       {
         title: 'ใครเห็นอะไร',
-        body: 'คนอื่นเห็นแค่ชื่อที่ตั้ง รูปประจำตัว และ XP สัปดาห์นี้ในตารางอันดับ ซึ่งปิดได้ในตั้งค่า',
+        body: 'คนอื่นเห็นแค่ชื่อที่ตั้ง สัญลักษณ์ที่เลือก และ XP สัปดาห์นี้ในตารางอันดับ ซึ่งปิดได้ในตั้งค่า รูปโปรไฟล์ที่อัปโหลดเห็นแค่คุณคนเดียว',
       },
       {
         title: 'ส่งอะไรให้ AI',
@@ -313,7 +314,7 @@ export const th = {
       },
       {
         title: 'ลบเมื่อไหร่',
-        body: 'ลบบัญชีได้เองทุกเมื่อในตั้งค่า และข้อมูลทั้งหมดจะถูกลบภายใน 31 มี.ค. 2570',
+        body: 'ลบรูปโปรไฟล์หรือลบบัญชีได้เองทุกเมื่อในตั้งค่า และข้อมูลทั้งหมดจะถูกลบภายใน 31 มี.ค. 2570',
       },
     ],
   },
@@ -629,6 +630,15 @@ export const th = {
   },
 
   // The summary speaks about today, which the daily activity counts (SPEC §11).
+  // TODO(review) the screen before the summary on the first finish of a day: the flame fills.
+  streak: {
+    title: 'ไฟติดต่อกัน {{n}} วัน',
+    first: 'จุดไฟวันแรกแล้ว',
+    body: 'มาเรียนอีกพรุ่งนี้ ไฟจะได้ไม่ดับ',
+    days: 'วัน',
+    week: 'เจ็ดวันที่ผ่านมา',
+    next: 'ไปต่อ',
+  },
   summary: {
     // TODO(review)
     title: 'สรุปวันนี้',

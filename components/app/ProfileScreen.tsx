@@ -25,7 +25,7 @@ import {
 } from '@/lib/sync/assessment';
 import { allMisconceptions, misconceptionShortOf, packOf, skillOf } from '@/lib/topics';
 import type { TopicId } from '@/lib/topics/types';
-import { Avatar } from './Avatar';
+import { ProfilePicture } from './Avatar';
 import { unitPassedName } from './unitText';
 import { useLearner, useRequiredProfile } from './useLearner';
 
@@ -240,7 +240,11 @@ export function ProfileScreen() {
   return (
     <main className="mx-auto flex w-full max-w-lg flex-col gap-7 px-5 py-6">
       <header className="flex items-center gap-3">
-        <Avatar avatar={account?.avatar ?? 'bracket'} className="size-16 text-2xl" />
+        <ProfilePicture
+          avatar={account?.avatar ?? 'bracket'}
+          photoAt={account?.photoAt}
+          className="size-16 text-2xl"
+        />
         <h1 className="min-w-0 truncate text-3xl leading-tight font-semibold">
           {account?.displayName ?? th.profile.guestName}
         </h1>
