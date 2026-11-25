@@ -3,8 +3,8 @@ import { newProfile } from '@/lib/director/turn';
 import type { Profile } from '@/lib/director/types';
 import { ALL_UNITS } from '@/lib/learner/progress';
 import type { ThemeId } from '@/lib/learner/types';
-import { allSkills } from '@/lib/topics';
-import type { SkillId } from '@/lib/topics/types';
+import { allSkills, isRegisteredTopic } from '@/lib/topics';
+import type { SkillId, TopicId } from '@/lib/topics/types';
 
 // A student's first server copy, which may start from what they did as a guest on this device.
 
@@ -41,6 +41,7 @@ const misconceptionState = z.object({
   lastCaughtAtItem: z.number().int().min(0),
   itemsToResolve: z.number().int().min(0).optional(),
   msToResolve: z.number().min(0).optional(),
+  relapses: z.number().int().min(0).optional(),
   rewarded: z.boolean(),
   fromPretest: z.boolean().optional(),
 });
@@ -77,17 +78,31 @@ export function guestProgressFor(skills: readonly SkillId[]) {
 
 const guestProgress = guestProgressFor(allSkills().map(({ id }) => id));
 
+/**
+ * The topic the guest was learning, read apart from their progress so that one this server does not
+ * know drops only itself. Nothing else of the guest's student is read: the id, units and theme are the
+ * account's own.
+ */
+const guestTopic = z.object({
+  student: z.object({ activeTopic: z.custom<TopicId>(isRegisteredTopic) }),
+});
+
 export function freshProfile(userId: string, theme: ThemeId): Profile {
   return newProfile({ id: userId, units: [...ALL_UNITS], theme });
 }
 
 /**
- * Keeps what a guest earned and drops anything open, since that was drawn for the guest's id. It came
- * from the browser, so whatever does not look right is simply not carried over. It cannot touch the
- * leaderboard, which counts only attempts the server saw.
+ * Keeps what a guest earned and the topic they were on, and drops anything open, since that was drawn
+ * for the guest's id. It came from the browser, so whatever does not look right is simply not carried
+ * over. It cannot touch the leaderboard, which counts only attempts the server saw.
  */
 export function startingProfile(userId: string, theme: ThemeId, guest: unknown): Profile {
   const fresh = freshProfile(userId, theme);
   const parsed = guestProgress.safeParse(guest);
-  return parsed.success ? ({ ...fresh, ...parsed.data } as Profile) : fresh;
+  if (!parsed.success) return fresh;
+  const topic = guestTopic.safeParse(guest);
+  const student = topic.success
+    ? { ...fresh.student, activeTopic: topic.data.student.activeTopic }
+    : fresh.student;
+  return { ...fresh, ...parsed.data, student } as Profile;
 }
