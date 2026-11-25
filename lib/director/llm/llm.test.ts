@@ -189,6 +189,32 @@ describe('hasNumberInWords', () => {
   ])('leaves %s alone, which only looks like a number', (text) => {
     expect(hasNumberInWords(text)).toBe(false);
   });
+
+  // The vector topic's own words (docs/VECTORS.md): every model wrote them, and each was thrown away.
+  it.each([
+    'ยกกำลังสองแล้วบวกกัน',
+    'อย่าลืมถอดรากที่สอง',
+    'เวกเตอร์ในสองมิติ',
+    'พิกัดสามมิติ',
+    'เวกเตอร์หนึ่งหน่วย',
+    'มุมระหว่างสองเวกเตอร์',
+    'ปริมาตรจากสามเวกเตอร์',
+    'หาเวกเตอร์จากจุดสองจุด',
+    'สองเส้นทแยงมุม',
+  ])('leaves the maths word %s alone', (text) => {
+    expect(hasNumberInWords(text)).toBe(false);
+  });
+
+  it.each([
+    'คูณสอง',
+    'ยกกำลังสองได้เก้า',
+    'ได้สามแล้ว',
+    'ขนาดเป็นหนึ่ง',
+    'มีสองช่อง',
+    'รากที่สองของสิบแปด',
+  ])('still catches the number in %s', (text) => {
+    expect(hasNumberInWords(text)).toBe(true);
+  });
 });
 
 describe('what the tutor is told', () => {

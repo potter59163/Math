@@ -11,9 +11,12 @@ const DIGITS = /[0-9๐-๙⁰¹²³⁴-⁹₀-₉]/;
 /**
  * Number words let a sum through without a digit. These Thai words contain one by accident, and each is
  * common enough in a tutor's sentence to be worth telling apart. A rare miss only means falling back.
+ * The vector topic's own words (squared, square root, 2D and 3D, unit vector, two or three vectors, two
+ * points) and det's two diagonals name a kind of thing, never an answer, and the eval of 25 Nov 2026
+ * threw away about one vector message in five over them.
  */
 const NUMBER_WORDS =
-  /(?<!นิด|ครู่|อย่าง|ส่วน|ครั้ง)หนึ่ง|สอง|สาม(?!ารถ|เหลี่ยม)|สี่(?!เหลี่ยม)|(?<!ก)ห้า(?!ม)|หก(?!ล้ม)|เจ็ด|แปด|เก้า|สิบ|(?<!เรียบ)ร้อย|(?<!สัม)พัน(?!ธ)|ศูนย์/;
+  /(?<!นิด|ครู่|อย่าง|ส่วน|ครั้ง)หนึ่ง(?!หน่วย)|(?<!ยกกำลัง|รากที่)สอง(?!มิติ|เวกเตอร์|จุด|เส้นทแยง)|สาม(?!ารถ|เหลี่ยม|มิติ|เวกเตอร์)|สี่(?!เหลี่ยม)|(?<!ก)ห้า(?!ม)|หก(?!ล้ม)|เจ็ด|แปด|เก้า|สิบ|(?<!เรียบ)ร้อย|(?<!สัม)พัน(?!ธ)|ศูนย์/;
 
 export function hasNumberInWords(text: string): boolean {
   return NUMBER_WORDS.test(text);
