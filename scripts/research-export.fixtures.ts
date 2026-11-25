@@ -631,6 +631,35 @@ export function withVectors(): Tables {
         }),
       ],
     }),
+    scene_views: among(tables.scene_views, {
+      2: [
+        sceneView('acct-a', 10, '10:00:30', {
+          template: 'quantity_sort',
+          purpose: 'intro',
+          beats_total: 6,
+          beats_seen: 6,
+          duration_ms: 25_000,
+        }),
+        sceneView('acct-a', 11, '10:03:30', {
+          template: 'magnitude_box',
+          purpose: 'remediate',
+          beats_total: 7,
+          beats_seen: 5,
+          replays: 1,
+          duration_ms: 28_000,
+        }),
+      ],
+      4: [
+        sceneView('acct-b', 10, '10:00:40', {
+          template: 'quantity_sort',
+          purpose: 'intro',
+          beats_total: 6,
+          beats_seen: 0,
+          skipped: true,
+          duration_ms: 2_000,
+        }),
+      ],
+    }),
     hint_events: among(tables.hint_events, {
       2: [hint('acct-a', 10, '10:02:40', magnitude, 1)],
       5: [hint('acct-b', 10, '10:01:30', vectorRef('v_quantity', 1, 8), 2)],

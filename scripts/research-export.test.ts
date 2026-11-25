@@ -1,6 +1,10 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
+import { classify } from '@/lib/core/classify';
+import { misconceptionAnswer } from '@/lib/sim/answers';
 import { packOf } from '@/lib/topics';
+import type { TemplateId as MatrixTemplate } from '@/lib/topics/matrix/scenes/types';
+import type { VectorTemplate } from '@/lib/topics/vector/scenes/types';
 import * as research from './research-export.mjs';
 import { exportBeforeVectors } from './research-export.frozen.mjs';
 import { matrixClass, withVectors, type Row, type Tables } from './research-export.fixtures';
@@ -16,6 +20,71 @@ const M_CODES = matrix.catalog.map(({ id }) => id);
 const vector = packOf('vector');
 const VECTOR_SKILLS = vector.skills.map(({ id }) => id);
 const V_CODES = vector.catalog.map(({ id }) => id);
+
+// Every clip template of each pack, and no other, so one added to a pack does not compile here until it
+// is listed. The vector pack's reveals play the matrices' worked_solution (VECTORS §5).
+const MATRIX_TEMPLATES = Object.keys({
+  cell_by_cell: 0,
+  det_sum: 0,
+  row_col_dot: 0,
+  dimension_match: 0,
+  grid_transform: 0,
+  inverse_recipe: 0,
+  worked_solution: 0,
+  cell_locator: 0,
+  transpose_flip: 0,
+  sarrus: 0,
+} satisfies Record<MatrixTemplate, 0>);
+const VECTOR_TEMPLATES = Object.keys({
+  quantity_sort: 0,
+  arrow_chain: 0,
+  component_steps: 0,
+  parallel_scale: 0,
+  magnitude_box: 0,
+  unit_shrink: 0,
+  dot_pairs: 0,
+  angle_fan: 0,
+  cross_cover: 0,
+  area_volume: 0,
+} satisfies Record<VectorTemplate, 0>);
+
+/**
+ * The template of every clip a pack plays, built through the pack as the director builds them: each
+ * unit's intro, each skill's concept clip and solution at each level, and the clip of each mistake.
+ */
+function templatesPlayed(topic: 'matrix' | 'vector'): Set<string> {
+  const pack = packOf(topic);
+  const played = new Set<string>();
+  for (const { id } of pack.units) played.add(pack.scenes.intro(id, { seed: 1 }).template);
+  for (const { id: skill } of pack.skills) {
+    for (const level of pack.levelsOf(skill)) {
+      played.add(pack.scenes.concept(skill, { seed: 1, level }).template);
+      const item = pack.generate({ skill, difficulty: level, seed: 1 });
+      played.add(pack.scenes.reveal(item).template);
+    }
+  }
+  for (const { id, skills } of pack.catalog) {
+    for (const skill of skills) {
+      for (const variant of pack.variantsOf(id)) {
+        for (const level of pack.probeLevels(skill, id, variant)) {
+          const item = pack.generate({
+            skill,
+            difficulty: level,
+            seed: 1,
+            target: id,
+            targetVariant: variant,
+          });
+          const answer = misconceptionAnswer(item, id, variant);
+          if (!answer) continue;
+          const caught = classify(item, answer);
+          if (caught.type !== 'misconception') continue;
+          played.add(pack.scenes.remediate(item, answer, caught).template);
+        }
+      }
+    }
+  }
+  return played;
+}
 
 const USERS = ['u-1', 'u-2', 'u-3', 'u-4', 'u-5'];
 const ASSESSMENTS = ['t-1', 't-2', 't-3', 't-4', 't-5', 't-6'];
@@ -162,18 +231,22 @@ const matrixCandidates = fc.array(
   { maxLength: 4 },
 );
 
-const sceneView = record({
-  _id: id,
-  user_id: user,
-  template: fc.constantFrom('cell_by_cell', 'dimension_match', 'sarrus', 'worked_solution'),
-  purpose: fc.constantFrom('intro', 'concept', 'remediate', 'request', 'reveal'),
-  beats_total: fc.nat(8),
-  beats_seen: fc.nat(8),
-  replays: fc.nat(3),
-  skipped: fc.boolean(),
-  duration_ms: fc.nat(90_000),
-  created_at: day,
-});
+/** As `writeLogs` stores a clip view. */
+const viewOf = (template: fc.Arbitrary<string>) =>
+  record({
+    _id: id,
+    user_id: user,
+    template,
+    purpose: fc.constantFrom('intro', 'concept', 'remediate', 'request', 'reveal'),
+    beats_total: fc.nat(8),
+    beats_seen: fc.nat(8),
+    replays: fc.nat(3),
+    skipped: fc.boolean(),
+    duration_ms: fc.nat(90_000),
+    created_at: day,
+  });
+
+const sceneView = viewOf(fc.constantFrom(...MATRIX_TEMPLATES));
 
 const hintOf = (ref: fc.Arbitrary<Row | null>) =>
   record({ _id: id, user_id: user, item_ref: ref, level: level, created_at: day });
@@ -333,6 +406,7 @@ const placed = <T>(what: fc.Arbitrary<T>, maxLength: number) =>
 const vectorWork = fc.record({
   attempts: placed(attemptOf(vectorRef), 6),
   decisions: placed(vectorDecision, 6),
+  views: placed(viewOf(fc.constantFrom(...VECTOR_TEMPLATES)), 4),
   hints: placed(hintOf(vectorRef), 4),
   skills: placed(fc.tuple(fc.nat(), fc.constantFrom(...VECTOR_SKILLS), skillState), 6),
   misconceptions: placed(fc.tuple(fc.nat(), fc.constantFrom(...V_CODES), misconceptionState), 6),
@@ -364,6 +438,7 @@ function withWork(tables: Tables, work: VectorWork): Tables {
     ...tables,
     attempts: among(tables.attempts, work.attempts),
     decisions: among(tables.decisions, work.decisions),
+    scene_views: among(tables.scene_views, work.views),
     hint_events: among(tables.hint_events, work.hints),
     learner_profiles: tables.learner_profiles.map((row, index) => {
       const profile = row.profile as Row;
@@ -419,17 +494,18 @@ describe('the research export', () => {
   it('leaves out the vector work the export used to count', () => {
     const before = exportBeforeVectors(withVectors()).files;
     const after = researchExport(withVectors()).files;
-    // The old export counted S-1's vector answers, skills, hint, fix and decisions as matrix work.
+    // The old export counted S-1's vector answers, clips, skills, hint, fix and decisions as matrix work.
     for (const [column, counted, kept] of [
       ['items_done', '6', '4'],
       ['skills_reached', '5', '3'],
       ['skills_mastered', '2', '1'],
+      ['scenes_viewed', '5', '3'],
       ['hints_used', '4', '3'],
       ['misconceptions_resolved', '3', '2'],
       ['median_items_to_resolve', '3', '4.5'],
       ['llm_decisions', '2', '1'],
       ['fallback_rate', String(4 / 7), '0.5'],
-      ['minutes_in_app', '3', '2.3'],
+      ['minutes_in_app', '3.9', '2.3'],
     ]) {
       expect([column, wideCell(before, 'S-1', column)]).toEqual([column, counted]);
       expect([column, wideCell(after, 'S-1', column)]).toEqual([column, kept]);
@@ -443,6 +519,9 @@ describe('the research export', () => {
       expect(before.get(name)).toMatch(/v_quantity/);
       expect(after.get(name)).not.toMatch(/v_[a-z]|V\d\d_/);
     }
+    const vectorClip = new RegExp(VECTOR_TEMPLATES.join('|'));
+    expect(before.get('scene_views.csv')).toMatch(vectorClip);
+    expect(after.get('scene_views.csv')).not.toMatch(vectorClip);
     expect(outputOf(researchExport(withVectors()))).toEqual(
       outputOf(researchExport(matrixClass())),
     );
@@ -463,5 +542,15 @@ describe('the research export', () => {
     expect(research.MATRIX_SKILLS).toEqual(MATRIX_SKILLS);
     expect(VECTOR_SKILLS.filter((skill) => MATRIX_SKILLS.includes(skill))).toEqual([]);
     expect(V_CODES.filter((code) => M_CODES.includes(code))).toEqual([]);
+  });
+
+  it('leaves out the clips of the vector pack’s own templates, which no matrix clip plays', () => {
+    expect(research.VECTOR_TEMPLATES).toEqual(VECTOR_TEMPLATES);
+    expect(MATRIX_TEMPLATES.filter((template) => VECTOR_TEMPLATES.includes(template))).toEqual([]);
+    // What the packs really play: each its own, and vectors the matrices' worked_solution too.
+    expect([...templatesPlayed('matrix')].sort()).toEqual([...MATRIX_TEMPLATES].sort());
+    expect([...templatesPlayed('vector')].sort()).toEqual(
+      [...VECTOR_TEMPLATES, 'worked_solution'].sort(),
+    );
   });
 });

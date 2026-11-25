@@ -26,9 +26,8 @@ function csv(rows, columns) {
 }
 
 // Vectors share these collections and the one flat profile, but the research is about matrices, so the
-// files keep matrix work alone (docs/VECTORS.md §6.2): a class that has started vectors gets the files
-// it would have got without them. Ids never collide across topics, and these two lists are the matrix
-// pack's, which research-export.test.ts keeps them in step with.
+// files keep matrix work alone (docs/VECTORS.md §6.2). Ids never collide across topics, and the lists
+// below are the packs' own, which research-export.test.ts keeps them in step with.
 
 /** The matrix skills (lib/topics/matrix/skills.ts). */
 export const MATRIX_SKILLS = [
@@ -75,8 +74,23 @@ const ON_TEST = new Set(
   ),
 );
 
+/** The vector pack's own clip templates (lib/topics/vector/scenes/types.ts). */
+export const VECTOR_TEMPLATES = [
+  'quantity_sort',
+  'arrow_chain',
+  'component_steps',
+  'parallel_scale',
+  'magnitude_box',
+  'unit_shrink',
+  'dot_pairs',
+  'angle_fan',
+  'cross_cover',
+  'area_volume',
+];
+
 const MATRIX_SKILL_IDS = new Set(MATRIX_SKILLS);
 const M_CODES = new Set(MISCONCEPTIONS);
+const VECTOR_TEMPLATE_IDS = new Set(VECTOR_TEMPLATES);
 
 /** An item ref from before topics names none, and it is a matrix one. */
 const isMatrixRef = (ref) => (ref?.topic ?? 'matrix') === 'matrix';
@@ -166,17 +180,22 @@ export function researchExport(tables, cohort) {
     ],
     isMatrixDecision,
   );
-  // A scene view names no topic, and worked_solution is a template both topics play, so all are kept.
-  const views = exportTable('scene_views', [
-    'template',
-    'purpose',
-    'beats_total',
-    'beats_seen',
-    'replays',
-    'skipped',
-    'duration_ms',
-    'created_at',
-  ]);
+  // A clip view names no topic, but one of the vector pack's own templates is a vector clip. Vector
+  // reveals play worked_solution, which matrices play too, so those are all kept.
+  const views = exportTable(
+    'scene_views',
+    [
+      'template',
+      'purpose',
+      'beats_total',
+      'beats_seen',
+      'replays',
+      'skipped',
+      'duration_ms',
+      'created_at',
+    ],
+    (row) => !VECTOR_TEMPLATE_IDS.has(row.template),
+  );
   const hints = exportTable('hint_events', ['item_ref', 'level', 'created_at'], ofMatrixItem);
   // Only the matrix test is wired into the app (docs/VECTORS.md §6.1).
   const assessments = exportTable('assessments', [
