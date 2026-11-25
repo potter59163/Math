@@ -29,6 +29,9 @@ export function ChoiceButtons({
           <button
             key={id}
             type="button"
+            // An answer, like an answer box: Enter after picking it sends the answer instead of picking it
+            // again (the keyboard handlers skip only buttons without this). Space still picks.
+            data-box=""
             aria-pressed={isSelected}
             onClick={() => onPick(id)}
             className={`touch-manipulation rounded-xl border-2 px-3 text-lg font-semibold transition-colors select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
