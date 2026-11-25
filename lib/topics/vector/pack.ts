@@ -11,6 +11,7 @@ import {
   type FormId as AssessmentFormId,
   type MarkedResponse as VectorMarked,
 } from './assessment';
+import { workedLine } from './display';
 import { generate, regenerate, VECTOR_GENERATOR_VERSION } from './generators';
 import { attemptContext, EXAMPLES, FOCUS_RULE, sceneWord, skillWord, TOPIC_WORD } from './llm';
 import { CATALOG, catalogEntry, probeLevel, probeLevels, variantsOf } from './misconceptions';
@@ -29,10 +30,7 @@ function asVector(item: Item): VectorItem {
   return item as VectorItem;
 }
 
-const lineOf = ({ labelKey, params, latex }: Step): WorkedLine => ({
-  text: fillTokens(thVector.worked[labelKey], params),
-  latex,
-});
+const lineOf = (step: Step): WorkedLine => workedLine(step);
 
 const isVectorUnit = (unit: number): boolean => (UNITS as readonly number[]).includes(unit);
 

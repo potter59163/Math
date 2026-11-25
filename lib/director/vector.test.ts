@@ -15,6 +15,7 @@ import type { Profile } from '@/lib/director/types';
 import { buildDirectorInput } from '@/lib/director/llm/input';
 import { prepareAttempt } from '@/lib/director/rules';
 import { feedbackFor } from '@/lib/practice/feedback';
+import { applyAction } from '@/lib/sync/actions';
 import { hintAt } from '@/lib/practice/hints';
 import { Surd } from '@/lib/core/surd';
 import { misconceptionAnswer } from '@/lib/sim/answers';
@@ -137,5 +138,16 @@ describe('with vectors as the active topic', () => {
     expect(JSON.stringify(input.skills.map(({ nameTh, level }) => [nameTh, level]))).not.toMatch(
       DIGIT,
     );
+  });
+
+  it('leaves what was open in the other topic when the student switches', () => {
+    const onVectors = settled(startSession(vectorStudent('VEC-5')));
+    expect(currentItem(onVectors)?.ref.topic).toBe('vector');
+    const { profile: onMatrices } = applyAction(onVectors, { type: 'set_topic', topic: 'matrix' });
+    expect(onMatrices.current).toBeUndefined();
+    expect(currentItem(settled(startSession(onMatrices)))?.ref.topic).toBe('matrix');
+    // Choosing the topic already on screen keeps the item.
+    const { profile: same } = applyAction(onVectors, { type: 'set_topic', topic: 'vector' });
+    expect(same.current).toEqual(onVectors.current);
   });
 });

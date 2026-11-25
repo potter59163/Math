@@ -1,7 +1,6 @@
-import { thVector } from '@/lib/content/th.vector';
-import { fillTokens } from '@/lib/core/tokens';
 import type { Level } from '@/lib/core/types';
 import type { ScenePurpose, SceneSpec, TopicPack } from '@/lib/topics/types';
+import { workedLine } from '../display';
 import { generate } from '../generators';
 import { SKILLS, type SkillId } from '../skills';
 import type { VectorItem } from '../types';
@@ -24,9 +23,8 @@ function workedScene(item: VectorItem, purpose: ScenePurpose): WorkedSpec {
   return {
     template: 'worked_solution',
     params: {
-      steps: steps.map(({ labelKey, params, latex }, i) => ({
-        text: fillTokens(thVector.worked[labelKey], params),
-        latex,
+      steps: steps.map((step, i) => ({
+        ...workedLine(step),
         beat: beats[Math.floor((i * beatCount) / steps.length)],
       })),
     },

@@ -3,9 +3,11 @@ import { Rational } from '@/lib/core/rational';
 import { surdText } from '@/lib/core/surd';
 import { fillTokens } from '@/lib/core/tokens';
 import type { Answer } from '@/lib/core/types';
+import type { WorkedLine } from '@/lib/topics/types';
 import type { Given } from './format';
 import { figureExpr, num, term } from './latex';
 import type { PointLabel, Slot, VectorItem } from './types';
+import type { Step } from './worked';
 
 // How a vector item is shown on screen, worked out here so the components only place it. Every number
 // is the engine's: the givens, the arrows over named vectors, and the words around an answer box.
@@ -121,4 +123,16 @@ export function simplifiedForm(typed: readonly string[], answer: Answer): string
     text === parts[i].toString() || text.replace('-', '−') === shown[i];
   if (typed.every(asShown)) return null;
   return answer.kind === 'vector' ? `(${shown.join(', ')})` : shown[0];
+}
+
+/**
+ * One worked step in words and a formula. A step with no formula that picks a choice names it, so a
+ * solution never ends on "this one" without saying which.
+ */
+export function workedLine({ labelKey, params, latex, value }: Step): WorkedLine {
+  const text = fillTokens(thVector.worked[labelKey], params);
+  if (latex || value?.kind !== 'choice') return { text, latex };
+  const label = thVector.choices[value.id as keyof typeof thVector.choices];
+  const arrow = choiceLatex(value.id);
+  return arrow ? { text, latex: arrow } : { text: label ? `${text}: ${label}` : text, latex };
 }
