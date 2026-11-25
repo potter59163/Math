@@ -1,6 +1,6 @@
 # Kidma: upper-secondary maths app
 
-Adaptive web app that teaches maths to Thai upper-secondary students. Matrices (ม.5–6) are the first topic and the only one in this MVP.
+Adaptive web app that teaches maths to Thai upper-secondary students. Two topics: matrices (ม.5–6) and vectors (ม.5, `docs/VECTORS.md`). Vectors are switched on with `NEXT_PUBLIC_TOPICS=matrix,vector`.
 Duolingo-style path: short animation → exercise → diagnosis of *why* an answer is wrong (misconception) → AI tutor "คิว" picks each student's next step.
 Students sign in with Google and learn on their own: there are no teacher pages for now. Tabs: lessons, leaderboard, profile, settings.
 Successor of QEDify (physics). Built for the Chula Innovative Award 2027 (submission 27 Nov 2026) and a real classroom trial (13–19 Nov 2026).
@@ -15,14 +15,15 @@ Successor of QEDify (physics). Built for the Chula Innovative Award 2027 (submis
 - `docs/RESEARCH.md`: pre/post test, trial protocol, analysis.
 - `docs/DECISIONS.md`: append non-obvious decisions (date, decision, why).
 - `docs/SETUP.md`: the accounts and keys Potter sets up (MongoDB Atlas, Google, Vercel, Claude).
+- `docs/VECTORS.md`: the vector topic: skills, √ arithmetic, misconceptions V01–V26, clips, how it plugs in.
 
 ## Non-negotiables
-1. IMPORTANT: The LLM never does math. Every number, answer key, classification, worked step and scene value comes from the engine (`lib/core`, `lib/topics/matrix`) using exact `Rational` arithmetic.
+1. IMPORTANT: The LLM never does math. Every number, answer key, classification, worked step and scene value comes from the engine (`lib/core`, `lib/topics/<topic>`) using exact `Rational` arithmetic, and `Surd` (c√r) where vectors need roots.
 2. The app must work 100% with `LLM_PROVIDER=none` (rules director). LLM output is Zod-validated; invalid / timeout / 429 → rules decision, logged with `fallback_reason`.
 3. The LLM may only pick one of the candidates the rules engine offers. Student-facing LLM text contains no digit characters (0-9, ๐-๙); numbers appear only through whitelisted `{{tokens}}` resolved server-side.
 4. Every generated item passes `validateItem` (MISCONCEPTIONS.md §2). Deterministic: seeded PRNG only. No `Math.random` / `Date.now` inside engine, learner model or rules director.
 5. Privacy: a student signs in with Google, but only the name they chose is ever shown, and sign-in asks Google for `openid` alone, so the app never receives their email or real name. `LearnerProfile` holds no name or email, and nothing identifying goes to the LLM. Consent is asked once, before any data is stored. A student can leave the leaderboard and delete their account in Settings. No camera, mic, location or face data, and no Google photo.
-6. Scope is matrices only. No story/open-world mode, no runtime video generation, no native app.
+6. Scope is matrices and vectors. No story/open-world mode, no runtime video generation, no native app.
 7. UI text is Thai and lives in `lib/content/th.ts`. Code, comments and commits are English.
 8. Mobile-first: works at 360px wide, touch targets ≥ 44px, custom on-screen keypad (no system keyboard, no sliders), honors `prefers-reduced-motion`.
 
@@ -37,7 +38,7 @@ Next.js (App Router) + TypeScript strict + Tailwind · `motion` (Framer Motion) 
 - `TEST_MONGODB_URI=mongodb://127.0.0.1:27099 npm test`: also runs `lib/server/store.test.ts` on a real MongoDB, which is skipped without it (`docs/SETUP.md`). Run it after touching the store.
 - `npm run sim`: simulated-learner report (Phase 4+)
 - `npm run eval:director`: LLM director eval (needs an LLM key, and costs real money)
-- `npm run voice`: records changed lines of `th.voice` (needs `ELEVENLABS_API_KEY`, and spends credits)
+- `npm run voice`: records changed lines of `th.voice` (needs `ELEVENLABS_API_KEY`, and spends credits). `npm run voice -- vector` records one topic; `npm run voice:dry` prints the credits and records nothing
 - `npm run export -- <cohort>`: research CSVs into `exports/` (needs `MONGODB_URI`)
 - `python analysis/analyze.py <export-dir>`: research report (Phase 9)
 
@@ -49,8 +50,10 @@ app/auth/       google · callback · signout
 app/dev/        engine · scenes · director  (dev-only playgrounds)
 app/api/        me · welcome · sync · leaderboard · assessment/[phase]
 lib/config.ts   all tunable numbers (BKT, thresholds, timeouts, XP, names)
-lib/core/       rational · prng · types · parse · validate · classify · tokens (topic-agnostic)
-lib/topics/matrix/  ops · skills · generators/ · misconceptions · worked · assessment · scenes/
+lib/core/       rational · surd · prng · types · parse · validate · classify · tokens (topic-agnostic)
+lib/topics/     index (registry: packOf) · types (TopicPack)
+lib/topics/matrix/  pack · ops · skills · generators/ · misconceptions · worked · assessment · scenes/
+lib/topics/vector/  the same layout for vectors, with Thai copy in lib/content/th.vector.ts
 lib/learner/    bkt · mastery · difficulty · misconceptionStatus · interleave · progress · profile · types
 lib/director/   candidates · rules · turn · fixedPath · scene · items · pathStep · tokens · messages · types · llm/ (config · input · prompt · schema · validate · providers · decide)
 lib/sync/       actions (every change to a student, as data) · types · leaderboard · assessment
@@ -74,7 +77,9 @@ scripts/        export-data.mjs
 
 ## Gotchas
 - Never compare numbers as floats. Use `Rational.equals`; matrices are `Rational[][]`, serialized as strings like `"-3/2"`.
-- An item is identified by `ItemRef {topic, skill, difficulty, seed, target?, gv}`. The server regenerates the item from it and re-classifies before logging. Bump `GENERATOR_VERSION` on any generator change and freeze it before the trial.
+- An item is identified by `ItemRef {topic, skill, difficulty, seed, target?, gv}`. The server regenerates the item from it and re-classifies before logging. Each topic pack has its own generator version (matrix: `CONFIG.generatorVersion`, vector: `VECTOR_GENERATOR_VERSION`); bump only that topic's on a generator change, and freeze it before a trial.
+- Code outside `lib/topics/<topic>/` reaches a topic only through `packOf()`. Vector ids are prefixed (`v_` skills, `V01_…` misconceptions, units 11–15) so both topics share one flat profile.
+- The dev server cannot run in a git worktree whose `node_modules` is a symlink (Turbopack): run `npm ci` there instead.
 - Thai `.length` counts code units including vowel/tone marks. Length limits in docs are code units.
 - LLM calls are server-only (`app/api/**`) with timeout `LLM_TIMEOUT_MS` (default 4000). Never block the UI: the client shows its own instant rule feedback first.
 - The repo root already contains these docs: when scaffolding, never overwrite `CLAUDE.md`, `docs/`, `.claude/`.

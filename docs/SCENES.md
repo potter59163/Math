@@ -232,5 +232,12 @@ interface SceneSpec<T extends TemplateId = TemplateId> {
   - ทุก ★ skill ต้องมี concept scene ที่เล่นได้ และไม่เกิน 20 วินาที
   - caption ไม่ล้นบรรทัดที่ 360px
 
+## 6.1 คลิปเวกเตอร์
+- template 10 แบบของเวกเตอร์ และคลิปที่แต่ละความเข้าใจผิดใช้ อยู่ใน `docs/VECTORS.md` §5 (โค้ด: `lib/topics/vector/scenes/`, `components/scenes/vector/`)
+- หลักทุกข้อในไฟล์นี้ใช้เหมือนกัน ทั้งความยาว, compare, จังหวะแตะ 1 ครั้ง และเสียงที่ไม่พูดตัวเลข
+- ภาพ 3 มิติใช้แกนแบบ oblique มุมเดียวทุกคลิป ตำแหน่ง pixel เป็นทศนิยมได้ แต่ตัวเลขทุกตัวบนจอมาจาก engine
+- เสียงอยู่ใน `th.voice` กลุ่ม `v_*` แต่ manifest แยกไฟล์ (`lib/topics/vector/scenes/voice.json`) และไฟล์เสียงอยู่ `public/voice/vector/` อัดเฉพาะเวกเตอร์ด้วย `npm run voice -- vector`
+- `/preview/clip` มีปุ่มสลับเมทริกซ์/เวกเตอร์ และ `/preview/clip/frames` แสดงทุก beat ของคลิปเป็นภาพนิ่งไว้ตรวจ
+
 ## 7. Stretch
 - **คลิป hook ต่อ unit:** อัดจาก `/dev/scenes` โหมด presentation หรือทำด้วย Manim ล่วงหน้า (ไม่สร้างตอน runtime)

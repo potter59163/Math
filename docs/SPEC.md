@@ -438,7 +438,7 @@ export const CONFIG = {
 - เนื้อเรื่องแบบ open world หรือ story mode ทั้งเกม (ถ้าทำ ธีมถอดรหัสเป็นโจทย์ประยุกต์ได้แค่ข้อเดียว)
 - สร้างวิดีโอจาก prompt ตอน runtime
 - แอป native และโหมด offline แบบ PWA
-- หัวข้ออื่นนอกจากเมทริกซ์
+- หัวข้ออื่นนอกจากเมทริกซ์และเวกเตอร์ (เวกเตอร์: `docs/VECTORS.md`)
 - แชทกับ AI (stretch หลังส่งงาน)
 - เสียงพากย์ (stretch)
 
@@ -448,3 +448,8 @@ export const CONFIG = {
 - **โครงสร้าง topic pack:** แต่ละหัวข้อมี `lib/topics/<topic>/` (ops, skills, generators, misconceptions, worked, assessment) + scene templates ของตัวเอง
 - **ส่วนที่ใช้ร่วมกันทุกหัวข้อ:** core, learner model, director และ UI
 - **เขียนในแบบเสนอได้ว่า:** "สถาปัตยกรรมรองรับการเพิ่มหัวข้อ" แต่ห้ามเคลมว่าทำหัวข้ออื่นเสร็จแล้ว
+- **หัวข้อที่สอง (พ.ย. 2026):** เวกเตอร์ ม.5 เป็น topic pack ที่สอง (`lib/topics/vector/`, `docs/VECTORS.md`)
+  - ทุกที่นอก pack เข้าถึงหัวข้อผ่าน `packOf()` ใน `lib/topics/index.ts` และ interface `TopicPack` ใน `lib/topics/types.ts`
+  - เปิดด้วย `NEXT_PUBLIC_TOPICS=matrix,vector` และหน้าบทเรียนมีแถบเลือกหัวข้อเมื่อเปิดมากกว่าหนึ่งหัวข้อ
+  - คำตอบที่มีรากใช้ `Surd` (c√r) ใน `lib/core/surd.ts` ยังเป็น exact เหมือนเดิม
+  - หลังเปิดเวกเตอร์แล้ว เขียนได้ว่ามีสองหัวข้อ แต่ต้องบอกว่าเวกเตอร์ยังไม่ได้ทดลองกับนักเรียน จนกว่าจะทดลองจริง

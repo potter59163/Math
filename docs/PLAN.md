@@ -184,6 +184,21 @@
 - assessment A/B
 - `row_col_dot` และ `inverse_recipe`
 
+## หัวข้อที่สอง: เวกเตอร์ (24–25 พ.ย.) · `docs/VECTORS.md`
+Potter เลือกเพิ่มทั้งที่ใกล้วันส่ง และยอมให้แก้โปสเตอร์กับ proposal ทีหลัง
+- [x] แผน (VECTORS.md) Potter อนุมัติ
+- [x] `Surd` + คำตอบชนิด `surd`/`vector` ใน core, ปุ่ม √, `VectorInput`
+- [x] refactor เป็น `TopicPack` โดยเมทริกซ์ไม่เปลี่ยน (sim report ตรงกับ main ทุกบรรทัด)
+- [x] engine: 13 ทักษะ, 26 ความเข้าใจผิด, rules, worked, assessment (property test ≥ 1000 runs ทุกทักษะ × ระดับ)
+- [x] ต่อเข้าแอปทุกหน้า และเรียนจบได้ที่ 360px ด้วย keypad (โหมดไม่ล็อกอิน)
+- [x] คลิป 10 template: intro 5 · concept 13 · แก้ความเข้าใจผิด 55 · วิธีทำ 13
+- [x] เสียง 172 บรรทัด (11 takes) อัดแล้ว
+- [ ] Potter ฟังเสียงและดูคลิปที่ `/preview/clip` (แท็บเวกเตอร์)
+- [ ] ครูคณิตตรวจ VECTORS §2, §4 และข้อความ `// TODO(review)` ใน `lib/content/th.vector.ts`
+- [ ] merge เข้า main, deploy, แล้วตั้ง `NEXT_PUBLIC_TOPICS=matrix,vector` บน Vercel (server ต้องขึ้นก่อนเปิดสวิตช์)
+- [ ] test กับ MongoDB จริง (`TEST_MONGODB_URI=… npm test`)
+- [ ] Potter แก้โปสเตอร์และ proposal ใน `submission/` ให้บอกว่ามีสองหัวข้อ
+
 ## หลังส่งงาน (ก่อน 14 ม.ค. ถ้าผ่านรอบคัดเลือก)
 - แชท "ถามคิว" (AI_DIRECTOR §8)
 - Tier B scenes ที่เหลือ
