@@ -1,8 +1,11 @@
+import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { CONFIG } from '@/lib/config';
 import { newLearnerProfile } from '@/lib/learner/profile';
+import { ALL_UNITS, isUnitPassed } from '@/lib/learner/progress';
 import type { LearnerProfile, MisconceptionState, SkillState } from '@/lib/learner/types';
-import { badgesOf, comboAfter, soundFor, xpFor } from './rewards';
+import { packOf } from '@/lib/topics';
+import { badgesOf, comboAfter, soundFor, xpFor, type Badge } from './rewards';
 
 describe('soundFor', () => {
   it('tells a right answer from a wrong one, whatever the run so far', () => {
@@ -63,6 +66,55 @@ describe('badgesOf (SPEC §11)', () => {
     expect(badgesOf(profile)).toEqual([]);
     profile.misconceptions = { M09_MULT_ELEMENTWISE: fix(true) };
     expect(badgesOf(profile)).toEqual([{ kind: 'fixed' }]);
+  });
+
+  /** badgesOf as it was before it walked each topic's units: the stored units, which are matrix units. */
+  const badgesBefore = (profile: LearnerProfile): Badge[] => {
+    const units = [...profile.student.units]
+      .sort((a, b) => a - b)
+      .filter((unit) => isUnitPassed(profile, unit))
+      .map((unit): Badge => ({ kind: 'unit', unit }));
+    const fixedOne = Object.values(profile.misconceptions).some(
+      (state) => state?.rewarded === true,
+    );
+    return fixedOne ? [...units, { kind: 'fixed' }] : units;
+  };
+
+  const skillIds = packOf('matrix').skills.map(({ id }) => id);
+  const misconceptionIds = packOf('matrix').catalog.map(({ id }) => id);
+  const unitIds = [...ALL_UNITS, ...packOf('vector').units.map(({ id }) => id)];
+  /**
+   * Any profile with no vector attempt: any matrix units stored in any order (or even repeated, or with
+   * vector units among them), any skills tried or passed, any misconception fixed.
+   */
+  const matrixOnly = fc
+    .record({
+      units: fc.oneof(
+        fc.shuffledSubarray([...ALL_UNITS]),
+        fc.array(fc.constantFrom(...unitIds), { maxLength: 8 }),
+      ),
+      tried: fc.subarray(skillIds),
+      passedIds: fc.subarray(skillIds),
+      caught: fc.subarray(misconceptionIds),
+      rewarded: fc.subarray(misconceptionIds),
+    })
+    .map(({ units, tried, passedIds, caught, rewarded }) => {
+      const profile = newLearnerProfile({ id: 'A-1', units });
+      for (const id of tried) profile.skills[id] = { ...passed, passed: false };
+      for (const id of passedIds) profile.skills[id] = passed;
+      for (const id of caught) profile.misconceptions[id] = fix(false);
+      for (const id of rewarded) profile.misconceptions[id] = fix(true);
+      return profile;
+    });
+
+  it('gives a profile with no vector attempt the same badges as before, with matrices alone on', () => {
+    expect(CONFIG.topics).toEqual(['matrix']);
+    fc.assert(
+      fc.property(matrixOnly, (profile) => {
+        expect(badgesOf(profile)).toEqual(badgesBefore(profile));
+      }),
+      { numRuns: 1000 },
+    );
   });
 });
 
