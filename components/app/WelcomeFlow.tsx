@@ -169,7 +169,10 @@ export function WelcomeFlow() {
         <section className="flex flex-1 flex-col gap-5 motion-safe:animate-rise">
           <div className="flex items-center gap-3">
             <Mascot className="size-14 shrink-0 -rotate-3" />
-            <h1 className="text-2xl leading-snug font-semibold">{th.welcome.themeTitle}</h1>
+            <div className="flex flex-col gap-1">
+              <h1 className="text-2xl leading-snug font-semibold">{th.welcome.themeTitle}</h1>
+              <p className="text-sm text-muted">{th.welcome.themeHelp}</p>
+            </div>
           </div>
           <ThemePicker value={theme} onPick={setTheme} />
           <div className="mt-auto flex gap-2">
@@ -231,7 +234,7 @@ export function WelcomeFlow() {
                 if (agreed && !saving) void finish();
               }}
             >
-              {th.welcome.start}
+              {th.welcome.consentNext}
             </Button>
           </div>
         </section>
