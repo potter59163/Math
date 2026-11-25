@@ -16,8 +16,9 @@ import { skillStateOf } from '@/lib/learner/profile';
 import { mapOf } from '@/lib/learner/progress';
 import { badgesOf, type Badge } from '@/lib/practice/rewards';
 import { assessedItemsDone, testBlock, type AssessmentStatus } from '@/lib/sync/assessment';
-import { allMisconceptions, misconceptionShortOf, skillOf, unitOf } from '@/lib/topics';
+import { allMisconceptions, misconceptionShortOf, skillOf } from '@/lib/topics';
 import { Avatar } from './Avatar';
+import { unitPassedName } from './unitText';
 import { useLearner, useRequiredProfile } from './useLearner';
 
 function Stat({ icon, label, value }: { icon?: ReactNode; label: string; value: number }) {
@@ -128,9 +129,7 @@ function Mastery({ profile }: { profile: Profile }) {
 }
 
 function badgeLabel(badge: Badge): string {
-  return badge.kind === 'fixed'
-    ? th.summary.badgeFixed
-    : fillTokens(th.summary.unitPassed, { n: unitOf(badge.unit).label });
+  return badge.kind === 'fixed' ? th.summary.badgeFixed : unitPassedName(badge.unit);
 }
 
 /** `practised` is what the tests count (assessedItemsDone), not every item done. */
@@ -262,7 +261,7 @@ export function ProfileScreen() {
           <ul className="flex flex-wrap gap-2">
             {badges.map((badge) => (
               <li
-                key={badgeLabel(badge)}
+                key={badge.kind === 'unit' ? badge.unit : badge.kind}
                 className="flex items-center gap-1 rounded-full bg-xp-soft px-3 py-1 text-sm font-semibold text-xp"
               >
                 <StarIcon className="size-4 shrink-0" />

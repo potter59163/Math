@@ -30,7 +30,10 @@ export interface TopicSkill {
 
 export interface TopicUnit {
   id: UnitId;
-  /** What "หน่วยที่ {{n}}" shows: `3` for matrices, `V3` for vectors. */
+  /**
+   * Its short code in the docs and the clip preview: `3` for matrices, `V3` for vectors. A student reads
+   * its place in the topic instead ("หน่วยที่ 3", `unitNumberOf`).
+   */
   label: string;
   titleTh: string;
 }

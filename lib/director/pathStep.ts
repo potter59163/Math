@@ -1,8 +1,8 @@
 import { th } from '@/lib/content/th';
 import { fillTokens } from '@/lib/core/tokens';
 import type { Level } from '@/lib/core/types';
-import { misconceptionShortOf } from '@/lib/topics';
-import type { MisconceptionId } from '@/lib/topics/types';
+import { isKnownSkill, misconceptionShortOf, packOfSkill } from '@/lib/topics';
+import type { MisconceptionId, TopicId } from '@/lib/topics/types';
 import type { Candidate, PathKind, PathStep, Profile } from './types';
 
 /** One line at 360px (AI_DIRECTOR §3.2). */
@@ -39,6 +39,21 @@ export function stripNote(profile: OnScreen): string {
 /** The kind of step the strip's note is about, which the strip labels when it came from the pre-test. */
 export function stripKind(profile: OnScreen): PathKind | null {
   return stripStep(profile)?.kind ?? null;
+}
+
+/**
+ * The latest steps in one topic, newest first. The lessons page shows the path of the topic on screen, so
+ * a student on vectors never reads why คิว chose a matrix skill. A skill no longer registered is left out.
+ */
+export function latestStepsIn(
+  steps: readonly PathStep[],
+  topic: TopicId,
+  count: number,
+): PathStep[] {
+  return steps
+    .filter(({ skill }) => isKnownSkill(skill) && packOfSkill(skill).id === topic)
+    .slice(-count)
+    .reverse();
 }
 
 export function pathStepFor(

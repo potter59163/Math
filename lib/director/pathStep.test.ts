@@ -2,7 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { th } from '@/lib/content/th';
 import { generate } from '@/lib/topics/matrix/generators';
 import { CATALOG } from '@/lib/topics/matrix/misconceptions';
-import { MAX_NOTE_UNITS, noteFor, pathStepFor, stripKind, stripNote } from './pathStep';
+import {
+  latestStepsIn,
+  MAX_NOTE_UNITS,
+  noteFor,
+  pathStepFor,
+  stripKind,
+  stripNote,
+} from './pathStep';
 import type { PathKind, PathStep, PendingTurn } from './types';
 
 const KINDS = Object.keys(th.pathNotes) as PathKind[];
@@ -116,5 +123,38 @@ describe('pathStepFor', () => {
       level: 2,
       note: 'เพิ่มข้อนี้เพราะเมื่อกี้ลบสลับลำดับ',
     });
+  });
+});
+
+describe('latestStepsIn', () => {
+  const step = (skill: string, note: string): PathStep => ({
+    kind: KINDS[0],
+    skill,
+    level: 1,
+    note,
+  });
+  const steps = [
+    step('dim', 'a'),
+    step('v_quantity', 'b'),
+    step('index', 'c'),
+    step('v_points', 'd'),
+    step('a_skill_that_is_gone', 'e'),
+    step('v_linear', 'f'),
+    step('v_magnitude', 'g'),
+  ];
+
+  it('keeps the latest steps of the topic on screen, newest first', () => {
+    expect(latestStepsIn(steps, 'vector', 3).map(({ note }) => note)).toEqual(['g', 'f', 'd']);
+    expect(latestStepsIn(steps, 'matrix', 3).map(({ note }) => note)).toEqual(['c', 'a']);
+  });
+
+  it('shows nothing for a topic not begun, and skips a skill that no longer exists', () => {
+    expect(latestStepsIn(steps.slice(0, 1), 'vector', 3)).toEqual([]);
+    expect(latestStepsIn(steps, 'vector', 10).map(({ note }) => note)).toEqual([
+      'g',
+      'f',
+      'd',
+      'b',
+    ]);
   });
 });

@@ -8,7 +8,7 @@ import { fillTokens } from '@/lib/core/tokens';
 import type { NextTurn } from '@/lib/director/types';
 import type { AttemptOutcome } from '@/lib/learner/types';
 import { feedbackFor } from '@/lib/practice/feedback';
-import { DEFAULT_TOPIC, misconceptionShortOf, skillOf, unitOf } from '@/lib/topics';
+import { DEFAULT_TOPIC, misconceptionShortOf, skillOf, unitNumberOf } from '@/lib/topics';
 import type { TopicId } from '@/lib/topics/types';
 
 interface FeedbackCardProps {
@@ -130,7 +130,7 @@ export function FeedbackCard({
             ))}
           {unitPassed && (
             <Stamp label={th.session.stamps.unit}>
-              {fillTokens(th.session.unitPassed, { unit: unitOf(unitPassed).label })}
+              {fillTokens(th.session.unitPassed, { unit: String(unitNumberOf(unitPassed)) })}
             </Stamp>
           )}
           {allPassed && <p className="font-semibold">{th.session.allDone}</p>}

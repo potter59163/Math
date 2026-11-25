@@ -646,6 +646,8 @@ export const th = {
     // TODO(review)
     unitPassed: 'ผ่านหน่วยที่ {{n}}',
     // TODO(review)
+    unitPassedIn: 'ผ่าน{{topic}} หน่วยที่ {{n}}',
+    // TODO(review)
     fixed: 'ความเข้าใจผิดที่แก้ได้',
     // TODO(review)
     badges: 'เหรียญ',

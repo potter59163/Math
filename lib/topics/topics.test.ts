@@ -23,6 +23,7 @@ import {
   packOfSkill,
   packOfUnit,
   registeredTopics,
+  unitNumberOf,
   unitOf,
 } from '.';
 
@@ -48,6 +49,19 @@ describe('the topic registry', () => {
     expect(allMisconceptions().slice(0, CATALOG.length)).toEqual(CATALOG);
     expect(pack.units.map(({ id }) => id)).toEqual([...ALL_UNITS]);
     expect(unitOf(3)).toEqual({ id: 3, label: '3', titleTh: 'คูณ' });
+  });
+
+  it('numbers each unit within its own topic, the way its tab and the textbook count', () => {
+    expect(packOf('matrix').units.map(({ id }) => unitNumberOf(id))).toEqual([1, 2, 3, 4, 5]);
+    // Vector units are 11–15 inside, so they never clash with matrices, and a student reads 1–5.
+    expect(packOf('vector').units.map(({ id }) => [id, unitNumberOf(id)])).toEqual([
+      [11, 1],
+      [12, 2],
+      [13, 3],
+      [14, 4],
+      [15, 5],
+    ]);
+    expect(() => unitNumberOf(21)).toThrow(/unknown unit/);
   });
 
   it('keeps the matrix generator version at 2', () => {

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useSyncExternalStore } from 'react';
 import { LinkButton } from '@/components/ui/Button';
+import { KeepWords } from '@/components/ui/KeepWords';
 import { CONFIG } from '@/lib/config';
 import { th } from '@/lib/content/th';
 import { fillTokens } from '@/lib/core/tokens';
@@ -71,7 +72,9 @@ export function Landing() {
           <span className="block">{taglineLead}</span>
           <span className="block">{taglineRest}</span>
         </p>
-        <p className="mt-1 text-sm text-muted">{openingLine()}</p>
+        <p className="mt-1 text-sm text-muted">
+          <KeepWords text={openingLine()} />
+        </p>
       </header>
 
       <NotebookDemo className="my-10 md:col-start-2 md:row-span-3 md:row-start-1 md:my-0" />

@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Mascot } from '@/components/app/Mascot';
 import { recommendationCopy } from '@/components/app/recommendationText';
+import { unitPassedName } from '@/components/app/unitText';
 import { useRequiredProfile } from '@/components/app/useLearner';
 import { LinkButton } from '@/components/ui/Button';
 import { BoltIcon, CheckIcon, FlameIcon } from '@/components/ui/Icons';
@@ -10,13 +11,12 @@ import { Filled, KeepWords } from '@/components/ui/KeepWords';
 import { sfx } from '@/lib/client/sfx';
 import { CONFIG } from '@/lib/config';
 import { th } from '@/lib/content/th';
-import { fillTokens } from '@/lib/core/tokens';
 import { dayOf, streakOf } from '@/lib/learner/activity';
 import { isOpen } from '@/lib/learner/misconceptionStatus';
 import { mapOf } from '@/lib/learner/progress';
 import { recommendationFor } from '@/lib/learner/recommend';
 import { badgesOf, type Badge } from '@/lib/practice/rewards';
-import { allMisconceptions, misconceptionShortOf, skillOf, unitOf } from '@/lib/topics';
+import { allMisconceptions, misconceptionShortOf, skillOf } from '@/lib/topics';
 import { LoadingScreen } from './LoadingScreen';
 
 function Stat({ icon, label, value }: { icon?: ReactNode; label: string; value: string }) {
@@ -32,9 +32,7 @@ function Stat({ icon, label, value }: { icon?: ReactNode; label: string; value: 
 }
 
 function badgeLabel(badge: Badge): string {
-  return badge.kind === 'fixed'
-    ? th.summary.badgeFixed
-    : fillTokens(th.summary.unitPassed, { n: unitOf(badge.unit).label });
+  return badge.kind === 'fixed' ? th.summary.badgeFixed : unitPassedName(badge.unit);
 }
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -123,7 +121,7 @@ export function SummaryScreen() {
           <ul className="flex flex-wrap gap-2">
             {badges.map((badge) => (
               <li
-                key={badgeLabel(badge)}
+                key={badge.kind === 'unit' ? badge.unit : badge.kind}
                 className="flex items-center gap-1 rounded-full bg-good-soft px-3 py-1 text-sm font-semibold text-good"
               >
                 <CheckIcon className="size-4 shrink-0" />

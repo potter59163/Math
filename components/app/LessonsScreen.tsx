@@ -17,6 +17,7 @@ import {
 import { CONFIG } from '@/lib/config';
 import { th } from '@/lib/content/th';
 import { fillTokens } from '@/lib/core/tokens';
+import { latestStepsIn } from '@/lib/director/pathStep';
 import type { PathStep, Profile } from '@/lib/director/types';
 import { itemsOn, streakOf } from '@/lib/learner/activity';
 import { hasPretestMarks, isQuickCheck, pretestCheckOf } from '@/lib/learner/pretest';
@@ -43,6 +44,7 @@ import type { MisconceptionId, SkillId, TopicId } from '@/lib/topics/types';
 import { Filled, KeepWords } from '@/components/ui/KeepWords';
 import { Mascot } from './Mascot';
 import { recommendationCopy } from './recommendationText';
+import { unitName } from './unitText';
 import { learner, useLearner, useRequiredProfile } from './useLearner';
 
 function Chips({ profile, now }: { profile: Profile; now: number }) {
@@ -148,16 +150,16 @@ function ForYou({
 /** How many of the latest steps the lessons page shows, above the map (SPEC §4 allows up to five). */
 const PATH_SHOWN = Math.min(3, CONFIG.pathStepsOnMap);
 
-/** The latest steps คิว chose, newest first, each with its reason (SPEC §4). */
-function MyPath({ steps }: { steps: readonly PathStep[] }) {
-  const recent = steps.slice(-PATH_SHOWN).reverse();
+/** The latest steps คิว chose in the topic on screen, newest first, each with its reason (SPEC §4). */
+function MyPath({ steps, topic }: { steps: readonly PathStep[]; topic: TopicId }) {
+  const recent = latestStepsIn(steps, topic, PATH_SHOWN);
   if (recent.length === 0) return null;
   return (
     <section className="flex flex-col gap-2">
       <h2 className="font-sans text-sm font-semibold text-muted">{th.learn.myPath}</h2>
       <ol className="flex flex-col gap-2 border-l-2 border-margin pl-3">
         {recent.map(({ note, skill }, index) => (
-          <li key={steps.length - index} className={index === 0 ? '' : 'text-muted'}>
+          <li key={index} className={index === 0 ? '' : 'text-muted'}>
             <p className="font-hand text-sm leading-relaxed">{note}</p>
             <p className="text-xs text-muted">{skillOf(skill).nameTh}</p>
           </li>
@@ -283,9 +285,7 @@ function UnitPath({
   return (
     <section className="flex flex-col gap-5">
       <h2 className="flex items-baseline gap-2">
-        <span className="shrink-0 font-sans text-sm text-muted">
-          {fillTokens(th.learn.unit, { n: unitOf(unit).label })}
-        </span>
+        <span className="shrink-0 font-sans text-sm text-muted">{unitName(unit)}</span>
         <span className="marker min-w-0 text-xl">{unitOf(unit).titleTh}</span>
         <span className="ml-auto shrink-0 font-matrix text-sm text-muted tabular-nums">
           {done}/{skills.length}
@@ -422,7 +422,7 @@ function SkillSheet({
     >
       <div className="flex flex-col gap-3 p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] motion-safe:animate-rise">
         <p className="text-sm text-muted">
-          {fillTokens(th.learn.unit, { n: unitOf(unit).label })} · {unitOf(unit).titleTh}
+          {unitName(unit)} · {unitOf(unit).titleTh}
         </p>
         <h2 className="text-2xl">{nameTh}</h2>
         <SheetStatus profile={profile} id={id} status={status} />
@@ -527,7 +527,7 @@ export function LessonsScreen() {
             </p>
           )}
           <ForYou profile={profile} now={now} topic={shown.id} showReport={showReport} />
-          <MyPath steps={profile.path} />
+          <MyPath steps={profile.path} topic={shown.id} />
           {mode === 'guest' && (
             <Link
               href="/settings"

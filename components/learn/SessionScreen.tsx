@@ -51,7 +51,7 @@ import {
 } from '@/lib/practice/draft';
 import { hintAt, type Hint } from '@/lib/practice/hints';
 import { actionFromKey } from '@/lib/practice/keyboard';
-import { activeTopicOf, packOf, skillOf, unitOf } from '@/lib/topics';
+import { activeTopicOf, packOf, skillOf, unitNumberOf, unitOf } from '@/lib/topics';
 import { simplifiedForm } from '@/lib/topics/vector/display';
 import type { SceneSpec, SkillId } from '@/lib/topics/types';
 import { FeedbackCard } from './FeedbackCard';
@@ -84,8 +84,10 @@ function skillOfScene(request: SceneRequest, fallback: SkillId): SkillId {
 function sceneTitle(spec: SceneSpec, skill: SkillId): string {
   const { nameTh, unit } = skillOf(skill);
   if (spec.purpose === 'intro') {
-    const { label, titleTh } = unitOf(unit);
-    return fillTokens(th.scenes.player.unitTitle, { n: label, name: titleTh });
+    return fillTokens(th.scenes.player.unitTitle, {
+      n: String(unitNumberOf(unit)),
+      name: unitOf(unit).titleTh,
+    });
   }
   return spec.purpose === 'reveal' ? th.session.workedTitle : nameTh;
 }
