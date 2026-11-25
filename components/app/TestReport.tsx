@@ -61,13 +61,7 @@ function Group({
   );
 }
 
-function SkillChips({
-  skills,
-  tone,
-}: {
-  skills: PretestSummary['known'];
-  tone: 'good' | 'plain';
-}) {
+function SkillChips({ skills, tone }: { skills: PretestSummary['known']; tone: 'good' | 'plain' }) {
   return (
     <ul className="flex flex-wrap gap-1.5">
       {skills.map(({ skill, passed }) => (
@@ -219,7 +213,12 @@ interface PosttestReportProps {
   topic: TopicId;
 }
 
-function Column({ label, score, total, strong }: AssessmentScore & { label: string; strong?: boolean }) {
+function Column({
+  label,
+  score,
+  total,
+  strong,
+}: AssessmentScore & { label: string; strong?: boolean }) {
   return (
     <div className="flex flex-col items-center gap-1">
       <span className="text-sm text-muted">{label}</span>

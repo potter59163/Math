@@ -124,7 +124,10 @@ describe('what the pre-test changed (SPEC §4, §7.1)', () => {
     if (!m05) throw new Error('applyPretest did not catch M05');
     const fixed: LearnerProfile = {
       ...profile,
-      misconceptions: { ...profile.misconceptions, M05_SUB_REVERSED: { ...m05, status: 'resolved' } },
+      misconceptions: {
+        ...profile.misconceptions,
+        M05_SUB_REVERSED: { ...m05, status: 'resolved' },
+      },
     };
     expect(pretestSummaryOf(fixed, 'matrix').caught[0]).toEqual({
       misconception: 'M05_SUB_REVERSED',

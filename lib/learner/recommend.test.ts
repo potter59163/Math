@@ -33,7 +33,8 @@ describe('recommendationFor (SPEC §4)', () => {
 
   it('names the next skill once one has passed', () => {
     let profile = fresh();
-    for (let n = 0; n < 6 && !profile.skills.dim?.passed; n += 1) profile = answerDim(profile, true);
+    for (let n = 0; n < 6 && !profile.skills.dim?.passed; n += 1)
+      profile = answerDim(profile, true);
     expect(profile.skills.dim?.passed).toBe(true);
     expect(recommendationFor(profile)).toEqual({ kind: 'next', skill: 'index' });
   });
@@ -108,7 +109,11 @@ describe('after the pre-test (SPEC §4, §7.1)', () => {
 
   it('calls the next known skill a quick check, and a flagged one a check', () => {
     const known = answerDim(
-      applyPretest(fresh(), { dim: { outcome: 'correct' }, index: { outcome: 'correct' } }, { at: 0 }),
+      applyPretest(
+        fresh(),
+        { dim: { outcome: 'correct' }, index: { outcome: 'correct' } },
+        { at: 0 },
+      ),
       true,
     );
     expect(known.skills.dim?.passed).toBe(true);

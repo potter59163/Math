@@ -36,7 +36,8 @@ export function recommendationCopy(recommendation: Recommendation): Copy {
           values: { skill, m: misconceptionShortOf(recommendation.misconception) },
         };
       }
-      if (recommendation.start === 'quick') return { template: copy.pretestQuick, values: { skill, n } };
+      if (recommendation.start === 'quick')
+        return { template: copy.pretestQuick, values: { skill, n } };
       return recommendation.known > 0
         ? { template: copy.pretestLearn, values: { skill, n } }
         : { template: copy.pretestLearnNone, values: { skill } };

@@ -56,9 +56,7 @@ export function rankEntries(
     entries: entries.slice(0, SHOWN_ON_BOARD),
     // Below the top: this student with the place just above and just below, none of it repeated.
     around:
-      mine >= SHOWN_ON_BOARD
-        ? entries.slice(Math.max(SHOWN_ON_BOARD, mine - 1), mine + 2)
-        : [],
+      mine >= SHOWN_ON_BOARD ? entries.slice(Math.max(SHOWN_ON_BOARD, mine - 1), mine + 2) : [],
     me: mine >= 0 ? entries[mine] : null,
     hidden,
   };

@@ -455,7 +455,11 @@ function SkillSheet({
  */
 function TopicTabs({ topics, shown }: { topics: readonly TopicId[]; shown: TopicId }) {
   return (
-    <div role="tablist" aria-label={th.learn.topicTabs} className="flex gap-1 rounded-xl bg-sunken p-1">
+    <div
+      role="tablist"
+      aria-label={th.learn.topicTabs}
+      className="flex gap-1 rounded-xl bg-sunken p-1"
+    >
       {topics.map((topic) => {
         const selected = topic === shown;
         return (
