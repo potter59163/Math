@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { Affixed } from '@/components/input/Affixed';
 import { AnswerBox, type ClosedTone } from '@/components/input/AnswerBox';
@@ -11,6 +10,7 @@ import { MatrixInput } from '@/components/input/MatrixInput';
 import { VectorInput } from '@/components/input/VectorInput';
 import { componentsOf } from '@/components/topics';
 import { Button } from '@/components/ui/Button';
+import { ExitLink } from '@/components/ui/ExitLink';
 import { BulbIcon, CheckIcon } from '@/components/ui/Icons';
 import { learner, useLearner, useRequiredProfile } from '@/components/app/useLearner';
 import { LazyScene, preloadScenes } from '@/components/scenes/LazyScene';
@@ -23,7 +23,7 @@ import { restoreAnswer, storeAnswer } from '@/lib/core/answerJson';
 import { fillTokens } from '@/lib/core/tokens';
 import type { Answer, Item } from '@/lib/core/types';
 import { rebuildItem } from '@/lib/director/items';
-import { stripNote } from '@/lib/director/pathStep';
+import { stripKind, stripNote } from '@/lib/director/pathStep';
 import { openInOtherTopic } from '@/lib/director/rules';
 import { sceneOfChosen, sceneOrNull, workedRequest } from '@/lib/director/scene';
 import type {
@@ -52,7 +52,7 @@ import {
 } from '@/lib/practice/draft';
 import { hintAt, type Hint } from '@/lib/practice/hints';
 import { actionFromKey } from '@/lib/practice/keyboard';
-import { activeTopicOf, packOf, skillOf, unitOf } from '@/lib/topics';
+import { activeTopicOf, packOf, skillOf, unitNumberOf, unitOf } from '@/lib/topics';
 import { simplifiedForm } from '@/lib/topics/vector/display';
 import type { SceneSpec, SkillId } from '@/lib/topics/types';
 import { FeedbackCard } from './FeedbackCard';
@@ -85,8 +85,10 @@ function skillOfScene(request: SceneRequest, fallback: SkillId): SkillId {
 function sceneTitle(spec: SceneSpec, skill: SkillId): string {
   const { nameTh, unit } = skillOf(skill);
   if (spec.purpose === 'intro') {
-    const { label, titleTh } = unitOf(unit);
-    return fillTokens(th.scenes.player.unitTitle, { n: label, name: titleTh });
+    return fillTokens(th.scenes.player.unitTitle, {
+      n: String(unitNumberOf(unit)),
+      name: unitOf(unit).titleTh,
+    });
   }
   return spec.purpose === 'reveal' ? th.session.workedTitle : nameTh;
 }
@@ -319,7 +321,15 @@ function ItemScreen({
   }, [hintLevel]);
 
   const skill = skillOf(item.ref.skill);
-  const answered = closed ? answeredLine(item, draft) : '';
+  const answered = closed ? answeredText(item, draft) : '';
+  const answerTone: ClosedTone | undefined = closed ? toneOf(closed.outcome) : undefined;
+  // The pre-test got this skill right and every answer since was too, so one sufficed (SPEC §7.1).
+  const passedState = closed?.outcome.skillPassed
+    ? profile.skills[closed.outcome.skillPassed]
+    : undefined;
+  const fastPass =
+    passedState?.pretestCorrect === true &&
+    passedState.attempts.every(({ countsCorrect }) => countsCorrect);
   // A right √8 is shown as 2√2 too (docs/VECTORS.md §3.3). Only what was typed here can tell.
   const simplified =
     closed?.outcome.classification.type === 'correct' && takesRoot(item)
@@ -371,13 +381,8 @@ function ItemScreen({
   return (
     <div className="flex h-dvh flex-col">
       <header className="shrink-0 border-b border-line bg-surface">
-        <div className="mx-auto flex h-12 w-full max-w-lg items-center gap-1 pr-3 pl-1">
-          <Link
-            href="/summary"
-            className="flex min-h-11 shrink-0 items-center rounded-lg px-2 text-sm font-medium text-muted"
-          >
-            {th.session.stop}
-          </Link>
+        <div className="mx-auto flex h-12 w-full max-w-lg items-center gap-1 pr-3 pl-1 lg:max-w-5xl">
+          <ExitLink href="/summary" label={th.session.stop} />
           <div className="flex min-w-0 flex-1 flex-col items-center">
             <p className="max-w-full truncate text-sm font-semibold">{skill.nameTh}</p>
             <LevelDots level={item.ref.difficulty} max={skill.maxLevel} />
@@ -386,17 +391,19 @@ function ItemScreen({
         </div>
       </header>
 
-      <div className="flex min-h-0 flex-1 flex-col short-landscape:flex-row">
+      {/* On a wide screen the item and the answer panel sit side by side, as on a phone held sideways. */}
+      <div className="flex min-h-0 flex-1 flex-col short-landscape:flex-row lg:mx-auto lg:w-full lg:max-w-5xl lg:flex-row lg:gap-8 lg:px-6">
         {/* In landscape the strip takes this column only: the answer slot needs its full height. */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-          <PathStrip note={stripNote(profile)} />
+          <PathStrip note={stripNote(profile)} kind={stripKind(profile)} />
           {/* Focusable, so a keyboard can scroll it once the answer boxes are closed and take no focus. */}
           <main
             ref={scroller}
             tabIndex={0}
-            className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-2 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand"
+            className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-2 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand lg:flex lg:flex-col"
           >
-            <div className="mx-auto flex max-w-lg flex-col gap-3">
+            {/* Each new item rises in, so a probe with the same question still reads as a new one. */}
+            <div className="mx-auto flex w-full max-w-lg flex-col gap-3 motion-safe:animate-rise lg:my-auto lg:max-w-xl">
               <ItemPrompt item={item} />
               {!isChoice && (
                 <div className="flex justify-center">
@@ -413,13 +420,31 @@ function ItemScreen({
                   <HintBubble key={hint.level} hint={hint} />
                 </div>
               )}
-              {/* Last in the flow, so appearing on send cannot move anything above it. */}
-              {answered && <p className="text-center text-sm text-muted">{answered}</p>}
+              {/*
+               * Last in the flow, so appearing on send cannot move anything above it. Its room is held
+               * on choice items from the start, so a centred item on a wide screen does not shift either.
+               */}
+              {(isChoice || answered) && (
+                <p
+                  aria-hidden={answered ? undefined : true}
+                  className={`flex items-center justify-center gap-2 text-sm text-muted ${answered ? '' : 'invisible'}`}
+                >
+                  {th.session.yourAnswerLabel}
+                  <AnswerBox
+                    text={answered || '·'}
+                    label={th.session.yourAnswerLabel}
+                    active={false}
+                    closedTone={answerTone ?? 'neutral'}
+                    sizeClass="h-12 min-w-24 px-3"
+                    onSelect={() => {}}
+                  />
+                </p>
+              )}
             </div>
           </main>
         </div>
 
-        <div className="relative shrink-0 border-t border-line bg-sunken pb-[env(safe-area-inset-bottom)] short-landscape:w-[22rem] short-landscape:border-t-0 short-landscape:border-l">
+        <div className="relative shrink-0 border-t border-line bg-sunken pb-[env(safe-area-inset-bottom)] short-landscape:w-[22rem] short-landscape:border-t-0 short-landscape:border-l lg:my-auto lg:w-[24rem] lg:rounded-2xl lg:border lg:pb-0">
           {/* Floats over the item: always in view on a short screen, and takes up no space. */}
           <div
             role="status"
@@ -437,6 +462,7 @@ function ItemScreen({
                 outcome={closed.outcome}
                 topic={packOf(item.ref.topic).id}
                 turn={closed.turn}
+                fastPass={fastPass}
                 note={
                   simplified
                     ? fillTokens(th.vector.feedback.simplified, { value: simplified })
@@ -566,13 +592,18 @@ interface AnswerBoxesProps {
   onSelect(box: number): void;
 }
 
+/**
+ * How a closed answer is marked: green when right, the red pen under it when wrong. A slip keeps the
+ * other cells plain, since only its one wrong cell is marked (SPEC §9). Nothing shows the right value.
+ */
+function toneOf({ classification }: AttemptOutcome): ClosedTone {
+  if (classification.type === 'correct') return 'correct';
+  return classification.type === 'slip' ? 'neutral' : 'wrong';
+}
+
 function AnswerBoxes({ item, draft, outcome, onSelect }: AnswerBoxesProps) {
   const classification = outcome?.classification;
-  const closedTone: ClosedTone | undefined = classification
-    ? classification.type === 'correct'
-      ? 'correct'
-      : 'neutral'
-    : undefined;
+  const closedTone: ClosedTone | undefined = outcome ? toneOf(outcome) : undefined;
 
   if (item.kind === 'matrix' || item.kind === 'matrix_or_undefined') {
     return (
@@ -617,10 +648,10 @@ function issueText(issue: NotReadyReason, isChoice: boolean): string {
 }
 
 /** Repeats an answer the closed screen no longer shows: a choice, or the undefined button. */
-function answeredLine(item: Item, draft: Draft): string {
+function answeredText(item: Item, draft: Draft): string {
   const option = item.options?.find(({ id }) => id === draft.choice);
   const answer = draft.isUndefined
     ? th.session.undefined
     : option && packOf(item.ref.topic).copy.choiceLabel(option.labelKey);
-  return answer ? fillTokens(th.session.yourAnswer, { answer }) : '';
+  return answer ?? '';
 }

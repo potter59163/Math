@@ -138,8 +138,13 @@ export interface AppStore extends SyncStore {
   assessmentScores(userId: string): Promise<AssessmentStatus>;
   /** False when this student has already taken this test. */
   saveAssessment(userId: string, assessment: NewAssessment): Promise<boolean>;
-  /** Whoever chose to be on the board and earned XP since `weekStart`, highest first. */
-  weeklyLeaderboard(weekStart: string, maxRows: number): Promise<BoardRow[]>;
+  /**
+   * Whoever chose to be on the board and earned XP since `weekStart`, highest first: everyone, or only
+   * those who came in through the same class link.
+   */
+  weeklyLeaderboard(weekStart: string, maxRows: number, cohort?: string): Promise<BoardRow[]>;
+  /** The class link this student came in through, which is compared on the server and never sent. */
+  cohortOf(userId: string): Promise<string | null>;
 }
 
 interface ProfileDoc {
@@ -384,7 +389,12 @@ export function createStore(db: Db): AppStore {
       return true;
     },
 
-    weeklyLeaderboard(weekStart, maxRows) {
+    async cohortOf(userId) {
+      const row = await profiles.findOne({ _id: userId }, { projection: { cohort: 1 } });
+      return row?.cohort ?? null;
+    },
+
+    weeklyLeaderboard(weekStart, maxRows, cohort) {
       return attempts
         .aggregate<BoardRow>([
           { $match: { created_at: { $gte: new Date(weekStart) } } },
@@ -392,7 +402,12 @@ export function createStore(db: Db): AppStore {
           { $match: { xp: { $gt: 0 } } },
           { $lookup: { from: 'profiles', localField: '_id', foreignField: '_id', as: 'owner' } },
           { $unwind: '$owner' },
-          { $match: { 'owner.show_on_leaderboard': true } },
+          {
+            $match: {
+              'owner.show_on_leaderboard': true,
+              ...(cohort !== undefined && { 'owner.cohort': cohort }),
+            },
+          },
           { $sort: { xp: -1, _id: 1 } },
           { $limit: maxRows },
           {

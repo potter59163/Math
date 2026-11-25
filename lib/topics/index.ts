@@ -116,11 +116,19 @@ export function allMisconceptions(): TopicMisconception[] {
   return PACKS.flatMap(({ catalog }) => catalog);
 }
 
-/** "หน่วยที่ {{n}}" of any registered unit. */
+/** Any registered unit: its short code in the docs (`3`, `V3`) and its Thai title. */
 export function unitOf(unit: UnitId): { label: string; titleTh: string } {
   const found = packOfUnit(unit).units.find(({ id }) => id === unit);
   if (!found) throw new Error(`unitOf: unknown unit ${unit}`);
   return found;
+}
+
+/**
+ * The n of "หน่วยที่ {{n}}": a unit's place in its own topic, the way the topic's tab and the textbook
+ * count it. Vector units are 11–15 inside and read 1–5. Throws on an unknown unit.
+ */
+export function unitNumberOf(unit: UnitId): number {
+  return packOfUnit(unit).units.findIndex(({ id }) => id === unit) + 1;
 }
 
 export const misconceptionShortOf = (id: MisconceptionId): string =>

@@ -260,9 +260,10 @@ export function SettingsScreen() {
           </Button>
         )}
         {mode === 'guest' && (
+          // It erases this device's progress, so it wears the red pen like deleting an account does.
           <Button
             variant="secondary"
-            className="w-full"
+            className="w-full text-warn"
             onClick={() => {
               if (window.confirm(th.settings.resetGuestConfirm)) {
                 learner.forgetDevice();

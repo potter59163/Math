@@ -372,7 +372,13 @@ export function ClipPlayer<Beat extends string>({
                   )}
                 </Button>
               )}
-              <Button variant="quiet" size="md" className="shrink-0 text-sm" onClick={skip}>
+              {/* A real button, not grey text on the board: skipping a clip must be easy to find. */}
+              <Button
+                variant="secondary"
+                size="compact"
+                className="shrink-0 text-sm"
+                onClick={skip}
+              >
                 {th.clip.skip}
               </Button>
             </header>

@@ -80,10 +80,19 @@ export interface LeaderboardEntry {
   isMe: boolean;
 }
 
+/** A board of the student's own class (their `?cohort=` link), or of everyone. */
+export type BoardScope = 'class' | 'all';
+
 export interface LeaderboardResponse {
   weekStart: string;
+  scope: BoardScope;
+  /** The student came in through a class link, so a class board exists. Its label never leaves the server. */
+  hasClass: boolean;
+  /** The top of the board. */
   entries: LeaderboardEntry[];
-  /** This student's own place when it is below the list, or null if they have no XP this week. */
+  /** This student's place and the ones just above and below it, when it is below the top. */
+  around: LeaderboardEntry[];
+  /** This student's own place, or null if they have no XP this week. */
   me: LeaderboardEntry | null;
   hidden: boolean;
 }

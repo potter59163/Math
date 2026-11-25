@@ -10,8 +10,11 @@ export const th = {
     tagline: 'คณิต ม.ปลาย ที่คิดมาเพื่อคุณคนเดียว',
     demoLabel: `ตัวอย่าง: สมุดที่${CONFIG.tutorName}ตรวจแล้ว ข้อที่ผิดคือแยก log ของผลบวก`,
     demoNote: ['log แยกผลบวกไม่ได้นะ', 'แยกได้เฉพาะผลคูณ'],
-    // The first page speaks for all of it, and this keeps it honest about what is open today.
-    opening: 'เปิดเรื่องแรกแล้ว เรื่องอื่นกำลังตามมา',
+    // The first page speaks for all of it, and this keeps it honest about what is open today: the
+    // topics switched on, so it stays true whether vectors are on or off. TODO(review)
+    opening: 'ตอนนี้เรียน{{topics}}ได้แล้ว เรื่องอื่นกำลังตามมา',
+    // Joins the last two topic names: "เมทริกซ์และเวกเตอร์". TODO(review)
+    topicJoin: 'และ',
     signIn: 'เข้าสู่ระบบด้วย Google',
     signingIn: 'กำลังพาไปหน้า Google…',
     tryFirst: 'ลองเรียนก่อน',
@@ -59,6 +62,8 @@ export const th = {
     nameTooLong: 'ยาวไปหน่อย ขอไม่เกิน {{max}} ตัวอักษร',
     avatarTitle: 'เลือกสัญลักษณ์ของคุณ',
     themeTitle: 'ยกตัวอย่างเรื่องอะไรดี',
+    // TODO(review) says why the theme is asked: the opening clips tell their story with it.
+    themeHelp: 'คลิปเปิดแต่ละหน่วยจะเล่าโจทย์ด้วยเรื่องนี้ เปลี่ยนได้ในตั้งค่า',
     consentTitle: 'ก่อนเริ่มเรียน',
     consentIntro: 'แอปนี้เป็นส่วนหนึ่งของโครงงานนวัตกรรมของนักเรียน',
     consentItems: [
@@ -71,9 +76,13 @@ export const th = {
     ],
     consentAgree: 'อ่านแล้วและยินยอม',
     start: 'เริ่มเรียน',
+    // TODO(review) the consent step's button: the pre-test offer comes next, not a lesson.
+    consentNext: 'ยินยอมและไปต่อ',
     failed: 'บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง',
     pretestTitle: `ให้${CONFIG.tutorName}รู้จักคุณก่อนไหม`,
-    pretestBody: 'แบบทดสอบ 14 ข้อ ราว 20 นาที เรื่องที่ทำได้แล้วจะได้ข้ามไปเลย',
+    // TODO(review) says what really happens: a known skill skips its clip and needs one right answer
+    // (SPEC §7.1), rather than being skipped outright.
+    pretestBody: `แบบทดสอบเรื่องเมทริกซ์ 14 ข้อ ราว 20 นาที เรื่องที่ทำได้แล้ว${CONFIG.tutorName}จะข้ามคลิปและเช็กแค่ข้อเดียว`,
     pretestYes: 'ทำแบบทดสอบ',
     pretestNo: 'ข้ามไปเรียนเลย',
   },
@@ -119,7 +128,9 @@ export const th = {
   learn: {
     title: 'บทเรียน',
     topic: 'เมทริกซ์',
-    topicNote: 'เรื่องแรกของคณิต ม.ปลาย',
+    // TODO(review) no longer "the first topic", now that vectors are on. The grade is left out until a
+    // teacher confirms which grade learns matrices (SPEC §2).
+    topicNote: 'คณิตศาสตร์เพิ่มเติม',
     unit: 'หน่วยที่ {{n}}',
     status: {
       passed: 'ผ่านแล้ว',
@@ -129,12 +140,21 @@ export const th = {
     },
     recommend: {
       start: 'เริ่มที่{{skill}}ก่อนเลย',
-      fix: 'เรื่อง "{{m}}" ยังค้างอยู่ เคลียร์ให้จบเลย',
+      // TODO(review) without the quotes, which read oddly around a short name.
+      fix: 'ยังมีจุดที่{{m}} ค้างอยู่ เคลียร์ให้จบเลย',
       stuck: 'เรื่อง{{skill}} ยากจริง ค่อยๆ ดูทีละขั้น',
       review: 'ไม่ได้ทำเรื่อง{{skill}} มาสักพัก ลองอีกรอบ',
       next: 'เรื่องต่อไป: {{skill}}',
       carryOn: 'ทำเรื่อง{{skill}} ต่อจากเมื่อกี้',
       done: 'ผ่านครบทุกเรื่องแล้ว ทบทวนให้แม่นขึ้นได้เลย',
+      // TODO(review) the first visit after the pre-test says what it changed (SPEC §4).
+      pretestQuick: 'จากแบบทดสอบ คุณทำได้แล้ว {{n}} เรื่อง เริ่มเช็กเร็วที่{{skill}}',
+      pretestCheck: `ตอนแบบทดสอบ{{m}} เริ่มที่{{skill}} ${CONFIG.tutorName}ขอเช็กจุดนี้ก่อน`,
+      pretestLearn: 'จากแบบทดสอบ คุณทำได้แล้ว {{n}} เรื่อง เรื่องแรกที่ต้องเรียนคือ{{skill}}',
+      pretestLearnNone: 'จากแบบทดสอบ เริ่มที่{{skill}} มีคลิปสั้นก่อนลงมือ',
+      // TODO(review) the next skill, when the pre-test already said something about it.
+      nextQuick: 'เรื่องต่อไป: {{skill}} ทำได้แล้วจากแบบทดสอบ เช็กข้อเดียวพอ',
+      nextCheck: 'เรื่องต่อไป: {{skill}} ขอเช็กจุดที่{{m}} ก่อน',
     },
     start: 'เริ่มเรียน',
     continue: 'เรียนต่อ',
@@ -143,7 +163,16 @@ export const th = {
     dailyCount: '{{n}}/{{goal}} ข้อ',
     dailyDone: 'ครบแล้ว',
     streak: '{{n}} วันติด',
-    mastery: 'แม่น {{p}}%',
+    // TODO(review) P(L) is the tutor's estimate that the skill is known, not a score, so it says so.
+    mastery: `${CONFIG.tutorName}ประเมินว่าเข้าใจ {{p}}%`,
+    // TODO(review) the sheet of a skill: what the pre-test said about it, or that it has not begun.
+    sheetQuick: 'ทำได้แล้วจากแบบทดสอบ ตอบถูกข้อเดียวก็ผ่าน',
+    sheetCheck: 'ตอนแบบทดสอบ{{m}} ข้อแรกของเรื่องนี้จะเช็กจุดนี้',
+    sheetNotStarted: 'ยังไม่ได้เริ่ม',
+    // TODO(review) the marks under a skill on the map, and the way back to the pre-test result.
+    markQuick: 'เช็กเร็ว',
+    markCheck: 'เช็กก่อน',
+    pretestLink: 'ดูผลแบบทดสอบก่อนเรียน',
     sheetStart: 'เรียนเรื่องนี้',
     sheetContinue: 'เรียนต่อ',
     sheetAgain: 'ฝึกอีกรอบ',
@@ -167,6 +196,21 @@ export const th = {
     guest: 'ล็อกอินเพื่อแข่งกับเพื่อนในตารางอันดับ',
     failed: 'โหลดตารางไม่สำเร็จ',
     notYet: 'ทำสักข้อเพื่อขึ้นตาราง',
+    // TODO(review) the board as Potter chose it: a board per class, a podium, your own place on top.
+    scopes: { class: 'ห้องของฉัน', all: 'ทุกคน' },
+    scopeLabel: 'เลือกกระดาน',
+    resetsIn: 'เริ่มใหม่ในอีก {{n}} วัน',
+    resetsInHours: 'เริ่มใหม่ในอีก {{n}} ชั่วโมง',
+    resetsSoon: 'ใกล้เริ่มใหม่แล้ว',
+    myRank: 'อันดับของคุณ',
+    behind: 'ห่างอันดับ {{rank}} อีก {{xp}} XP',
+    leading: 'นำอยู่อันดับ 1',
+    movedUp: 'ขึ้นมา {{n}} อันดับจากครั้งก่อน',
+    movedDown: 'ลงไป {{n}} อันดับจากครั้งก่อน',
+    weekXp: 'XP สัปดาห์นี้',
+    howTo: `XP ได้จากข้อที่ตอบถูก และ +${CONFIG.xp.misconceptionResolved} เมื่อแก้จุดที่พลาดได้`,
+    top: 'สามอันดับแรก',
+    around: 'รอบตัวคุณ',
   },
 
   // TODO(review): everything in this block.
@@ -182,10 +226,17 @@ export const th = {
     week: '7 วันที่ผ่านมา',
     weekLabel: '{{day}}: {{n}} ข้อ',
     days: ['จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส', 'อา'],
-    mastery: 'ความแม่นแต่ละเรื่อง',
+    // Each skill's state in words, and คิว's estimate as a bar once it has begun (not a score).
+    mastery: 'แต่ละเรื่อง',
+    skillPassed: 'ผ่านแล้ว',
+    skillQuick: 'ทำได้จากแบบทดสอบ',
+    skillNew: 'ยังไม่เริ่ม',
     badges: 'เหรียญ',
-    fixed: 'ความเข้าใจผิดที่แก้ได้',
+    fixed: 'ความเข้าใจผิด',
+    fixedDone: 'แก้ได้แล้ว',
     open: 'กำลังแก้',
+    waiting: 'รอเช็กตอนถึงเรื่องนั้น',
+    seeResult: 'ดูผล',
     tests: 'แบบทดสอบ',
     pre: 'ก่อนเรียน',
     post: 'หลังเรียน',
@@ -324,6 +375,13 @@ export const th = {
       post: 'ทำได้ครั้งเดียว ถ้าครูนัดเวลาไว้ให้รอทำตอนนั้น ไม่มีใบ้และไม่บอกผลระหว่างทำ',
     },
     begin: 'เริ่มทำ',
+    // TODO(review) the intro says which topic, how long, and that an item can be skipped.
+    topic: 'เรื่อง{{topic}}',
+    meta: '{{n}} ข้อ ราว {{minutes}} นาที ข้อไหนไม่แน่ใจข้ามได้',
+    // TODO(review) a test left half-way, after a reload or a locked screen, carries on where it was.
+    resume: 'ทำต่อจากข้อ {{n}}',
+    // TODO(review) the way out of a test, which keeps the answers given so far.
+    exit: 'ออก',
     progress: 'ข้อ {{n}} จาก {{total}}',
     next: 'ข้อถัดไป',
     skip: 'ข้ามข้อนี้',
@@ -375,6 +433,8 @@ export const th = {
     // TODO(review)
     yourAnswer: 'คำตอบของคุณ: {{answer}}',
     // TODO(review)
+    yourAnswerLabel: 'คำตอบของคุณ',
+    // TODO(review)
     skillPassed: 'ผ่านเรื่อง {{skill}} แล้ว',
     // TODO(review)
     unitPassed: 'ผ่านหน่วยที่ {{unit}} แล้ว',
@@ -382,6 +442,26 @@ export const th = {
     allDone: 'ผ่านครบทุกเรื่องที่เปิดแล้ว ฝึกทบทวนต่อได้เลย',
     // TODO(review)
     misconceptionFixed: 'แก้ความเข้าใจผิดเรื่อง "{{m}}" ได้แล้ว {{xp}}',
+    // The stamps on the feedback card when a skill passes, a mistake is fixed or a unit is done.
+    stamps: {
+      // TODO(review)
+      passed: 'ผ่านแล้ว!',
+      // TODO(review)
+      fastPass: 'ผ่านเร็ว!',
+      // TODO(review)
+      fastPassNote: '{{skill}} ทำได้ตั้งแต่แบบทดสอบ',
+      // TODO(review)
+      fixed: 'แก้ได้แล้ว!',
+      // TODO(review)
+      unit: 'จบหน่วย!',
+    },
+    // The label before the path note, when the step came from the pre-test.
+    strip: {
+      // TODO(review)
+      quick: 'เช็กเร็ว',
+      // TODO(review)
+      check: 'จากแบบทดสอบ',
+    },
     issues: {
       // TODO(review)
       incomplete: 'กรอกให้ครบทุกช่องก่อนส่งนะ',
@@ -539,9 +619,22 @@ export const th = {
     },
   },
 
+  // The summary speaks about today, which the daily activity counts (SPEC §11).
   summary: {
     // TODO(review)
-    title: 'สรุป',
+    title: 'สรุปวันนี้',
+    // TODO(review)
+    itemsToday: 'ข้อวันนี้',
+    // TODO(review)
+    xpToday: 'XP วันนี้',
+    // TODO(review)
+    streak: 'วันติดกัน',
+    // TODO(review)
+    fixing: 'กำลังแก้',
+    // TODO(review)
+    nextTime: `ครั้งหน้า ${CONFIG.tutorName}แนะนำ`,
+    // TODO(review)
+    nothingYet: 'วันนี้ยังไม่ได้ทำข้อไหน เริ่มสักข้อก็ได้',
     // TODO(review)
     xp: 'XP',
     // TODO(review)
@@ -553,6 +646,8 @@ export const th = {
     // TODO(review)
     unitPassed: 'ผ่านหน่วยที่ {{n}}',
     // TODO(review)
+    unitPassedIn: 'ผ่าน{{topic}} หน่วยที่ {{n}}',
+    // TODO(review)
     fixed: 'ความเข้าใจผิดที่แก้ได้',
     // TODO(review)
     badges: 'เหรียญ',
@@ -562,6 +657,41 @@ export const th = {
     continue: 'เรียนต่อ',
     // TODO(review)
     toMap: 'กลับหน้าบทเรียน',
+  },
+
+  // The result after a test (SPEC §4). It speaks per skill, never per item, and shows no answer, so the
+  // post-test, a different form, is not given away (RESEARCH §4). TODO(review): everything in this block.
+  report: {
+    eyebrow: 'แบบทดสอบก่อนเรียน · {{topic}}',
+    title: `${CONFIG.tutorName}รู้จักคุณแล้ว`,
+    scoreLabel: '{{score}} จาก {{total}} คะแนน',
+    points: 'คะแนน',
+    known: 'ทำได้แล้ว {{n}} เรื่อง',
+    knownNote: 'ไม่ต้องดูคลิป เช็กเรื่องละข้อเดียว ถูกก็ผ่าน',
+    caught: `${CONFIG.tutorName}เห็นจุดที่พลาด {{n}} จุด`,
+    caughtNote: `ถึงเรื่องไหน ${CONFIG.tutorName}จะเช็กจุดนั้นก่อน`,
+    toLearn: 'เรียนพร้อมคลิป {{n}} เรื่อง',
+    toLearnNote: 'มีคลิปสั้นก่อนเริ่มแต่ละเรื่อง',
+    nothing: 'ไม่เป็นไร เริ่มจากพื้นฐาน มีคลิปสั้นก่อนทุกเรื่อง',
+    passed: 'ผ่านแล้ว',
+    fixed: 'แก้ได้แล้ว',
+    start: {
+      quick: 'เริ่มที่{{skill}} · เช็กเร็วข้อเดียว',
+      check: `เริ่มที่{{skill}} · ${CONFIG.tutorName}ขอเช็กจุดที่{{m}} ก่อน`,
+      learn: 'เริ่มที่{{skill}} · มีคลิปสั้นก่อน',
+    },
+    allPassed: 'ผ่านครบทุกเรื่องแล้ว ทบทวนต่อได้เลย',
+    begin: 'เริ่มเรียน',
+    toMap: 'ดูเส้นทาง',
+    // A fixed path does not use the pre-test, so its students get the score alone (RESEARCH §2).
+    sent: 'ส่งแล้ว เริ่มเรียนได้เลย',
+    postEyebrow: 'แบบทดสอบหลังเรียน · {{topic}}',
+    postTitle: 'เทียบกับก่อนเรียน',
+    before: 'ก่อนเรียน',
+    after: 'หลังเรียน',
+    gained: 'ดีขึ้น {{points}} คะแนน',
+    same: 'เท่ากับก่อนเรียน',
+    noPre: 'ไม่ได้ทำแบบทดสอบก่อนเรียน จึงไม่มีคะแนนให้เทียบ',
   },
 
   // Names from docs/SPEC.md §3.

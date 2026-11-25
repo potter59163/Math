@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState, type ReactNode } from 'react';
 import { LoadingScreen } from '@/components/learn/LoadingScreen';
 import { LinkButton } from '@/components/ui/Button';
@@ -9,12 +10,15 @@ import { th } from '@/lib/content/th';
 import { fillTokens } from '@/lib/core/tokens';
 import type { Profile } from '@/lib/director/types';
 import { lastDays, streakOf } from '@/lib/learner/activity';
+import { isOpen } from '@/lib/learner/misconceptionStatus';
+import { isQuickCheck } from '@/lib/learner/pretest';
 import { skillStateOf } from '@/lib/learner/profile';
 import { mapOf } from '@/lib/learner/progress';
 import { badgesOf, type Badge } from '@/lib/practice/rewards';
 import { assessedItemsDone, testBlock, type AssessmentStatus } from '@/lib/sync/assessment';
-import { allMisconceptions, misconceptionShortOf, skillOf, unitOf } from '@/lib/topics';
+import { allMisconceptions, misconceptionShortOf, skillOf } from '@/lib/topics';
 import { Avatar } from './Avatar';
+import { unitPassedName } from './unitText';
 import { useLearner, useRequiredProfile } from './useLearner';
 
 function Stat({ icon, label, value }: { icon?: ReactNode; label: string; value: number }) {
@@ -72,33 +76,51 @@ function WeekBars({ profile, now }: { profile: Profile; now: number }) {
   );
 }
 
+/**
+ * Each skill in words: passed, known from the pre-test, or not begun. Only a skill being worked on shows
+ * a bar, which is คิว's estimate that it is known (SPEC §7.1), not a score.
+ */
 function Mastery({ profile }: { profile: Profile }) {
   return (
-    <ul className="flex flex-col gap-2">
+    <ul className="flex flex-col gap-1">
       {mapOf(profile)
         .flatMap(({ skills }) => skills)
         .map(({ id, status }) => {
-          const percent = Math.round(skillStateOf(profile, id).pKnown * 100);
-          const shown = status === 'passed' ? 100 : profile.skills[id] ? percent : 0;
+          const state = skillStateOf(profile, id);
+          const percent = Math.round(state.pKnown * 100);
+          const begun = state.attempts.length > 0;
           return (
-            <li key={id} className="flex items-center gap-2 text-sm">
-              <span className="w-32 shrink-0 truncate">{skillOf(id).nameTh}</span>
-              <span
-                role="progressbar"
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={shown}
-                aria-label={skillOf(id).nameTh}
-                className="h-3 min-w-0 flex-1 overflow-hidden rounded-full border border-edge bg-surface"
-              >
-                <span
-                  className={`block h-full origin-left ${status === 'passed' ? 'bg-good' : 'bg-brand'}`}
-                  style={{ transform: `scaleX(${shown / 100})` }}
-                />
-              </span>
-              <span className="w-10 shrink-0 text-right font-matrix text-muted tabular-nums">
-                {shown}%
-              </span>
+            <li key={id} className="flex min-h-9 items-center gap-2 text-sm">
+              <span className="w-36 shrink-0 truncate">{skillOf(id).nameTh}</span>
+              {status === 'passed' ? (
+                <span className="inline-flex items-center gap-1 font-medium text-good">
+                  <CheckIcon className="size-4" />
+                  {th.profile.skillPassed}
+                </span>
+              ) : begun ? (
+                <>
+                  <span
+                    role="progressbar"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={percent}
+                    aria-label={fillTokens(th.learn.mastery, { p: String(percent) })}
+                    className="h-3 min-w-0 flex-1 overflow-hidden rounded-full border border-edge bg-surface"
+                  >
+                    <span
+                      className="block h-full origin-left bg-brand"
+                      style={{ transform: `scaleX(${percent / 100})` }}
+                    />
+                  </span>
+                  <span className="w-10 shrink-0 text-right font-matrix text-muted tabular-nums">
+                    {percent}%
+                  </span>
+                </>
+              ) : isQuickCheck(profile, id) ? (
+                <span className="font-medium text-good">{th.profile.skillQuick}</span>
+              ) : (
+                <span className="text-muted">{th.profile.skillNew}</span>
+              )}
             </li>
           );
         })}
@@ -107,9 +129,7 @@ function Mastery({ profile }: { profile: Profile }) {
 }
 
 function badgeLabel(badge: Badge): string {
-  return badge.kind === 'fixed'
-    ? th.summary.badgeFixed
-    : fillTokens(th.summary.unitPassed, { n: unitOf(badge.unit).label });
+  return badge.kind === 'fixed' ? th.summary.badgeFixed : unitPassedName(badge.unit);
 }
 
 /** `practised` is what the tests count (assessedItemsDone), not every item done. */
@@ -135,11 +155,22 @@ function Tests({ practised }: { practised: number }) {
       <li className="flex min-h-12 items-center justify-between gap-2 border-b border-line">
         <span className="font-medium">{label}</span>
         {result ? (
-          <span className="font-matrix text-sm font-medium tabular-nums">
-            {fillTokens(th.profile.score, {
-              score: String(result.score),
-              total: String(result.total),
-            })}
+          <span className="flex items-center gap-3">
+            <span className="font-matrix text-sm font-medium tabular-nums">
+              {fillTokens(th.profile.score, {
+                score: String(result.score),
+                total: String(result.total),
+              })}
+            </span>
+            {/* What the pre-test changed is worth seeing again, with what has happened since. */}
+            {phase === 'pre' && (
+              <Link
+                href="/test/pre"
+                className="flex min-h-11 items-center text-sm font-medium text-brand underline"
+              >
+                {th.profile.seeResult}
+              </Link>
+            )}
           </span>
         ) : blocked ? (
           <span className="text-sm text-muted">
@@ -184,10 +215,12 @@ export function ProfileScreen() {
   const badges = badgesOf(profile);
   const catalog = allMisconceptions();
   const fixed = catalog.filter(({ id }) => profile.misconceptions[id]?.status === 'resolved');
-  const open = catalog.filter(({ id }) => {
-    const status = profile.misconceptions[id]?.status;
-    return status === 'suspected' || status === 'active';
-  });
+  // An open mistake is being fixed once one of its skills has begun; until then a pre-test flag waits.
+  const begun = (skills: readonly string[]) =>
+    skills.some((skill) => (profile.skills[skill]?.attempts.length ?? 0) > 0);
+  const openOnes = catalog.filter(({ id }) => isOpen(profile.misconceptions[id]));
+  const open = openOnes.filter(({ skills }) => begun(skills));
+  const waiting = openOnes.filter(({ skills }) => !begun(skills));
 
   return (
     <main className="mx-auto flex w-full max-w-lg flex-col gap-7 px-5 py-6">
@@ -228,7 +261,7 @@ export function ProfileScreen() {
           <ul className="flex flex-wrap gap-2">
             {badges.map((badge) => (
               <li
-                key={badgeLabel(badge)}
+                key={badge.kind === 'unit' ? badge.unit : badge.kind}
                 className="flex items-center gap-1 rounded-full bg-xp-soft px-3 py-1 text-sm font-semibold text-xp"
               >
                 <StarIcon className="size-4 shrink-0" />
@@ -239,19 +272,30 @@ export function ProfileScreen() {
         </Section>
       )}
 
-      {(fixed.length > 0 || open.length > 0) && (
+      {(fixed.length > 0 || open.length > 0 || waiting.length > 0) && (
         <Section title={th.profile.fixed}>
-          <ul className="flex flex-col gap-1">
-            {fixed.map(({ id, nameTh }) => (
-              <li key={id} className="flex items-center gap-2">
-                <CheckIcon className="size-5 shrink-0 text-good" />
-                {nameTh}
-              </li>
-            ))}
-          </ul>
+          {fixed.length > 0 && (
+            <div className="flex flex-col gap-1">
+              <h3 className="font-sans text-sm font-semibold text-good">{th.profile.fixedDone}</h3>
+              <ul className="flex flex-col gap-1">
+                {fixed.map(({ id, nameTh }) => (
+                  <li key={id} className="flex items-center gap-2">
+                    <CheckIcon className="size-5 shrink-0 text-good" />
+                    {nameTh}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           {open.length > 0 && (
+            <p className="text-sm">
+              <span className="font-semibold text-warn">{th.profile.open}:</span>{' '}
+              {open.map(({ id }) => misconceptionShortOf(id)).join(', ')}
+            </p>
+          )}
+          {waiting.length > 0 && (
             <p className="text-sm text-muted">
-              {th.profile.open}: {open.map(({ id }) => misconceptionShortOf(id)).join(', ')}
+              {th.profile.waiting}: {waiting.map(({ id }) => misconceptionShortOf(id)).join(', ')}
             </p>
           )}
         </Section>

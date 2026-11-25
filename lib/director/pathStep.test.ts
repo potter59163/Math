@@ -2,7 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { th } from '@/lib/content/th';
 import { generate } from '@/lib/topics/matrix/generators';
 import { CATALOG } from '@/lib/topics/matrix/misconceptions';
-import { MAX_NOTE_UNITS, noteFor, pathStepFor, stripNote } from './pathStep';
+import {
+  latestStepsIn,
+  MAX_NOTE_UNITS,
+  noteFor,
+  pathStepFor,
+  stripKind,
+  stripNote,
+} from './pathStep';
 import type { PathKind, PathStep, PendingTurn } from './types';
 
 const KINDS = Object.keys(th.pathNotes) as PathKind[];
@@ -81,6 +88,25 @@ describe('stripNote', () => {
   });
 });
 
+describe('stripKind', () => {
+  const step = (kind: PathKind): PathStep => ({ kind, skill: 'dim', level: 2, note: kind });
+  const probe = generate({ skill: 'mult', difficulty: 1, seed: 1, target: 'M09_MULT_ELEMENTWISE' });
+  const open = { ref: probe.ref, hintLevel: 0 as const };
+
+  it('names the kind of the step whose note is shown', () => {
+    expect(stripKind({ path: [] })).toBeNull();
+    expect(stripKind({ path: [step('start'), step('skip_clip')] })).toBe('skip_clip');
+    expect(stripKind({ path: [step('pretest_probe'), step('request')] })).toBe('pretest_probe');
+  });
+
+  it('follows the note to the probe once a compare clip has played', () => {
+    expect(stripKind({ path: [step('remediate')], current: open })).toBe('probe');
+    expect(
+      stripKind({ path: [step('remediate')], pending: {} as PendingTurn, current: open }),
+    ).toBe('remediate');
+  });
+});
+
 describe('pathStepFor', () => {
   it('reports the real level of the item, which a probe can move', () => {
     const step = pathStepFor(
@@ -97,5 +123,38 @@ describe('pathStepFor', () => {
       level: 2,
       note: 'เพิ่มข้อนี้เพราะเมื่อกี้ลบสลับลำดับ',
     });
+  });
+});
+
+describe('latestStepsIn', () => {
+  const step = (skill: string, note: string): PathStep => ({
+    kind: KINDS[0],
+    skill,
+    level: 1,
+    note,
+  });
+  const steps = [
+    step('dim', 'a'),
+    step('v_quantity', 'b'),
+    step('index', 'c'),
+    step('v_points', 'd'),
+    step('a_skill_that_is_gone', 'e'),
+    step('v_linear', 'f'),
+    step('v_magnitude', 'g'),
+  ];
+
+  it('keeps the latest steps of the topic on screen, newest first', () => {
+    expect(latestStepsIn(steps, 'vector', 3).map(({ note }) => note)).toEqual(['g', 'f', 'd']);
+    expect(latestStepsIn(steps, 'matrix', 3).map(({ note }) => note)).toEqual(['c', 'a']);
+  });
+
+  it('shows nothing for a topic not begun, and skips a skill that no longer exists', () => {
+    expect(latestStepsIn(steps.slice(0, 1), 'vector', 3)).toEqual([]);
+    expect(latestStepsIn(steps, 'vector', 10).map(({ note }) => note)).toEqual([
+      'g',
+      'f',
+      'd',
+      'b',
+    ]);
   });
 });
