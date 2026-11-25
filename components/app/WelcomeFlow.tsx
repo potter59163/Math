@@ -14,7 +14,7 @@ import {
 import { th } from '@/lib/content/th';
 import { fillTokens } from '@/lib/core/tokens';
 import type { ThemeId } from '@/lib/learner/types';
-import { testBlock } from '@/lib/sync/assessment';
+import { assessedItemsDone, testBlock } from '@/lib/sync/assessment';
 import { MAX_DISPLAY_NAME, THEMES, type AvatarId } from '@/lib/sync/types';
 import { AvatarPicker } from './Avatar';
 import { savedCohort } from './Landing';
@@ -115,8 +115,8 @@ export function WelcomeFlow() {
     });
     setSaving(false);
     if (!done) setFailed(true);
-    // Whoever practised as a guest first has no start left for a pre-test to measure, and moves on.
-    else if (!testBlock('pre', learner.getState().profile?.itemsDone ?? 0)) setStep('pretest');
+    // Whoever practised matrices as a guest has no start left for the pre-test to measure, and moves on.
+    else if (!testBlock('pre', assessedItemsDone(learner.getState().profile))) setStep('pretest');
   };
 
   return (

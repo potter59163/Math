@@ -8,6 +8,7 @@ import { assessmentSubmit } from '@/lib/server/schemas';
 import { createStore } from '@/lib/server/store';
 import {
   ASSESSED_TOPIC,
+  assessedItemsDone,
   testBlock,
   type AssessmentAnswer,
   type AssessmentForm,
@@ -75,7 +76,7 @@ export async function POST(request: Request, { params }: Params) {
 
   const store = createStore(await database());
   const row = await store.loadLearner(userId);
-  const blocked = testBlock(taken, row?.profile.itemsDone ?? 0);
+  const blocked = testBlock(taken, assessedItemsDone(row?.profile));
   if (blocked) return fail(409, blocked);
 
   const test = assessment();
