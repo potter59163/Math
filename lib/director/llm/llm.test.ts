@@ -325,7 +325,7 @@ describe('decideWithLlm', () => {
 });
 
 describe('llmDecider', () => {
-  const store = (calls = 0) => ({ llmCallsSince: async () => calls });
+  const store = (room = true) => ({ reserveLlmCall: async () => room });
 
   it('is off with no provider set, so the rules decide with nothing asked of anyone', () => {
     expect(llmDecider({ userId: 'u', store: store(), config: null })).toBeNull();
@@ -334,7 +334,7 @@ describe('llmDecider', () => {
   it('holds back a student who has used up this minute', async () => {
     const decide = llmDecider({
       userId: 'u',
-      store: store(20),
+      store: store(false),
       config: { model: 'm', apiKey: 'k', timeoutMs: 100 },
       provider: answering(decision()),
     })!;
@@ -345,7 +345,7 @@ describe('llmDecider', () => {
   it('asks when there is room', async () => {
     const decide = llmDecider({
       userId: 'u',
-      store: store(0),
+      store: store(true),
       config: { model: 'm', apiKey: 'k', timeoutMs: 100 },
       provider: answering(decision()),
     })!;

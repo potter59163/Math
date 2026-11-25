@@ -10,11 +10,10 @@ import { systemPrompt } from './prompt';
 import { createProvider, RateLimitedError, type LlmProvider } from './providers';
 import { validateDecision } from './validate';
 
-const MINUTE_MS = 60_000;
-
 export interface DeciderOptions {
   userId: string;
-  store: { llmCallsSince(userId: string, since: string): Promise<number> };
+  /** Counts the call before it is made, so answers sent at once cannot all slip under the limit. */
+  store: { reserveLlmCall(userId: string, at: Date): Promise<boolean> };
   config?: LlmConfig | null;
   provider?: LlmProvider;
   now?: () => number;
@@ -103,8 +102,7 @@ export function llmDecider({
   if (!config) return null;
   const llm = provider ?? createProvider(config);
   return async (prepared, { timeMs, hintLevel }) => {
-    const since = new Date(now() - MINUTE_MS).toISOString();
-    if ((await store.llmCallsSince(userId, since)) >= CONFIG.llm.maxCallsPerMinutePerStudent) {
+    if (!(await store.reserveLlmCall(userId, new Date(now())))) {
       return { tutor: { fallbackReason: 'rate_limited' } };
     }
     return decideWithLlm(prepared, {

@@ -32,6 +32,10 @@ export const CONFIG = {
     timeoutMs: 5000,
     maxCandidates: 4,
     maxCallsPerMinutePerStudent: 20,
+    // For everyone together, so a script or a crowd of new accounts cannot run up the bill: past it,
+    // the rules decide for the rest of the day (UTC). About 6,000 a day for a class of 100 answering 60
+    // each, at roughly $0.003 a call on Claude Sonnet 5.5 (DECISIONS, 25 Nov 2026).
+    maxCallsPerDay: 10_000,
     // What the tutor is told in words, as "quick" or "slow", in place of a number it would copy.
     quickAnswerMs: 20_000,
     slowAnswerMs: 90_000,

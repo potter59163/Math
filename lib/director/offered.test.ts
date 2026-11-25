@@ -47,7 +47,13 @@ describe('the items a decision offers', () => {
             const item = currentItem(profile);
             if (!item) return;
             expect(wasOffered(profile, item.ref)).toBe(true);
-            const event = { item, answer: answerFor(item, move), hintLevel: 0 as const, timeMs: 9, at: AT };
+            const event = {
+              item,
+              answer: answerFor(item, move),
+              hintLevel: 0 as const,
+              timeMs: 9,
+              at: AT,
+            };
             const prepared = prepareAttempt(profile, event);
             const ruled = commitAttempt(prepared);
             for (const candidate of prepared.candidates) {
@@ -83,9 +89,9 @@ describe('the items a decision offers', () => {
     const easier = { ...item.ref, seed: item.ref.seed + 7 };
     expect(rebuildItem(easier)).not.toBeNull();
     expect(wasOffered(profile, easier)).toBe(false);
-    expect(wasOffered(profile, { ...item.ref, difficulty: item.ref.difficulty === 1 ? 2 : 1 })).toBe(
-      false,
-    );
+    expect(
+      wasOffered(profile, { ...item.ref, difficulty: item.ref.difficulty === 1 ? 2 : 1 }),
+    ).toBe(false);
     expect(wasOffered({ current: undefined }, item.ref)).toBe(false);
   });
 

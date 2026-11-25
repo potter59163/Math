@@ -206,7 +206,12 @@ describe.skipIf(!uri)('on a real MongoDB', () => {
           at: AT,
         },
       });
-      await processActions({ store, userId: id, deviceId: 'device-a', actions: [answer(1, picked)] });
+      await processActions({
+        store,
+        userId: id,
+        deviceId: 'device-a',
+        actions: [answer(1, picked)],
+      });
       const after = (await store.loadLearner(id))!.profile;
       await processActions({
         store,
@@ -305,11 +310,38 @@ describe.skipIf(!uri)('on a real MongoDB', () => {
       const ago = (ms: number) => new Date(Date.now() - ms).toISOString();
       expect(await store.attemptsSince(id, ago(60_000))).toBe(1);
       expect(await store.attemptsSince(id, ago(-60_000))).toBe(0);
-      expect(await store.llmCallsSince(id, ago(60_000))).toBe(0);
-      await db
-        .collection('decisions')
-        .insertOne({ user_id: id, mode: 'llm', created_at: new Date() });
-      expect(await store.llmCallsSince(id, ago(60_000))).toBe(1);
+    });
+
+    it('lets a burst of tutor calls through only up to the limit', async () => {
+      const { id } = await student();
+      const limits = { perMinute: 20, perDay: 1000 };
+      const at = new Date('2099-02-01T03:00:10.000Z');
+      const results = await Promise.all(
+        Array.from({ length: 30 }, () => store.reserveLlmCall(id, at, limits)),
+      );
+      expect(results.filter(Boolean)).toHaveLength(20);
+      // The next minute starts again.
+      expect(await store.reserveLlmCall(id, new Date('2099-02-01T03:01:10.000Z'), limits)).toBe(
+        true,
+      );
+    });
+
+    it('stops tutor calls for everyone once the day is used up', async () => {
+      const limits = { perMinute: 20, perDay: 3 };
+      const day = new Date('2099-02-02T03:00:00.000Z');
+      const [a, b] = [await student(), await student()];
+      expect(await store.reserveLlmCall(a.id, day, limits)).toBe(true);
+      expect(await store.reserveLlmCall(b.id, day, limits)).toBe(true);
+      expect(await store.reserveLlmCall(a.id, day, limits)).toBe(true);
+      expect(await store.reserveLlmCall(b.id, day, limits)).toBe(false);
+      expect(await store.reserveLlmCall(b.id, new Date('2099-02-03T03:00:00.000Z'), limits)).toBe(
+        true,
+      );
+    });
+
+    it('has MongoDB drop the call counters by itself', async () => {
+      const indexes = await db.collection('llm_calls').indexes();
+      expect(indexes.find(({ name }) => name === 'expires_at_1')?.expireAfterSeconds).toBe(0);
     });
   });
 
@@ -504,6 +536,7 @@ describe.skipIf(!uri)('on a real MongoDB', () => {
       'hint_events',
       'assessments',
       'vector_assessments',
+      'llm_calls',
     ];
 
     async function studentWithEverything(sub: string) {
@@ -542,6 +575,7 @@ describe.skipIf(!uri)('on a real MongoDB', () => {
         startedAt: AT,
         responses: RESPONSES,
       });
+      await store.reserveLlmCall(id, new Date());
       await store.savePhoto(id, {
         type: 'image/jpeg',
         data: new Uint8Array([0xff, 0xd8, 0xff, 0xe0]),

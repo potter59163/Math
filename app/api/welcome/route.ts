@@ -31,6 +31,9 @@ export async function POST(request: Request) {
     profile: startingProfile(userId, theme as ThemeId, guestProfile),
   });
   // A second welcome changes nothing, so send back what the first one saved.
-  const [saved, learner] = await Promise.all([store.loadAccount(userId), store.loadLearner(userId)]);
+  const [saved, learner] = await Promise.all([
+    store.loadAccount(userId),
+    store.loadLearner(userId),
+  ]);
   return ok({ account: saved ?? account, profile: learner?.profile ?? null });
 }
