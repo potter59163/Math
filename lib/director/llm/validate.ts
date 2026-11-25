@@ -5,28 +5,60 @@ import { LlmDecision, MAX_NARRATION_LINES, MAX_NARRATION_UNITS, MAX_REASON_UNITS
 
 // AI_DIRECTOR §4.3. A choice or message that fails here is thrown away and the rules decide instead.
 
-/** Arabic and Thai digits, and the superscripts that could say "k²" without a digit. */
-const DIGITS = /[0-9๐-๙⁰¹²³⁴-⁹₀-₉]/;
+/**
+ * Any character Unicode counts as a number (Arabic, Thai, fullwidth and Lao digits, superscripts and
+ * subscripts, ½, ①, Ⅱ, mathematical bold digits) and the keycap emoji that can draw one.
+ */
+const DIGITS = /[\p{N}\u{1F51F}\u20E3]/u;
+
+/** The inverse of a named matrix, A⁻¹ or (AB)⁻¹: a name. Its ¹ alone is taken out before the check. */
+const INVERSE = /([A-Z)])⁻¹/g;
 
 /**
  * Number words let a sum through without a digit. These Thai words contain one by accident, and each is
  * common enough in a tutor's sentence to be worth telling apart. A rare miss only means falling back.
- * The vector topic's own words (squared, square root, 2D and 3D, unit vector, two or three vectors, two
- * points) and det's two diagonals name a kind of thing, never an answer, and the eval of 25 Nov 2026
- * threw away about one vector message in five over them. So do the item's own things counted by name
- * (the two vectors, these two, one step, one cell). A bare count such as อีกสองช่อง still fails: it can
- * say how much is left to do.
  */
 const NUMBER_WORDS =
-  /(?<!นิด|ครู่|อย่าง|ส่วน|ครั้ง)หนึ่ง|สอง|สาม(?!ารถ|เหลี่ยม)|สี่(?!เหลี่ยม)|(?<!ก)ห้า(?!ม)|หก(?!ล้ม)|เจ็ด|แปด|เก้า|สิบ|(?<!เรียบ)ร้อย|(?<!สัม)พัน(?!ธ)|ศูนย์/;
+  /(?<!นิด|ครู่|อย่าง|ส่วน|ครั้ง)หนึ่ง|(?<!นิด|ครู่)นึง|สอง|สาม(?!ารถ|เหลี่ยม)|สี่(?!เหลี่ยม)|(?<!ก)ห้า(?!ม)|หก(?!ล้ม)|เจ็ด|แปด|เก้า|สิบ|(?<!เรียบ)ร้อย|(?<!สัม)พัน(?!ธ)|ศูนย์/;
+
+/** Words that turn what follows into an amount: how many are left, wrong, missing, or what it equals. */
+const COUNTING = String.raw`(?<!(?:อีก|เหลือ|แค่|ขาด|ผิด|มี|ได้|เป็น|คือ|เพียง)\s*)`;
+
+/**
+ * Maths names that hold a number word but never an amount (docs/AI_DIRECTOR.md §4.3), each matched
+ * whole and taken out before the number-word check, unless a counting word stands right before it.
+ * Squared is a name only as an operation: after a letter or a token ("k ยกกำลังสอง") it is k², a number.
+ * An adversarial review on 25 Nov 2026 broke a looser version of this list in about thirty ways.
+ */
+const NAMED_TERMS = new RegExp(
+  COUNTING +
+    String.raw`(?:` +
+    [
+      'เวกเตอร์หนึ่งหน่วย',
+      'รากที่สอง',
+      'สองมิติ',
+      'สามมิติ',
+      'จุดสองจุด',
+      'เวกเตอร์สองตัว',
+      'เวกเตอร์สองเส้น',
+      'สองเส้นทแยง',
+      'สองแนวทแยง',
+      'ทั้งสอง',
+      'ทั้งสาม',
+      String.raw`(?<![A-Za-z0-9)}\]]\s*)ยกกำลังสอง`,
+      String.raw`(?<!ยก|[A-Za-z0-9)}\]]\s*)กำลังสอง`,
+    ].join('|') +
+    ')',
+  'g',
+);
 
 export function hasNumberInWords(text: string): boolean {
-  return NUMBER_WORDS.test(text);
+  return NUMBER_WORDS.test(text.replace(NAMED_TERMS, ' '));
 }
 
 export function hasNumber(text: string): boolean {
-  // Exceptions for maths words and A⁻¹ were tried on 25 Nov 2026 and leaked numbers (DECISIONS).
-  return DIGITS.test(text) || hasNumberInWords(text);
+  const plain = text.replace(INVERSE, '$1');
+  return DIGITS.test(plain) || hasNumberInWords(plain);
 }
 
 /**
