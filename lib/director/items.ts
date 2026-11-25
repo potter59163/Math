@@ -39,6 +39,28 @@ export function currentItem(profile: Pick<LearnerProfile, 'current'>): Item | nu
   return profile.current ? rebuildItem(profile.current.ref) : null;
 }
 
+/** The same item: every field that a generator reads, with an absent target equal to none. */
+export function sameRef(a: ItemRef, b: ItemRef): boolean {
+  return (
+    a.topic === b.topic &&
+    a.skill === b.skill &&
+    a.difficulty === b.difficulty &&
+    a.seed === b.seed &&
+    (a.target ?? null) === (b.target ?? null) &&
+    (a.targetVariant ?? null) === (b.targetVariant ?? null) &&
+    a.gv === b.gv
+  );
+}
+
+/** An item the director opened for this student, or one its latest decision could have opened. */
+export function wasOffered(
+  profile: Pick<LearnerProfile, 'current'> & { offered?: ItemRef[] },
+  ref: ItemRef,
+): boolean {
+  const open = profile.current ? [profile.current.ref] : [];
+  return [...open, ...(profile.offered ?? [])].some((one) => sameRef(one, ref));
+}
+
 /**
  * Makes an item for a request. Written as a method so that a test can pass one pack's own `generate`,
  * whose request is narrower than any topic's.

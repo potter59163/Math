@@ -1,3 +1,4 @@
+import type { ItemRef } from '@/lib/core/types';
 import { markClipSeen, newLearnerProfile, noteSceneSeen } from '@/lib/learner/profile';
 import type { HintLevel, Student } from '@/lib/learner/types';
 import type { TopicId } from '@/lib/topics/types';
@@ -87,6 +88,7 @@ export function commitTurn(
     counter: draw.counter,
     recentItems: [...(profile.recentItems ?? []), fingerprintOf(draw.item)].slice(-RECENT_ITEMS),
     current: { ref: draw.item.ref, hintLevel: (chosen.next.hintLevel ?? 0) as HintLevel },
+    offered: offeredRefs(profile, candidates, chosen, draw.item.ref),
     lastReviewAt: chosen.next.purpose === 'review' ? profile.itemsDone : profile.lastReviewAt,
     pending: closed || scenes.length > 0 ? { turn, ...(closed && { closed }) } : undefined,
   };
@@ -94,6 +96,29 @@ export function commitTurn(
     turn,
     profile: { ...profile, ...issued, path: [...profile.path, pathStep].slice(-MAX_PATH_STEPS) },
   };
+}
+
+/**
+ * Each candidate's item at this counter, the chosen one first. One that resumes keeps the open item,
+ * and one whose generator fails is left out, since no device can open it either. Pure, and spends
+ * nothing: only the chosen draw moves the counter.
+ */
+function offeredRefs(
+  profile: Profile,
+  candidates: Candidate[],
+  chosen: Candidate,
+  chosenRef: ItemRef,
+): ItemRef[] {
+  const others = candidates.flatMap((candidate) => {
+    if (candidate === chosen) return [];
+    if (candidate.next.purpose === 'resume') return profile.current ? [profile.current.ref] : [];
+    try {
+      return [drawItem(profile, candidate.next).item.ref];
+    } catch {
+      return [];
+    }
+  });
+  return [chosenRef, ...others];
 }
 
 function noteScene(profile: Profile, { request }: ChosenScene): Profile {
@@ -133,7 +158,7 @@ export function finishTurn(profile: Profile): Profile {
  * same profile when nothing is let go.
  */
 export function dropOtherTopics(profile: Profile, topic: TopicId): Profile {
-  const { current, pending, ...rest } = profile;
+  const { current, pending, offered, ...rest } = profile;
   const pendingTopic = pending && (pending.closed?.ref.topic ?? pending.turn.next?.topic);
   const keepCurrent = !current || current.ref.topic === topic;
   const keepPending = !pending || pendingTopic === undefined || pendingTopic === topic;
@@ -141,6 +166,8 @@ export function dropOtherTopics(profile: Profile, topic: TopicId): Profile {
   return {
     ...rest,
     ...(current && keepCurrent && { current }),
+    // What the decision that opened the item let go of goes with it.
+    ...(offered && keepCurrent && { offered }),
     ...(pending && keepPending && { pending }),
   };
 }

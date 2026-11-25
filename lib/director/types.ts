@@ -140,4 +140,11 @@ export interface PendingTurn {
 export interface Profile extends LearnerProfile {
   path: PathStep[];
   pending?: PendingTurn;
+  /**
+   * Every item the latest decision could have opened, drawn at the same counter: the one it chose and
+   * each candidate it passed over. A device whose tutor answer came late opens the rules' choice, which
+   * is here too. The server pays XP only for an answer to `current` or to one of these
+   * (lib/server/sync.ts), so a device cannot pick an easy item of its own.
+   */
+  offered?: ItemRef[];
 }

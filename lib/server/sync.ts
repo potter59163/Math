@@ -1,3 +1,4 @@
+import { wasOffered } from '@/lib/director/items';
 import { commitAttempt, prepareAttempt, type PreparedAttempt } from '@/lib/director/rules';
 import type { TutorWords } from '@/lib/director/turn';
 import type { CandidateId, Condition, NextTurn, Profile, TurnMode } from '@/lib/director/types';
@@ -32,6 +33,11 @@ export type LogEntry =
       action: Extract<LearnerAction, { type: 'attempt' }>;
       outcome: AttemptOutcome;
       turn: NextTurn;
+      /**
+       * The item was open for this student, or offered by their latest decision. Any other is still
+       * counted and logged, since a lost answer is worse, but earns no XP (lib/server/store.ts).
+       */
+      issued: boolean;
     }
   | { kind: 'decision'; turn: NextTurn }
   | { kind: 'session' }
@@ -65,17 +71,25 @@ function lastAttemptSeq(actions: QueuedAction[]): number | null {
   return actions.findLast(({ action }) => action.type === 'attempt')?.seq ?? null;
 }
 
+interface Applied {
+  result: ActionResult;
+  item?: Item;
+  /** For an attempt: whether its item was one this server opened or offered (`Profile.offered`). */
+  issued?: boolean;
+}
+
 async function applyOne(
   profile: Profile,
   action: LearnerAction,
   condition: Condition,
   decide: Decide | null,
-): Promise<{ result: ActionResult; item?: Item }> {
+): Promise<Applied> {
   if (action.type !== 'attempt') {
     return { result: applyAction(profile, action, condition) };
   }
   const event = attemptEvent(action);
   if (!event) return { result: { profile } };
+  const issued = wasOffered(profile, event.item.ref);
   const prepared = prepareAttempt(profile, event, condition);
   const decided =
     decide && condition === 'adaptive'
@@ -88,18 +102,21 @@ async function applyOne(
       decided?.tutor,
     ),
     item: event.item,
+    issued,
   };
 }
 
 function logsOf(
   { action, seq }: QueuedAction,
   before: Profile,
-  { result, item }: { result: ActionResult; item?: Item },
+  { result, item, issued = false }: Applied,
 ): LogEntry[] {
   const { turn, outcome } = result;
   switch (action.type) {
     case 'attempt':
-      return item && turn && outcome ? [{ kind: 'attempt', seq, item, action, outcome, turn }] : [];
+      return item && turn && outcome
+        ? [{ kind: 'attempt', seq, item, action, outcome, turn, issued }]
+        : [];
     case 'start':
       return turn ? [{ kind: 'session' }, { kind: 'decision', turn }] : [];
     case 'practice':

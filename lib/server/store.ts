@@ -95,7 +95,9 @@ function attemptRow({ userId, deviceId, entry }: AttemptRowInput) {
     wrong_cells: classification.type === 'slip' ? [classification.cell] : null,
     time_ms: action.timeMs,
     hint_level: action.hintLevel,
-    xp: outcome.xp + outcome.bonusXp,
+    // The board sums this, so an item the device chose for itself counts for nothing there.
+    xp: entry.issued ? outcome.xp + outcome.bonusXp : 0,
+    issued: entry.issued,
     created_at: new Date(),
   };
 }

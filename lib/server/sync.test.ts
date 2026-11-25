@@ -2,12 +2,12 @@ import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { restoreAnswer, storeAnswer } from '@/lib/core/answerJson';
 import { currentItem, rebuildItem } from '@/lib/director/items';
-import { startSession } from '@/lib/director/rules';
+import { prepareAttempt, startSession } from '@/lib/director/rules';
 import { sceneOfChosen, sceneOrNull, workedRequest } from '@/lib/director/scene';
 import { finishScene, newProfile } from '@/lib/director/turn';
 import type { Condition, Profile } from '@/lib/director/types';
 import { misconceptionAnswer, slipAnswer } from '@/lib/sim/answers';
-import { applyAction, type LearnerAction } from '@/lib/sync/actions';
+import { applyAction, attemptEvent, type LearnerAction } from '@/lib/sync/actions';
 import type { QueuedAction } from '@/lib/sync/types';
 import type { SceneSpec } from '@/lib/topics/types';
 import type { MatrixItem } from '@/lib/topics/matrix/types';
@@ -87,6 +87,7 @@ const input = (store: SyncStore, actions: QueuedAction[], decide: Decide | null 
 });
 
 type Move = 'right' | 'wrong' | 'worked' | 'hint' | 'help';
+type AttemptAction = Extract<LearnerAction, { type: 'attempt' }>;
 
 /**
  * What a device sends as a student goes through a session the way SessionScreen takes them: every clip
@@ -312,6 +313,103 @@ describe('processActions', () => {
       'scene_view',
       'hint',
     ]);
+  });
+});
+
+describe('XP for an answer', () => {
+  const attemptsOf = (store: Fake) =>
+    store.logs.flatMap((entry) => (entry.kind === 'attempt' ? [entry] : []));
+
+  it('is paid for the item the server opened', async () => {
+    const profile = started();
+    const store = fakeStore(profile);
+    await processActions(input(store, [attemptOn(profile, 1)]));
+    expect(attemptsOf(store).map(({ issued }) => issued)).toEqual([true]);
+  });
+
+  it('is not paid for an item the device picked for itself, which is still counted and logged', async () => {
+    const profile = started();
+    const store = fakeStore(profile);
+    const open = currentItem(profile) as MatrixItem;
+    const ref = { ...open.ref, seed: open.ref.seed + 7 };
+    const picked = rebuildItem(ref) as MatrixItem;
+    const forged: QueuedAction = {
+      seq: 1,
+      action: {
+        type: 'attempt',
+        ref,
+        answer: storeAnswer(picked.correct),
+        hintLevel: 0,
+        timeMs: 10,
+        at: AT,
+      },
+    };
+    const result = await processActions(input(store, [forged]));
+    expect(attemptsOf(store).map(({ issued }) => issued)).toEqual([false]);
+    expect(result.profile.itemsDone).toBe(profile.itemsDone + 1);
+  });
+
+  it('is paid once for the same answer sent again from another device', async () => {
+    const profile = started();
+    const store = fakeStore(profile);
+    const batch = [attemptOn(profile, 1)];
+    await processActions(input(store, batch));
+    await processActions({ ...input(store, batch), deviceId: 'device-b' });
+    expect(attemptsOf(store).map(({ issued }) => issued)).toEqual([true, false]);
+  });
+
+  it("is paid for the rules' item a device opened when the tutor's choice came too late", async () => {
+    let device = started();
+    let checked = 0;
+    for (let n = 0; n < 8 && checked === 0; n += 1) {
+      const item = currentItem(device) as MatrixItem;
+      const diagnostic = item.diagnostics[0];
+      const wrong = (diagnostic && misconceptionAnswer(item, diagnostic.id)) ?? slipAnswer(item);
+      const attempt: QueuedAction = {
+        seq: 1,
+        action: {
+          type: 'attempt',
+          ref: item.ref,
+          answer: storeAnswer(wrong),
+          hintLevel: 0,
+          timeMs: 10,
+          at: AT,
+        },
+      };
+      // What the device did on its own: the rules' decision, and their item opened.
+      const ruled = applyAction(device, attempt.action);
+      const prepared = prepareAttempt(device, attemptEvent(attempt.action as AttemptAction)!);
+      const other = prepared.candidates.find(
+        (candidate) => candidate.id !== ruled.turn?.choice && candidate.next.purpose !== 'resume',
+      );
+      if (other && ruled.profile.current) {
+        const store = fakeStore(device);
+        const decide: Decide = async () => ({ choice: other.id, mode: 'llm', tutor: {} });
+        await processActions(input(store, [attempt], decide));
+        const onDevice = settled(ruled.profile);
+        await processActions(input(store, [attemptOn(onDevice, 2)]));
+        expect(attemptsOf(store).map(({ issued }) => issued)).toEqual([true, true]);
+        checked += 1;
+      }
+      device = settled(ruled.profile);
+    }
+    expect(checked).toBe(1);
+  });
+
+  it('is paid for every answer of a student who plays along', async () => {
+    const move = fc.constantFrom<Move>('right', 'wrong', 'worked', 'hint', 'help');
+    await fc.assert(
+      fc.asyncProperty(
+        fc.subarray([1, 2, 3, 4, 5], { minLength: 1 }),
+        fc.array(move, { maxLength: 10 }),
+        async (units, moves) => {
+          const store = fakeStore(newProfile({ id: 'u1', units }));
+          await processActions(input(store, sessionOf(units, moves)));
+          expect(attemptsOf(store).every(({ issued }) => issued)).toBe(true);
+        },
+      ),
+      { numRuns: 200 },
+    );
   });
 });
 
