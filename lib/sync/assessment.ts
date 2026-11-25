@@ -2,6 +2,8 @@ import { CONFIG } from '@/lib/config';
 import type { StoredAnswer } from '@/lib/core/answerJson';
 import type { Profile } from '@/lib/director/types';
 import type { ItemRef } from '@/lib/core/types';
+import type { LearnerProfile } from '@/lib/learner/types';
+import { packOf, registeredTopics } from '@/lib/topics';
 
 // The pre-test and the post-test across the wire.
 
@@ -12,6 +14,23 @@ export type AssessmentPhase = 'pre' | 'post';
  * topic's test needs that unique index to take the topic too (docs/VECTORS.md §6.1).
  */
 export const ASSESSED_TOPIC = 'matrix';
+
+/**
+ * The practice the tests count: the assessed topic's alone. Every topic adds to the one `itemsDone`, so
+ * this takes away the answers on other topics' skills, and a profile with none of those (every profile
+ * from before vectors) counts exactly as it always did. A guest's carried-over progress is checked
+ * field by field, so the two may disagree, and the count then stops at zero.
+ */
+export function assessedItemsDone(
+  profile: Pick<LearnerProfile, 'itemsDone' | 'skills'> | null | undefined,
+): number {
+  if (!profile) return 0;
+  const elsewhere = registeredTopics()
+    .filter((topic) => topic !== ASSESSED_TOPIC)
+    .flatMap((topic) => packOf(topic).skills)
+    .reduce((sum, { id }) => sum + (profile.skills[id]?.attempts.length ?? 0), 0);
+  return Math.max(0, profile.itemsDone - elsewhere);
+}
 
 export type TestBlock = 'already_learning' | 'too_early';
 

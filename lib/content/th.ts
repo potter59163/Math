@@ -192,7 +192,8 @@ export const th = {
     take: 'ทำเลย',
     testBlocked: {
       already_learning: 'ทำได้ก่อนเริ่มฝึกเท่านั้น',
-      too_early: 'เปิดเมื่อฝึกครบ {{n}} ข้อ',
+      // TODO(review) names the topic, since vector practice does not open the matrix post-test.
+      too_early: 'เปิดเมื่อฝึกเรื่องเมทริกซ์ครบ {{n}} ข้อ',
     },
     score: '{{score}}/{{total}} คะแนน',
     improved: 'ดีขึ้น {{points}} คะแนน',
@@ -314,7 +315,9 @@ export const th = {
     titles: { pre: 'แบบทดสอบก่อนเรียน', post: 'แบบทดสอบหลังเรียน' },
     blocked: {
       already_learning: 'แบบทดสอบก่อนเรียนต้องทำก่อนเริ่มฝึก คุณเริ่มไปแล้ว เรียนต่อได้เลย',
-      too_early: 'แบบทดสอบหลังเรียนเปิดเมื่อฝึกครบ {{n}} ข้อ ตอนนี้ฝึกไปแล้ว {{done}} ข้อ',
+      // TODO(review) names the topic, since {{done}} counts matrix items only and can be less than ข้อที่ทำ.
+      too_early:
+        'แบบทดสอบหลังเรียนเปิดเมื่อฝึกเรื่องเมทริกซ์ครบ {{n}} ข้อ ตอนนี้ฝึกไปแล้ว {{done}} ข้อ',
     },
     intro: {
       pre: 'ทำเท่าที่ทำได้ ไม่มีใบ้และไม่บอกผลระหว่างทำ คะแนนนี้ไม่มีผลกับเกรด',

@@ -12,7 +12,7 @@ import { lastDays, streakOf } from '@/lib/learner/activity';
 import { skillStateOf } from '@/lib/learner/profile';
 import { mapOf } from '@/lib/learner/progress';
 import { badgesOf, type Badge } from '@/lib/practice/rewards';
-import { testBlock, type AssessmentStatus } from '@/lib/sync/assessment';
+import { assessedItemsDone, testBlock, type AssessmentStatus } from '@/lib/sync/assessment';
 import { allMisconceptions, misconceptionShortOf, skillOf, unitOf } from '@/lib/topics';
 import { Avatar } from './Avatar';
 import { useLearner, useRequiredProfile } from './useLearner';
@@ -112,7 +112,8 @@ function badgeLabel(badge: Badge): string {
     : fillTokens(th.summary.unitPassed, { n: unitOf(badge.unit).label });
 }
 
-function Tests({ itemsDone }: { itemsDone: number }) {
+/** `practised` is what the tests count (assessedItemsDone), not every item done. */
+function Tests({ practised }: { practised: number }) {
   const [status, setStatus] = useState<AssessmentStatus | null>(null);
   useEffect(() => {
     let live = true;
@@ -129,7 +130,7 @@ function Tests({ itemsDone }: { itemsDone: number }) {
 
   const line = (phase: 'pre' | 'post', label: string) => {
     const result = status?.[phase];
-    const blocked = testBlock(phase, itemsDone);
+    const blocked = testBlock(phase, practised);
     return (
       <li className="flex min-h-12 items-center justify-between gap-2 border-b border-line">
         <span className="font-medium">{label}</span>
@@ -218,7 +219,7 @@ export function ProfileScreen() {
 
       {mode === 'account' && (
         <Section title={th.profile.tests}>
-          <Tests itemsDone={profile.itemsDone} />
+          <Tests practised={assessedItemsDone(profile)} />
         </Section>
       )}
 

@@ -29,6 +29,7 @@ import {
   type Draft,
 } from '@/lib/practice/draft';
 import {
+  assessedItemsDone,
   testBlock,
   type AssessmentAnswer,
   type AssessmentForm,
@@ -285,7 +286,8 @@ export function TestScreen({ phase }: { phase: AssessmentPhase }) {
   if (stage.name === 'done') return <Result phase={phase} result={stage.result} />;
 
   if (stage.name === 'intro') {
-    const blocked = testBlock(phase, profile.itemsDone);
+    const practised = assessedItemsDone(profile);
+    const blocked = testBlock(phase, practised);
     if (blocked) {
       return (
         <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col items-center justify-center gap-4 px-4 text-center">
@@ -293,7 +295,7 @@ export function TestScreen({ phase }: { phase: AssessmentPhase }) {
           <p>
             {fillTokens(th.test.blocked[blocked], {
               n: String(CONFIG.postTestAfterItems),
-              done: String(profile.itemsDone),
+              done: String(practised),
             })}
           </p>
           <LinkButton href="/learn" className="w-full">
