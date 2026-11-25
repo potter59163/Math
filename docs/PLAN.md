@@ -193,9 +193,10 @@ Potter เลือกเพิ่มทั้งที่ใกล้วัน�
 - [x] ต่อเข้าแอปทุกหน้า และเรียนจบได้ที่ 360px ด้วย keypad (โหมดไม่ล็อกอิน)
 - [x] คลิป 10 template: intro 5 · concept 13 · แก้ความเข้าใจผิด 55 · วิธีทำ 13
 - [x] เสียง 172 บรรทัด (11 takes) อัดแล้ว
-- [ ] Potter ฟังเสียงและดูคลิปที่ `/preview/clip` (แท็บเวกเตอร์)
+- [x] Potter ฟังเสียงและดูคลิปที่ `/preview/clip` (แท็บเวกเตอร์): "ฟังเสียงแล้ว ผ่าน" (25 พ.ย.)
 - [ ] ครูคณิตตรวจ VECTORS §2, §4 และข้อความ `// TODO(review)` ใน `lib/content/th.vector.ts`
-- [ ] merge เข้า main, deploy, แล้วตั้ง `NEXT_PUBLIC_TOPICS=matrix,vector` บน Vercel (server ต้องขึ้นก่อนเปิดสวิตช์)
+- [x] merge เข้า main และ deploy พร้อมงานแก้ 5 เรื่องก่อนเปิด (gate, export, account, director, ui) เปิดด้วย `.env.production` (25 พ.ย.)
+- [x] คิวใช้ Claude Sonnet 5.5 วัดด้วย eval และผ่านการตรวจแบบ adversarial สองรอบ (AI_DIRECTOR §7)
 - [x] test กับ MongoDB จริง (`TEST_MONGODB_URI=… npm test`): `lib/server` 78 ตัวผ่าน
 - [ ] Potter แก้โปสเตอร์และ proposal ใน `submission/` ให้บอกว่ามีสองหัวข้อ
 
