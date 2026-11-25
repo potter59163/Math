@@ -110,7 +110,7 @@ export interface MarkedResponse {
   correct: boolean;
 }
 
-/** A fixed pre/post test (RESEARCH §4). Only matrices have one wired into the app. */
+/** A fixed pre/post test (RESEARCH §4). Only the matrix one is wired into the app. */
 export interface TopicAssessment {
   forms: readonly string[];
   formFor(userId: string, phase: 'pre' | 'post'): string;
@@ -195,6 +195,10 @@ export interface TopicPack {
   };
 
   copy: {
+    /** The question an item asks, filled in, as plain text. */
+    prompt(item: Item): string;
+    /** A choice option's label as plain text. Its topic's components may draw it more richly. */
+    choiceLabel(labelKey: string): string;
     /** At most 16 code units, for path notes (AI_DIRECTOR §3.2). */
     misconceptionShort(id: MisconceptionId): string;
     /** SPEC §9 L2 for a known misconception. */

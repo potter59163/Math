@@ -118,13 +118,14 @@ describe('topics in a sync batch (docs/VECTORS.md §6.2)', () => {
     const physics = batch(attempt('physics', 'mult', { kind: 'undefined' }));
     expect(both.safeParse(physics).success).toBe(false);
     expect(both.safeParse(batch({ type: 'set_topic', topic: 'physics' })).success).toBe(false);
-    // Today only matrices are registered, so the server still refuses vectors.
+    expect(syncRequest.safeParse(physics).success).toBe(false);
+  });
+
+  it('takes vectors now that the vector pack is registered', () => {
     expect(
       syncRequest.safeParse(batch(attempt('vector', 'v_points', { kind: 'undefined' }))).success,
-    ).toBe(false);
-    expect(syncRequest.safeParse(batch({ type: 'set_topic', topic: 'vector' })).success).toBe(
-      false,
-    );
+    ).toBe(true);
+    expect(syncRequest.safeParse(batch({ type: 'set_topic', topic: 'vector' })).success).toBe(true);
   });
 
   it('takes the matrix batch it always took', () => {

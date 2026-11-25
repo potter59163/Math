@@ -1,4 +1,5 @@
 import { CONFIG } from '@/lib/config';
+import { thVector } from './th.vector';
 
 // All Thai UI copy lives here. Draft copy stays marked TODO(review) until Potter and a math teacher check it.
 export const th = {
@@ -1885,6 +1886,9 @@ export const th = {
     // TODO(review)
     inv2_divide: 'หารทุกช่องด้วย det',
   },
+
+  // The vector pack's copy, which has its own file (lib/content/th.vector.ts) and its own review marks.
+  vector: thVector,
 } as const;
 
 export type PromptKey = keyof typeof th.prompts;

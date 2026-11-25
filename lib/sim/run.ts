@@ -6,7 +6,7 @@ import { applyPretest } from '@/lib/learner/profile';
 import { isUnlocked } from '@/lib/learner/progress';
 import type { AttemptOutcome, PretestResult, UnitId } from '@/lib/learner/types';
 import type { ItemRef } from '@/lib/core/types';
-import type { SkillId } from '@/lib/topics/types';
+import type { SkillId, TopicId } from '@/lib/topics/types';
 import { answerItem, openItem } from './drive';
 import { checkStep, checkTurn, type Violation } from './invariants';
 import type { SimStudent } from './students';
@@ -24,6 +24,8 @@ export interface SimOptions {
   /** Stops once this much planned time has gone (RESEARCH §3.1). */
   minutes?: number;
   pretest?: Partial<Record<SkillId, PretestResult>>;
+  /** The topic to learn, if not matrices. It must be switched on in CONFIG.topics to count. */
+  topic?: TopicId;
 }
 
 export interface SimStep {
@@ -68,8 +70,9 @@ export function runStudent({
   items = Infinity,
   minutes = Infinity,
   pretest,
+  topic,
 }: SimOptions): SimRun {
-  const fresh = newProfile({ id, units });
+  const fresh = newProfile({ id, units, ...(topic && { activeTopic: topic }) });
   const start = pretest ? applyPretest(fresh, pretest, { at: 0 }) : fresh;
 
   const steps: SimStep[] = [];

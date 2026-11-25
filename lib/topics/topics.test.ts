@@ -27,25 +27,25 @@ import {
 } from '.';
 
 describe('the topic registry', () => {
-  it('has matrices only, for now', () => {
-    expect(registeredTopics()).toEqual(['matrix']);
+  it('has matrices first, then vectors', () => {
+    expect(registeredTopics()).toEqual(['matrix', 'vector']);
     expect(DEFAULT_TOPIC).toBe('matrix');
   });
 
   it('refuses a topic it does not have', () => {
-    expect(() => packOf('vector')).toThrow(/unknown topic vector/);
-    expect(() => packOf('physics')).toThrow(/unknown topic/);
-    expect(() => packOfSkill('v_points')).toThrow(/unknown skill/);
+    expect(() => packOf('physics')).toThrow(/unknown topic physics/);
+    expect(() => packOfSkill('v_projection')).toThrow(/unknown skill/);
     expect(() => packOfMisconception('V01_SCALAR_VECTOR')).toThrow(/unknown misconception/);
-    expect(() => packOfUnit(11)).toThrow(/unknown unit/);
+    expect(() => packOfUnit(21)).toThrow(/unknown unit/);
   });
 
   it('gives the matrix pack the matrix engine itself', () => {
     const pack = packOf('matrix');
     expect(pack.skills).toBe(SKILLS);
     expect(pack.catalog).toBe(CATALOG);
-    expect(allSkills()).toEqual(SKILLS);
-    expect(allMisconceptions()).toEqual(CATALOG);
+    // Packs are listed in registration order, and matrices come first.
+    expect(allSkills().slice(0, SKILLS.length)).toEqual(SKILLS);
+    expect(allMisconceptions().slice(0, CATALOG.length)).toEqual(CATALOG);
     expect(pack.units.map(({ id }) => id)).toEqual([...ALL_UNITS]);
     expect(unitOf(3)).toEqual({ id: 3, label: '3', titleTh: 'คูณ' });
   });
@@ -78,14 +78,16 @@ describe('the topics switch', () => {
 
   it('offers only topics that are registered and switched on', () => {
     expect(enabledTopics(['matrix'])).toEqual(['matrix']);
-    expect(enabledTopics(['matrix', 'vector'])).toEqual(['matrix']);
-    expect(enabledTopics(['vector'])).toEqual(['matrix']);
+    expect(enabledTopics(['matrix', 'vector'])).toEqual(['matrix', 'vector']);
+    expect(enabledTopics(['vector'])).toEqual(['vector']);
+    expect(enabledTopics(['physics'])).toEqual(['matrix']);
   });
 
   it('puts a profile from before topics, or one on a topic not offered, on matrices', () => {
     expect(activeTopicOf({})).toBe('matrix');
     expect(activeTopicOf({ activeTopic: 'matrix' })).toBe('matrix');
-    expect(activeTopicOf({ activeTopic: 'vector' }, ['matrix', 'vector'])).toBe('matrix');
+    expect(activeTopicOf({ activeTopic: 'vector' }, ['matrix'])).toBe('matrix');
+    expect(activeTopicOf({ activeTopic: 'vector' }, ['matrix', 'vector'])).toBe('vector');
   });
 });
 
@@ -128,7 +130,9 @@ describe('a profile that also holds another topic', () => {
     expect(nextSkill(mixed)).toBe(nextSkill(plain));
     expect(mapOf(mixed)).toEqual(mapOf(plain));
     expect(recommendationFor(mixed)).toEqual(recommendationFor(plain));
-    expect(openMisconceptions(mixed)).toEqual(openMisconceptions(plain));
+    const matrixOnly = (ids: string[]) =>
+      ids.filter((id) => packOfMisconception(id).id === 'matrix');
+    expect(matrixOnly(openMisconceptions(mixed))).toEqual(openMisconceptions(plain));
     expect(openMisconceptions(mixed, 'dim')).toEqual([]);
   });
 
@@ -150,6 +154,9 @@ describe('choosing a topic', () => {
   });
 
   it('ignores a topic this engine does not have', () => {
-    expect(applyAction(profile, { type: 'set_topic', topic: 'vector' }).profile).toBe(profile);
+    const physics = { type: 'set_topic', topic: 'physics' } as unknown as Parameters<
+      typeof applyAction
+    >[1];
+    expect(applyAction(profile, physics).profile).toBe(profile);
   });
 });

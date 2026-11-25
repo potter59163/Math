@@ -1,13 +1,16 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Affixed } from '@/components/input/Affixed';
 import { AnswerBox } from '@/components/input/AnswerBox';
 import { ChoiceButtons } from '@/components/input/ChoiceButtons';
 import { DimsInput } from '@/components/input/DimsInput';
 import { Keypad } from '@/components/input/Keypad';
 import { MatrixInput } from '@/components/input/MatrixInput';
+import { VectorInput } from '@/components/input/VectorInput';
 import { ItemPrompt } from '@/components/learn/ItemPrompt';
 import { LoadingScreen } from '@/components/learn/LoadingScreen';
+import { componentsOf, type AnswerAffix } from '@/components/topics';
 import { Button, LinkButton } from '@/components/ui/Button';
 import { CONFIG } from '@/lib/config';
 import { th } from '@/lib/content/th';
@@ -21,6 +24,7 @@ import {
   pickChoice,
   pressKey,
   readiness,
+  takesRoot,
   toggleUndefined,
   type Draft,
 } from '@/lib/practice/draft';
@@ -63,6 +67,8 @@ function TestItem({
   const isChoice = item.kind === 'choice';
   const canBeUndefined = item.kind === 'matrix_or_undefined' || item.kind === 'dims_or_undefined';
   const isLast = itemNo === total;
+  const affix = componentsOf(item.ref.topic).answerAffix?.(item);
+  const selectBox = (box: number) => setDraft((current) => focusBox(current, box));
 
   const send = (answer: AssessmentAnswer['answer']) => onAnswer(answer, Date.now() - openedAt);
 
@@ -105,14 +111,18 @@ function TestItem({
                   draft={draft}
                   onSelect={(box) => setDraft((current) => focusBox(current, box))}
                 />
+              ) : item.kind === 'vector' ? (
+                <VectorInput draft={draft} onSelect={selectBox} />
               ) : (
-                <AnswerBox
-                  text={draft.cells[0]}
-                  label={th.session.box.answer}
-                  active
-                  sizeClass="h-14 w-36"
-                  onSelect={() => setDraft((current) => focusBox(current, 0))}
-                />
+                <MaybeAffixed affix={affix}>
+                  <AnswerBox
+                    text={draft.cells[0]}
+                    label={th.session.box.answer}
+                    active
+                    sizeClass="h-14 w-36"
+                    onSelect={() => selectBox(0)}
+                  />
+                </MaybeAffixed>
               )}
             </div>
           )}
@@ -146,6 +156,7 @@ function TestItem({
             <>
               <ChoiceButtons
                 options={item.options ?? []}
+                topic={item.ref.topic}
                 selected={draft.choice}
                 onPick={(id) => setDraft((current) => pickChoice(current, id))}
               />
@@ -161,6 +172,7 @@ function TestItem({
           ) : (
             <Keypad
               digitsOnly={item.kind === 'dims' || item.kind === 'dims_or_undefined'}
+              withRoot={takesRoot(item)}
               sendReady={state.ready}
               onKey={(key) => setDraft((current) => pressKey(current, item, key))}
               onSend={() => {
@@ -172,6 +184,16 @@ function TestItem({
       </div>
     </div>
   );
+}
+
+function MaybeAffixed({
+  affix,
+  children,
+}: {
+  affix: AnswerAffix | null | undefined;
+  children: ReactNode;
+}) {
+  return affix ? <Affixed affix={affix}>{children}</Affixed> : children;
 }
 
 function Result({ phase, result }: { phase: AssessmentPhase; result: AssessmentScore }) {

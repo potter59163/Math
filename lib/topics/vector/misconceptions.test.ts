@@ -254,18 +254,37 @@ describe('V11_MAG_ADDITIVE', () => {
   const data: VectorData = {
     form: 'magnitude_combo',
     terms: [
+      { k: 1, name: 'u', vec: vec(2, 1, 2) },
+      { k: 1, name: 'v', vec: vec(0, 4, 3) },
+    ],
+  };
+
+  it('u = (2, 1, 2), v = (0, 4, 3) → u + v = (2, 5, 5), |u + v| = √54 = 3√6 · candidate 3 + 5 = 8', () => {
+    const item = assemble('v_magnitude', 3, data);
+    expectCorrect(item, surd('3√6'));
+    expect(candidateOf('V11_MAG_ADDITIVE', data)).toEqual(surd('8'));
+  });
+
+  it('as an item, the doc example probes V11, apart from V09 = 54 and V10 = 12', () => {
+    const item = assemble('v_magnitude', 3, data, { target: 'V11_MAG_ADDITIVE' });
+    expectDetects(item, 'V11_MAG_ADDITIVE', surd('8'));
+    expectDetects(item, 'V09_MAG_NO_ROOT', surd('54'));
+    expectDetects(item, 'V10_MAG_SUM_COMPONENTS', surd('12'));
+    expectValid(item);
+  });
+
+  // The example the doc had before: u + v = (3, 0, 3), and V10 gives |3| + |0| + |3| = 6 = |u| + |v|.
+  const old: VectorData = {
+    form: 'magnitude_combo',
+    terms: [
       { k: 1, name: 'u', vec: vec(1, 2, 2) },
       { k: 1, name: 'v', vec: vec(2, -2, 1) },
     ],
   };
 
-  it('u = (1, 2, 2), v = (2, −2, 1) → u + v = (3, 0, 3), |u + v| = 3√2 · candidate 3 + 3 = 6', () => {
-    const item = assemble('v_magnitude', 3, data);
-    expectCorrect(item, surd('3√2'));
+  it('the old example u = (1, 2, 2), v = (2, −2, 1) cannot probe V11: V10 gives 6 too', () => {
+    const data = old;
     expect(candidateOf('V11_MAG_ADDITIVE', data)).toEqual(surd('6'));
-  });
-
-  it('as an item, the doc example cannot probe V11: V10 gives |3| + |0| + |3| = 6 too', () => {
     const item = assemble('v_magnitude', 3, data);
     expect(diagnosticAnswer(item, 'V10_MAG_SUM_COMPONENTS')).toEqual(surd('6'));
     expect(ids(item)).not.toContain('V11_MAG_ADDITIVE');

@@ -3,6 +3,7 @@ import { fillStudentText, resolveTokens } from '@/lib/director/tokens';
 import type { PreparedAttempt } from '@/lib/director/rules';
 import type { FallbackReason } from '@/lib/director/types';
 import type { Decide } from '@/lib/server/sync';
+import type { TopicId } from '@/lib/topics/types';
 import { llmConfig, type LlmConfig } from './config';
 import { buildDirectorInput } from './input';
 import { systemPrompt } from './prompt';
@@ -50,7 +51,7 @@ export async function decideWithLlm(
   try {
     const input = buildDirectorInput(prepared, timeMs, hintLevel);
     const text = await provider.completeJson({
-      system: systemPrompt(),
+      system: systemPrompt(CONFIG.appName, item.ref.topic as TopicId),
       user: JSON.stringify(input),
       signal: controller.signal,
     });

@@ -2,7 +2,14 @@ import { CONFIG } from '@/lib/config';
 import { classify } from '@/lib/core/classify';
 import type { Level } from '@/lib/core/types';
 import { comboAfter, xpFor } from '@/lib/practice/rewards';
-import { allMisconceptions, misconceptionOf, packOfSkill, skillOf } from '@/lib/topics';
+import {
+  activeTopicOf,
+  allMisconceptions,
+  misconceptionOf,
+  packOfMisconception,
+  packOfSkill,
+  skillOf,
+} from '@/lib/topics';
 import type { MisconceptionId, SkillId } from '@/lib/topics/types';
 import { logActivity } from './activity';
 import { guessRate, updateKnown } from './bkt';
@@ -85,10 +92,15 @@ export function openMisconceptions(
  * fixed, and must not hold back reviews until the student gets there.
  */
 export function isFixingMisconception(
-  profile: Pick<LearnerProfile, 'misconceptions' | 'skills'>,
+  profile: Pick<LearnerProfile, 'misconceptions' | 'skills'> &
+    Partial<Pick<LearnerProfile, 'student'>>,
 ): boolean {
-  return openMisconceptions(profile).some((id) =>
-    misconceptionOf(id).skills.some((skill) => (profile.skills[skill]?.attempts.length ?? 0) > 0),
+  // Only the topic being learned: an open vector misconception never holds back a matrix review.
+  const topic = profile.student && activeTopicOf(profile.student);
+  return openMisconceptions(profile).some(
+    (id) =>
+      (topic === undefined || packOfMisconception(id).id === topic) &&
+      misconceptionOf(id).skills.some((skill) => (profile.skills[skill]?.attempts.length ?? 0) > 0),
   );
 }
 

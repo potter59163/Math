@@ -10,7 +10,7 @@ import { th } from '@/lib/content/th';
 import { fillTokens } from '@/lib/core/tokens';
 import { mapOf } from '@/lib/learner/progress';
 import { badgesOf, type Badge } from '@/lib/practice/rewards';
-import { allMisconceptions, skillOf } from '@/lib/topics';
+import { allMisconceptions, skillOf, unitOf } from '@/lib/topics';
 import { LoadingScreen } from './LoadingScreen';
 
 function Stat({ icon, label, value }: { icon?: ReactNode; label: string; value: string }) {
@@ -28,7 +28,7 @@ function Stat({ icon, label, value }: { icon?: ReactNode; label: string; value: 
 function badgeLabel(badge: Badge): string {
   return badge.kind === 'fixed'
     ? th.summary.badgeFixed
-    : fillTokens(th.summary.unitPassed, { n: String(badge.unit) });
+    : fillTokens(th.summary.unitPassed, { n: unitOf(badge.unit).label });
 }
 
 function ListOfDone({ title, items }: { title: string; items: string[] }) {

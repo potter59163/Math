@@ -280,6 +280,27 @@ export const thVector = {
     volume_dot: 'ดอทกับ u',
     volume_abs: 'ปริมาตรคือค่าสัมบูรณ์',
   },
+
+  // TODO(review): the lessons header and the topic tab.
+  topic: {
+    title: 'เวกเตอร์',
+    note: 'คณิตศาสตร์เพิ่มเติม ม.5',
+  },
+
+  // The feedback card. `misconception` joins a name and its L2 hint, which hold no number from the item,
+  // so the card can never give the answer away. TODO(review)
+  feedback: {
+    misconception: 'คำตอบนี้เหมือน{{name}} {{hint}}',
+    slip: 'ผิดแค่องค์ประกอบที่ {{i}}',
+    simplified: 'ทำให้อยู่ในรูปอย่างง่ายได้เป็น {{value}}',
+  },
+
+  // TODO(review): words around the answer box of a number item.
+  answer: {
+    angle: 'θ =',
+    degrees: 'องศา',
+    unknown: '{{x}} =',
+  },
 } as const;
 
 export type VectorPromptKey = keyof typeof thVector.prompts;

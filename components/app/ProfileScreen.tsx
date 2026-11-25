@@ -13,7 +13,7 @@ import { skillStateOf } from '@/lib/learner/profile';
 import { mapOf } from '@/lib/learner/progress';
 import { badgesOf, type Badge } from '@/lib/practice/rewards';
 import { testBlock, type AssessmentStatus } from '@/lib/sync/assessment';
-import { allMisconceptions, misconceptionShortOf, skillOf } from '@/lib/topics';
+import { allMisconceptions, misconceptionShortOf, skillOf, unitOf } from '@/lib/topics';
 import { Avatar } from './Avatar';
 import { useLearner, useRequiredProfile } from './useLearner';
 
@@ -109,7 +109,7 @@ function Mastery({ profile }: { profile: Profile }) {
 function badgeLabel(badge: Badge): string {
   return badge.kind === 'fixed'
     ? th.summary.badgeFixed
-    : fillTokens(th.summary.unitPassed, { n: String(badge.unit) });
+    : fillTokens(th.summary.unitPassed, { n: unitOf(badge.unit).label });
 }
 
 function Tests({ itemsDone }: { itemsDone: number }) {
