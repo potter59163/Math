@@ -30,6 +30,7 @@ export async function POST(request: Request) {
     consentAt: new Date().toISOString(),
     profile: startingProfile(userId, theme as ThemeId, guestProfile),
   });
-  const learner = await store.loadLearner(userId);
-  return ok({ account, profile: learner?.profile ?? null });
+  // A second welcome changes nothing, so send back what the first one saved.
+  const [saved, learner] = await Promise.all([store.loadAccount(userId), store.loadLearner(userId)]);
+  return ok({ account: saved ?? account, profile: learner?.profile ?? null });
 }

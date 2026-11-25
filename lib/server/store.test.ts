@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { MongoClient, MongoServerError, type Db } from 'mongodb';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { storeAnswer } from '@/lib/core/answerJson';
-import { currentItem } from '@/lib/director/items';
+import { currentItem, rebuildItem } from '@/lib/director/items';
 import { startSession } from '@/lib/director/rules';
 import { finishScene, newProfile } from '@/lib/director/turn';
 import type { Profile } from '@/lib/director/types';
@@ -118,6 +118,36 @@ describe.skipIf(!uri)('on a real MongoDB', () => {
       expect(await store.loadAccount(id)).toBeNull();
     });
 
+    it('keeps the first welcome when the screen is finished again', async () => {
+      const { id } = await student(ACCOUNT, 'm5-1');
+      await store.updateAccount(id, { showOnLeaderboard: false });
+      // The research team put this student in the control group.
+      await db
+        .collection<{ _id: string }>('profiles')
+        .updateOne({ _id: id }, { $set: { condition: 'fixed' } });
+      const again: Account = { ...ACCOUNT, displayName: 'อีกชื่อ', showOnLeaderboard: true };
+      await store.createAccount(id, {
+        account: again,
+        cohort: 'other',
+        profile: started(id),
+        consentAt: '2026-11-20T02:00:00.000Z',
+      });
+      expect(await store.loadAccount(id)).toEqual({
+        ...ACCOUNT,
+        showOnLeaderboard: false,
+        condition: 'fixed',
+      });
+      const row = await db.collection<{ _id: string }>('profiles').findOne({ _id: id });
+      expect(row).toMatchObject({ cohort: 'm5-1', consent_at: new Date(CONSENT) });
+    });
+
+    it('is recorded for a student whose row has no consent yet', async () => {
+      const id = randomUUID();
+      await db.collection<{ _id: string }>('profiles').insertOne({ _id: id });
+      await store.createAccount(id, { account: ACCOUNT, profile: started(id), consentAt: CONSENT });
+      expect(await store.loadAccount(id)).toEqual(ACCOUNT);
+    });
+
     it('keeps what the student chose, and the group from their link', async () => {
       const { id } = await student(ACCOUNT, 'm5-1');
       expect(await store.loadAccount(id)).toEqual(ACCOUNT);
@@ -158,6 +188,42 @@ describe.skipIf(!uri)('on a real MongoDB', () => {
         devices: { a: 1 },
         profile: { xp: 40 },
       });
+    });
+
+    it('logs an answer to an item the server never opened, but pays it no XP', async () => {
+      const { id, profile } = await student();
+      const open = currentItem(profile) as MatrixItem;
+      const ref = { ...open.ref, seed: open.ref.seed + 7 };
+      const picked = rebuildItem(ref) as MatrixItem;
+      const answer = (seq: number, item: MatrixItem): QueuedAction => ({
+        seq,
+        action: {
+          type: 'attempt',
+          ref: item.ref,
+          answer: storeAnswer(item.correct),
+          hintLevel: 0,
+          timeMs: 10,
+          at: AT,
+        },
+      });
+      await processActions({ store, userId: id, deviceId: 'device-a', actions: [answer(1, picked)] });
+      const after = (await store.loadLearner(id))!.profile;
+      await processActions({
+        store,
+        userId: id,
+        deviceId: 'device-a',
+        actions: [answer(2, currentItem(after) as MatrixItem)],
+      });
+      const rows = await db
+        .collection('attempts')
+        .find({ user_id: id })
+        .sort({ seq: 1 })
+        .project({ _id: 0, seq: 1, xp: 1, issued: 1 })
+        .toArray();
+      expect(rows).toEqual([
+        { seq: 1, xp: 0, issued: false },
+        { seq: 2, xp: 10, issued: true },
+      ]);
     });
 
     it('cannot be saved over by someone who read an older copy', async () => {

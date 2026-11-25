@@ -318,22 +318,29 @@ export function createStore(db: Db): AppStore {
 
     async createAccount(userId, { account, cohort, profile, consentAt }) {
       const now = new Date();
-      await profiles.updateOne(
-        { _id: userId },
-        {
-          $set: {
-            display_name: account.displayName,
-            avatar: account.avatar,
-            show_on_leaderboard: account.showOnLeaderboard,
-            condition: account.condition,
-            consent_at: new Date(consentAt),
-            updated_at: now,
-            ...(cohort && { cohort }),
+      // Only a student with no consent yet: a second welcome, from a stale tab or a replayed request,
+      // must not turn a leaderboard opt-out back on, move consent, or change the trial group.
+      try {
+        await profiles.updateOne(
+          { _id: userId, consent_at: { $exists: false } },
+          {
+            $set: {
+              display_name: account.displayName,
+              avatar: account.avatar,
+              show_on_leaderboard: account.showOnLeaderboard,
+              condition: account.condition,
+              consent_at: new Date(consentAt),
+              updated_at: now,
+              ...(cohort && { cohort }),
+            },
+            $setOnInsert: { created_at: now },
           },
-          $setOnInsert: { created_at: now },
-        },
-        { upsert: true },
-      );
+          { upsert: true },
+        );
+      } catch (error) {
+        // The student has consented already, so the upsert met their _id. The first welcome stands.
+        if (!(error instanceof MongoServerError && error.code === 11000)) throw error;
+      }
       // Finishing the welcome screen twice, in two tabs say, must not wipe what the first one started.
       await learners.updateOne(
         { _id: userId },
