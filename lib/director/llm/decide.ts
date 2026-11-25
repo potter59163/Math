@@ -61,6 +61,7 @@ export async function decideWithLlm(
       allowedTokens: input.allowedTokens,
       revealAllowed: true,
       sizes: resolveTokens(item, answer, { revealAllowed: true }),
+      topic: item.ref.topic,
     });
     if (!checked.ok) return { tutor: { fallbackReason: checked.reason, latencyMs: latency() } };
 
