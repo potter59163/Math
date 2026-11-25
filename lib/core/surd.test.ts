@@ -175,3 +175,11 @@ describe('text', () => {
     expect(surdLatex(Surd.rational(Rational.of(5, 2)))).toBe('\\frac{5}{2}');
   });
 });
+
+describe('Surd.parse on forged text', () => {
+  it('refuses a radicand longer than any it prints, before simplifying it', () => {
+    expect(() => Surd.parse('√99999999999989')).toThrow(RangeError);
+    expect(() => Surd.parse('-3/2√12345678')).toThrow(RangeError);
+    expect(Surd.parse('√999999').toString()).toBe('3√111111');
+  });
+});

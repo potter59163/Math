@@ -68,6 +68,11 @@ export class Surd {
     const match = /^(-?)(\d+(?:\/\d+)?)?√(\d+)$/.exec(text);
     if (!match) return Surd.rational(Rational.parse(text));
     const [, sign, coeff, radicand] = match;
+    // toString never prints a radicand above SURD_MAX_RADICAND, so a longer one is forged, and
+    // simplifying it by trial division could keep the server busy for seconds.
+    if (radicand.length > String(SURD_MAX_RADICAND).length) {
+      throw new RangeError(`Surd: radicand ${radicand} is too long`);
+    }
     const c = coeff === undefined ? Rational.ONE : Rational.parse(coeff);
     return Surd.of(sign === '-' ? c.neg() : c, Number(radicand));
   }

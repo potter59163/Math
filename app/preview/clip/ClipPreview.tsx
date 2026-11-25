@@ -11,6 +11,7 @@ import { conceptScene, introScene, revealScene, type SceneSpec } from '@/lib/top
 import { SCENE_COMBOS, caughtExample } from '@/lib/topics/matrix/scenes/catalog';
 import { SKILLS } from '@/lib/topics/matrix/skills';
 import { vectorSections } from './vectorEntries';
+import { enabledTopics } from '@/lib/topics';
 import type { TopicId } from '@/lib/topics/types';
 
 const SOUNDS: readonly SoundName[] = ['correct', 'wrong', 'streak', 'done'];
@@ -42,7 +43,8 @@ function caughtEntries(seed: number, theme: ThemeId): Entry[] {
   });
 }
 
-const TOPICS: readonly TopicId[] = ['matrix', 'vector'];
+/** Only switched-on topics: vector clips stay unseen until vectors are offered to students. */
+const TOPICS: readonly TopicId[] = enabledTopics();
 
 /** Every clip the app can play, to watch and hear without having to get anything wrong on purpose. */
 export function ClipPreview() {
@@ -111,19 +113,21 @@ export function ClipPreview() {
             {th.clip.preview.again}
           </button>
         </div>
-        <div role="group" className="grid grid-cols-2 gap-2">
-          {TOPICS.map((id) => (
-            <button
-              key={id}
-              type="button"
-              aria-pressed={topic === id}
-              onClick={() => setTopic(id)}
-              className={`min-h-11 rounded-lg border px-3 py-2 ${topic === id ? 'border-cta text-cta' : 'border-line'}`}
-            >
-              {th.clip.preview.topics[id]}
-            </button>
-          ))}
-        </div>
+        {TOPICS.length > 1 && (
+          <div role="group" className="grid grid-cols-2 gap-2">
+            {TOPICS.map((id) => (
+              <button
+                key={id}
+                type="button"
+                aria-pressed={topic === id}
+                onClick={() => setTopic(id)}
+                className={`min-h-11 rounded-lg border px-3 py-2 ${topic === id ? 'border-cta text-cta' : 'border-line'}`}
+              >
+                {th.clip.preview.topics[id]}
+              </button>
+            ))}
+          </div>
+        )}
         <section className="flex flex-col gap-2">
           <h2 className="font-hand text-lg text-cta">{th.clip.preview.sounds}</h2>
           <div className="grid grid-cols-2 gap-2">
