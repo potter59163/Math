@@ -1,5 +1,6 @@
 import { markClipSeen, newLearnerProfile, noteSceneSeen } from '@/lib/learner/profile';
 import type { HintLevel, Student } from '@/lib/learner/types';
+import type { TopicId } from '@/lib/topics/types';
 import { drawItem, fingerprintOf, RECENT_ITEMS } from './items';
 import { pathStepFor } from './pathStep';
 import type {
@@ -123,6 +124,25 @@ export function finishScene(profile: Profile): Profile {
 /** The student pressed on from the feedback, with no clip to play. */
 export function finishTurn(profile: Profile): Profile {
   return profile.pending ? { ...profile, pending: undefined } : profile;
+}
+
+/**
+ * Nothing left open from a topic other than `topic`: an item on screen or a decision still to play
+ * would take the student back to it. What they answered is already in the model, so only the next
+ * step is let go. A decision belongs to the item it closed, or else to the item it leads to. The
+ * same profile when nothing is let go.
+ */
+export function dropOtherTopics(profile: Profile, topic: TopicId): Profile {
+  const { current, pending, ...rest } = profile;
+  const pendingTopic = pending && (pending.closed?.ref.topic ?? pending.turn.next?.topic);
+  const keepCurrent = !current || current.ref.topic === topic;
+  const keepPending = !pending || pendingTopic === undefined || pendingTopic === topic;
+  if (keepCurrent && keepPending) return profile;
+  return {
+    ...rest,
+    ...(current && keepCurrent && { current }),
+    ...(pending && keepPending && { pending }),
+  };
 }
 
 /** "ดูวิธีทำ" showed a misconception's own scene, which counts for R1 like any other view. */

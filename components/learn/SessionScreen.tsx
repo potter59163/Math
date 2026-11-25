@@ -23,6 +23,7 @@ import { fillTokens } from '@/lib/core/tokens';
 import type { Answer, Item } from '@/lib/core/types';
 import { rebuildItem } from '@/lib/director/items';
 import { stripNote } from '@/lib/director/pathStep';
+import { openInOtherTopic } from '@/lib/director/rules';
 import { sceneOfChosen, sceneOrNull, workedRequest } from '@/lib/director/scene';
 import type {
   ChosenScene,
@@ -145,13 +146,18 @@ function SessionLoop({ profile }: { profile: Profile }) {
 
   const clip = !closed && pending ? pending.turn.scenes[0] : undefined;
   const lostTurn = pending && !closed && !clip;
+  // Left open in a topic the student is no longer learning, as when vectors are switched off again.
+  const elsewhere = openInOtherTopic(profile);
 
   useEffect(() => {
-    if (lostTurn) learner.dispatch({ type: 'finish_turn' });
+    if (elsewhere) learner.dispatch({ type: 'start' });
+    else if (lostTurn) learner.dispatch({ type: 'finish_turn' });
     else if (!pending && !open) learner.dispatch({ type: 'start' });
-  }, [lostTurn, pending, open]);
+  }, [elsewhere, lostTurn, pending, open]);
 
   useEffect(preloadScenes, []);
+
+  if (elsewhere) return <LoadingScreen />;
 
   if (clip) {
     return <ClipOnly key={JSON.stringify(clip.request)} profile={profile} clip={clip} />;

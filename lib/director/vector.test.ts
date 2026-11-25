@@ -6,9 +6,10 @@ vi.hoisted(() => {
 });
 
 import { CONFIG } from '@/lib/config';
+import { fixedStepAt } from '@/lib/director/fixedPath';
 import { currentItem } from '@/lib/director/items';
 import { MAX_NOTE_UNITS, stripNote } from '@/lib/director/pathStep';
-import { startSession, submitAttempt } from '@/lib/director/rules';
+import { beginSession, startSession, submitAttempt } from '@/lib/director/rules';
 import { workedRequest, buildScene } from '@/lib/director/scene';
 import { finishScene, newProfile } from '@/lib/director/turn';
 import type { Profile } from '@/lib/director/types';
@@ -19,7 +20,9 @@ import { applyAction } from '@/lib/sync/actions';
 import { hintAt } from '@/lib/practice/hints';
 import { Surd } from '@/lib/core/surd';
 import { misconceptionAnswer } from '@/lib/sim/answers';
-import { activeTopicOf, packOfSkill } from '@/lib/topics';
+import { answerItem, openItem } from '@/lib/sim/drive';
+import { activeTopicOf, packOfSkill, type TopicId } from '@/lib/topics';
+import { generate as generateMatrix } from '@/lib/topics/matrix/generators';
 import { generate } from '@/lib/topics/vector/generators';
 
 const DIGIT = /[0-9๐-๙]/;
@@ -150,5 +153,52 @@ describe('with vectors as the active topic', () => {
     // Choosing the topic already on screen keeps the item.
     const { profile: same } = applyAction(onVectors, { type: 'set_topic', topic: 'vector' });
     expect(same.current).toEqual(onVectors.current);
+  });
+
+  it('lets go at the session start of a matrix item that came back after the switch', () => {
+    // A phone still on matrices sent its answer after the switch, which drew a matrix item again.
+    const onVectors = settled(startSession(vectorStudent('VEC-6')));
+    const { ref } = generateMatrix({ skill: 'dim', difficulty: 1, seed: 1 });
+    const { profile, turn } = beginSession({ ...onVectors, current: { ref, hintLevel: 0 } });
+    expect(turn?.next?.topic).toBe('vector');
+    expect(currentItem(settled(profile))?.ref.topic).toBe('vector');
+  });
+});
+
+describe('the fixed path of each topic', () => {
+  const matrixStudent = (id: string) => newProfile({ id, units: [1, 2, 3, 4, 5] });
+  const switchTo = (profile: Profile, topic: TopicId) =>
+    applyAction(profile, { type: 'set_topic', topic }).profile;
+  const walk = (start: Profile, count: number) => {
+    let profile = start;
+    const steps: [string, string, number][] = [];
+    for (let index = 0; index < count; index += 1) {
+      const opened = openItem(profile, 'fixed');
+      const { topic, skill, difficulty } = opened.item.ref;
+      steps.push([topic, skill, difficulty]);
+      ({ profile } = answerItem(opened.profile, opened.item, opened.item.correct, {
+        condition: 'fixed',
+      }));
+    }
+    return { profile, steps };
+  };
+
+  it('starts vectors at the beginning of their path, however far matrices got', () => {
+    const onMatrices = walk(matrixStudent('VEC-F1'), 7).profile;
+    expect(walk(switchTo(onMatrices, 'vector'), 5).steps).toEqual([
+      ['vector', 'v_quantity', 1],
+      ['vector', 'v_quantity', 1],
+      ['vector', 'v_quantity', 2],
+      ['vector', 'v_quantity', 2],
+      ['vector', 'v_quantity', 3],
+    ]);
+  });
+
+  it('takes matrices up again where they were left', () => {
+    const onMatrices = walk(matrixStudent('VEC-F2'), 7).profile;
+    const onVectors = walk(switchTo(onMatrices, 'vector'), 3).profile;
+    // The eighth step of the matrix path, as if the three vector items had not been there.
+    expect(fixedStepAt([1, 2, 3, 4, 5], 7)).toEqual({ skill: 'index', level: 2 });
+    expect(walk(switchTo(onVectors, 'matrix'), 1).steps).toEqual([['matrix', 'index', 2]]);
   });
 });

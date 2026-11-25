@@ -1,7 +1,7 @@
 import { restoreAnswer, type StoredAnswer } from '@/lib/core/answerJson';
 import { rebuildItem } from '@/lib/director/items';
 import { beginSession, practiceSkill, requestHelp, submitAttempt } from '@/lib/director/rules';
-import { finishScene, finishTurn, noteWorkedView } from '@/lib/director/turn';
+import { dropOtherTopics, finishScene, finishTurn, noteWorkedView } from '@/lib/director/turn';
 import type { Condition, NextTurn, Profile, SceneRequest } from '@/lib/director/types';
 import { advanceHint } from '@/lib/learner/profile';
 import { isRegisteredTopic } from '@/lib/topics';
@@ -112,16 +112,11 @@ export function applyAction(
 
 /**
  * The student's topic, and nothing left open from another one: an item on screen or a decision still
- * to play would otherwise take them straight back to the topic they just left. What they answered is
- * already in the model, so only the next step is let go.
+ * to play would otherwise take them straight back to the topic they just left.
  */
 function withTopic(profile: Profile, topic: TopicId): Profile {
-  const { current, pending, ...rest } = profile;
-  const pendingTopic = pending && (pending.closed?.ref.topic ?? pending.turn.next?.topic);
-  return {
-    ...rest,
-    student: { ...profile.student, activeTopic: topic },
-    ...(current && current.ref.topic === topic && { current }),
-    ...(pending && (pendingTopic === undefined || pendingTopic === topic) && { pending }),
-  };
+  return dropOtherTopics(
+    { ...profile, student: { ...profile.student, activeTopic: topic } },
+    topic,
+  );
 }
