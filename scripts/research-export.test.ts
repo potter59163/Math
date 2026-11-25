@@ -1,16 +1,21 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { packOf } from '@/lib/topics';
+import * as research from './research-export.mjs';
 import { exportBeforeVectors } from './research-export.frozen.mjs';
-import { MISCONCEPTIONS, researchExport } from './research-export.mjs';
-import type { Row, Tables } from './research-export.fixtures';
+import { matrixClass, withVectors, type Row, type Tables } from './research-export.fixtures';
 
-// The export must give a class that did matrices only exactly what it gave before vectors came in.
-// research-export.frozen.mjs is that export, kept as it was.
+// The export must give a class that did matrices only exactly what it gave before vectors came in, and
+// a class that has started vectors the same files as if it had not (docs/VECTORS.md §6.2).
+// research-export.frozen.mjs is the export as it was.
 
+const { researchExport } = research;
 const matrix = packOf('matrix');
 const MATRIX_SKILLS = matrix.skills.map(({ id }) => id);
 const M_CODES = matrix.catalog.map(({ id }) => id);
+const vector = packOf('vector');
+const VECTOR_SKILLS = vector.skills.map(({ id }) => id);
+const V_CODES = vector.catalog.map(({ id }) => id);
 
 const USERS = ['u-1', 'u-2', 'u-3', 'u-4', 'u-5'];
 const ASSESSMENTS = ['t-1', 't-2', 't-3', 't-4', 't-5', 't-6'];
@@ -130,8 +135,8 @@ const candidateOf = (skill: fc.Arbitrary<string>, misconception: fc.Arbitrary<st
     ['scene', 'misconception'],
   );
 
-/** As `decisionRow` writes it. Every one the store writes has its candidates; this may have none. */
-const decisionOf = (candidates: fc.Arbitrary<Row[]>) =>
+/** As `decisionRow` writes it. Every one the store writes has its candidates; a test may leave them out. */
+const decisionOf = (candidates: fc.Arbitrary<Row[]>, optional = ['candidates']) =>
   record(
     {
       _id: id,
@@ -149,7 +154,7 @@ const decisionOf = (candidates: fc.Arbitrary<Row[]>) =>
       fallback_reason: fc.constantFrom(null, 'generator', 'disabled', 'timeout', 'schema_invalid'),
       created_at: day,
     },
-    ['candidates'],
+    optional,
   );
 
 const matrixCandidates = fc.array(
@@ -299,11 +304,96 @@ const matrixTables = record({
   ),
 }) as fc.Arbitrary<Tables>;
 
+const vectorRef = record(
+  {
+    topic: fc.constant('vector'),
+    skill: fc.constantFrom(...VECTOR_SKILLS),
+    difficulty: level,
+    seed: fc.nat(),
+    target: fc.constantFrom(...V_CODES),
+    gv: fc.constant(1),
+  },
+  ['target'],
+);
+
+// Each turn's candidates are all in the topic being learnt (lib/director/candidates.ts).
+const vectorDecision = decisionOf(
+  fc.array(candidateOf(fc.constantFrom(...VECTOR_SKILLS), fc.constantFrom(...V_CODES)), {
+    minLength: 1,
+    maxLength: 4,
+  }),
+  [],
+);
+
+/** Somewhere to put each one: a row's place among the others, or an entry's place in its map. */
+const placed = <T>(what: fc.Arbitrary<T>, maxLength: number) =>
+  fc.array(fc.tuple(fc.nat(), what), { maxLength });
+
+/** What a class adds once vectors are on: rows in the shared collections and entries in the maps. */
+const vectorWork = fc.record({
+  attempts: placed(attemptOf(vectorRef), 6),
+  decisions: placed(vectorDecision, 6),
+  hints: placed(hintOf(vectorRef), 4),
+  skills: placed(fc.tuple(fc.nat(), fc.constantFrom(...VECTOR_SKILLS), skillState), 6),
+  misconceptions: placed(fc.tuple(fc.nat(), fc.constantFrom(...V_CODES), misconceptionState), 6),
+});
+type VectorWork = typeof vectorWork extends fc.Arbitrary<infer T> ? T : never;
+
+/** `rows` with `extra` put in among them. The rows that were there keep their order. */
+function among(rows: Row[], extra: [number, Row][]): Row[] {
+  const mixed = [...rows];
+  for (const [at, row] of extra) mixed.splice(at % (mixed.length + 1), 0, row);
+  return mixed;
+}
+
+/** A map's entries with those of `extra` that are this learner's put in among them. */
+function amongEntries(map: unknown, extra: [number, [number, string, Row]][], mine: Predicate) {
+  if (map === undefined) return undefined;
+  const entries = Object.entries(map as Row);
+  for (const [at, [learner, key, value]] of extra) {
+    if (mine(learner)) entries.splice(at % (entries.length + 1), 0, [key, value]);
+  }
+  return Object.fromEntries(entries);
+}
+type Predicate = (learner: number) => boolean;
+
+/** The class after it has also done this vector work. A map that a profile lacks stays out. */
+function withWork(tables: Tables, work: VectorWork): Tables {
+  const learners = tables.learner_profiles.length;
+  return {
+    ...tables,
+    attempts: among(tables.attempts, work.attempts),
+    decisions: among(tables.decisions, work.decisions),
+    hint_events: among(tables.hint_events, work.hints),
+    learner_profiles: tables.learner_profiles.map((row, index) => {
+      const profile = row.profile as Row;
+      const mine = (learner: number) => learner % learners === index;
+      const skills = amongEntries(profile.skills, work.skills, mine);
+      const misconceptions = amongEntries(profile.misconceptions, work.misconceptions, mine);
+      return {
+        ...row,
+        profile: {
+          ...profile,
+          ...(skills && { skills }),
+          ...(misconceptions && { misconceptions }),
+        },
+      };
+    }),
+  };
+}
+
 /** Files in the order they are written, then the count the script prints. */
 const outputOf = ({ files, students }: { files: Map<string, string>; students: number }) => ({
   files: [...files],
   students,
 });
+
+/** One cell of research_wide.csv, for the student with this alias. */
+function wideCell(files: Map<string, string>, alias: string, column: string): string | undefined {
+  const [header, ...rows] = (files.get('research_wide.csv') ?? '').trimEnd().split('\n');
+  const row = rows.find((line) => line.startsWith(`${alias},`))?.split(',');
+  return row?.[header.split(',').indexOf(column)];
+}
 
 describe('the research export', () => {
   it('gives a class that did matrices only what it gave before vectors', () => {
@@ -316,7 +406,62 @@ describe('the research export', () => {
     );
   });
 
+  it('gives a class that has started vectors what it would have got without them', () => {
+    fc.assert(
+      fc.property(matrixTables, vectorWork, cohort, (tables, work, room) => {
+        expect(outputOf(researchExport(withWork(tables, work), room))).toEqual(
+          outputOf(exportBeforeVectors(tables, room)),
+        );
+      }),
+    );
+  });
+
+  it('leaves out the vector work the export used to count', () => {
+    const before = exportBeforeVectors(withVectors()).files;
+    const after = researchExport(withVectors()).files;
+    // The old export counted S-1's vector answers, skills, hint, fix and decisions as matrix work.
+    for (const [column, counted, kept] of [
+      ['items_done', '6', '4'],
+      ['skills_reached', '5', '3'],
+      ['skills_mastered', '2', '1'],
+      ['hints_used', '4', '3'],
+      ['misconceptions_resolved', '3', '2'],
+      ['median_items_to_resolve', '3', '4.5'],
+      ['llm_decisions', '2', '1'],
+      ['fallback_rate', String(4 / 7), '0.5'],
+      ['minutes_in_app', '3', '2.3'],
+    ]) {
+      expect([column, wideCell(before, 'S-1', column)]).toEqual([column, counted]);
+      expect([column, wideCell(after, 'S-1', column)]).toEqual([column, kept]);
+    }
+    for (const name of [
+      'attempts.csv',
+      'decisions.csv',
+      'hint_events.csv',
+      'learner_profiles.csv',
+    ]) {
+      expect(before.get(name)).toMatch(/v_quantity/);
+      expect(after.get(name)).not.toMatch(/v_[a-z]|V\d\d_/);
+    }
+    expect(outputOf(researchExport(withVectors()))).toEqual(
+      outputOf(researchExport(matrixClass())),
+    );
+  });
+
+  it('keeps a row that names no topic, which is a matrix row from before topics', () => {
+    const tables = matrixClass();
+    const attempts = researchExport(tables).files.get('attempts.csv') ?? '';
+    expect(attempts).toContain('S-1,5,"{""skill"":""det2"",""difficulty"":1,""seed"":9,""gv"":2}"');
+    expect(wideCell(researchExport(tables).files, 'S-1', 'items_done')).toBe('4');
+  });
+
   it('has a pre/post column for every misconception of the matrix catalog, in its order', () => {
-    expect(MISCONCEPTIONS).toEqual(M_CODES);
+    expect(research.MISCONCEPTIONS).toEqual(M_CODES);
+  });
+
+  it('keeps the skills of the matrix pack, which no vector skill is', () => {
+    expect(research.MATRIX_SKILLS).toEqual(MATRIX_SKILLS);
+    expect(VECTOR_SKILLS.filter((skill) => MATRIX_SKILLS.includes(skill))).toEqual([]);
+    expect(V_CODES.filter((code) => M_CODES.includes(code))).toEqual([]);
   });
 });

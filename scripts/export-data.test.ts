@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { matrixClass, type Tables } from './research-export.fixtures';
+import { matrixClass, withVectors, type Tables } from './research-export.fixtures';
 import { exportBeforeVectors } from './research-export.frozen.mjs';
 
 // Runs the real `npm run export` script with MongoDB and the disk swapped for memory. The snapshots
@@ -93,5 +93,12 @@ describe('npm run export', () => {
 
   it('writes headers alone, and no research_wide.csv, when there is no one to export', async () => {
     await expect(await runExport({})).toMatchFileSnapshot('./__snapshots__/export-data.empty.txt');
+  });
+
+  // docs/VECTORS.md §6.2: the research is about matrices, so vector work stays out of these files.
+  it('writes the same files once the class has started vectors', async () => {
+    for (const cohort of [undefined, 'm5-1']) {
+      expect(await runExport(withVectors(), cohort)).toBe(await runExport(matrixClass(), cohort));
+    }
   });
 });

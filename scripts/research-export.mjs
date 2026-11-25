@@ -25,7 +25,30 @@ function csv(rows, columns) {
   return `${[columns.join(','), ...rows.map((row) => columns.map((name) => cell(row[name])).join(','))].join('\n')}\n`;
 }
 
-// One row per student (RESEARCH §5). A form with no item for a misconception leaves its cell blank.
+// Vectors share these collections and the one flat profile, but the research is about matrices, so the
+// files keep matrix work alone (docs/VECTORS.md §6.2): a class that has started vectors gets the files
+// it would have got without them. Ids never collide across topics, and these two lists are the matrix
+// pack's, which research-export.test.ts keeps them in step with.
+
+/** The matrix skills (lib/topics/matrix/skills.ts). */
+export const MATRIX_SKILLS = [
+  'dim',
+  'index',
+  'transpose',
+  'addsub',
+  'scalar',
+  'mult_defined',
+  'mult',
+  'mult_noncomm',
+  'det2',
+  'det3',
+  'det_props',
+  'invertible',
+  'inv2',
+];
+
+// The matrix catalog. research_wide.csv has one row per student (RESEARCH §5), with a pre and a post
+// column for each: a form with no item for a misconception leaves its cell blank.
 export const MISCONCEPTIONS = [
   'M01_DIM_SWAP',
   'M02_INDEX_SWAP',
@@ -52,6 +75,30 @@ const ON_TEST = new Set(
   ),
 );
 
+const MATRIX_SKILL_IDS = new Set(MATRIX_SKILLS);
+const M_CODES = new Set(MISCONCEPTIONS);
+
+/** An item ref from before topics names none, and it is a matrix one. */
+const isMatrixRef = (ref) => (ref?.topic ?? 'matrix') === 'matrix';
+
+/** A decision is in the topic of the step it chose: every candidate of a turn is in the same one. */
+function isMatrixDecision({ candidates, choice }) {
+  const chosen = candidates?.find(({ id }) => id === choice) ?? candidates?.[0];
+  const skill = chosen?.next?.skill;
+  return skill === undefined || MATRIX_SKILL_IDS.has(skill);
+}
+
+/** The entries of a map keyed by id that `ids` has, in the order they were. */
+const only = (ids, map) =>
+  map && Object.fromEntries(Object.entries(map).filter(([id]) => ids.has(id)));
+
+/** The learner model of matrices: the flat skill and misconception maps without another topic's ids. */
+const matrixPart = (profile) => ({
+  ...profile,
+  skills: only(MATRIX_SKILL_IDS, profile.skills),
+  misconceptions: only(M_CODES, profile.misconceptions),
+});
+
 const median = (values) => {
   if (values.length === 0) return null;
   const sorted = [...values].sort((a, b) => a - b);
@@ -72,44 +119,54 @@ export function researchExport(tables, cohort) {
     .sort((a, b) => a.created_at - b.created_at);
   const aliasOf = new Map(profiles.map(({ _id }, index) => [_id, `S-${index + 1}`]));
 
-  function exportTable(table, columns) {
+  function exportTable(table, columns, isMatrix = () => true) {
     const rows = all(table)
-      .filter((row) => aliasOf.has(row.user_id))
+      .filter((row) => aliasOf.has(row.user_id) && isMatrix(row))
       .map((row) => ({ ...row, id: String(row._id), alias: aliasOf.get(row.user_id) }));
     files.set(`${table}.csv`, csv(rows, ['alias', ...columns]));
     return rows;
   }
+  const ofMatrixItem = (row) => isMatrixRef(row.item_ref);
 
-  const attempts = exportTable('attempts', [
-    'seq',
-    'item_ref',
-    'skill',
-    'difficulty',
-    'kind',
-    'target',
-    'answer',
-    'classification',
-    'misconception',
-    'variant',
-    'wrong_cells',
-    'time_ms',
-    'hint_level',
-    'xp',
-    'created_at',
-  ]);
-  const decisions = exportTable('decisions', [
-    'trigger',
-    'mode',
-    'candidates',
-    'choice',
-    'message',
-    'path_note',
-    'narration',
-    'reason',
-    'latency_ms',
-    'fallback_reason',
-    'created_at',
-  ]);
+  const attempts = exportTable(
+    'attempts',
+    [
+      'seq',
+      'item_ref',
+      'skill',
+      'difficulty',
+      'kind',
+      'target',
+      'answer',
+      'classification',
+      'misconception',
+      'variant',
+      'wrong_cells',
+      'time_ms',
+      'hint_level',
+      'xp',
+      'created_at',
+    ],
+    ofMatrixItem,
+  );
+  const decisions = exportTable(
+    'decisions',
+    [
+      'trigger',
+      'mode',
+      'candidates',
+      'choice',
+      'message',
+      'path_note',
+      'narration',
+      'reason',
+      'latency_ms',
+      'fallback_reason',
+      'created_at',
+    ],
+    isMatrixDecision,
+  );
+  // A scene view names no topic, and worked_solution is a template both topics play, so all are kept.
   const views = exportTable('scene_views', [
     'template',
     'purpose',
@@ -120,7 +177,8 @@ export function researchExport(tables, cohort) {
     'duration_ms',
     'created_at',
   ]);
-  const hints = exportTable('hint_events', ['item_ref', 'level', 'created_at']);
+  const hints = exportTable('hint_events', ['item_ref', 'level', 'created_at'], ofMatrixItem);
+  // Only the matrix test is wired into the app (docs/VECTORS.md §6.1).
   const assessments = exportTable('assessments', [
     'id',
     'phase',
@@ -146,7 +204,9 @@ export function researchExport(tables, cohort) {
       'time_ms',
     ]),
   );
-  const learners = all('learner_profiles').filter((row) => aliasOf.has(row._id));
+  const learners = all('learner_profiles')
+    .filter((row) => aliasOf.has(row._id))
+    .map((row) => ({ ...row, profile: matrixPart(row.profile) }));
   files.set(
     'learner_profiles.csv',
     csv(

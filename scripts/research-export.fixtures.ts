@@ -1,5 +1,5 @@
 // Made-up rows in the shapes lib/server/store.ts writes, for the research export's tests: a class of
-// matrix students as the trial left them.
+// matrix students as the trial left them, and the same class once vectors are switched on.
 
 export type Row = Record<string, unknown>;
 export type Tables = Record<string, Row[]>;
@@ -8,6 +8,10 @@ const at = (time: string): Date => new Date(`2026-11-13T${time}+07:00`);
 
 export function matrixRef(skill: string, difficulty: number, seed: number, target?: string) {
   return { topic: 'matrix', skill, difficulty, seed, ...(target && { target }), gv: 2 };
+}
+
+export function vectorRef(skill: string, difficulty: number, seed: number, target?: string) {
+  return { topic: 'vector', skill, difficulty, seed, ...(target && { target }), gv: 1 };
 }
 
 interface AttemptRef {
@@ -504,5 +508,145 @@ export function matrixClass(): Tables {
         updated_at: at('09:36:00'),
       },
     ],
+  };
+}
+
+/** `rows` with `extra[i]` put in before row i, so the rows that were there keep their order. */
+function among(rows: Row[], extra: Record<number, Row[]>): Row[] {
+  return [
+    ...rows.flatMap((row, index) => [...(extra[index] ?? []), row]),
+    ...(extra[rows.length] ?? []),
+  ];
+}
+
+/** A map keyed by id with `extra` taking turns with what is there, as two topics practised in turn leave it. */
+function alternate(map: unknown, extra: Row): Row {
+  const mine = Object.entries(map as Row);
+  const theirs = Object.entries(extra);
+  return Object.fromEntries(
+    Array.from({ length: Math.max(mine.length, theirs.length) }, (_, index) =>
+      [theirs[index], mine[index]].filter((entry) => entry !== undefined),
+    ).flat(),
+  );
+}
+
+/**
+ * The same class once vectors are on: every matrix row as it was, with vector work among them. Only what
+ * a row says is a vector's is added, so the running totals (xp, itemsDone) stay as they were.
+ */
+export function withVectors(): Tables {
+  const tables = matrixClass();
+  const magnitude = vectorRef('v_magnitude', 1, 5, 'V09_MAG_NO_ROOT');
+  const vectorMaps: Record<string, { skills: Row; misconceptions: Row }> = {
+    'acct-a': {
+      skills: {
+        v_points: skill(5, true, [9_000]),
+        v_magnitude: skill(6, false, [30_000]),
+      },
+      misconceptions: {
+        V09_MAG_NO_ROOT: misconception('resolved', 5, { itemsToResolve: 1, msToResolve: 60_000 }),
+        V05_POINTS_REVERSED: misconception('suspected', 0, { fromPretest: false }),
+      },
+    },
+    'acct-b': {
+      skills: { v_quantity: skill(2, true, [7_000]) },
+      misconceptions: {
+        V01_QUANTITY_MIX: misconception('resolved', 1, { itemsToResolve: 2, msToResolve: 90_000 }),
+      },
+    },
+  };
+  return {
+    ...tables,
+    attempts: among(tables.attempts, {
+      1: [
+        attempt('acct-a', 10, vectorRef('v_points', 1, 3), '10:01:00', {
+          kind: 'vector',
+          answer: { kind: 'vector', value: ['3', '-1'] },
+          time_ms: 9_000,
+        }),
+      ],
+      3: [
+        attempt('acct-a', 11, magnitude, '10:03:00', {
+          kind: 'surd',
+          answer: { kind: 'surd', value: '25' },
+          classification: 'misconception',
+          misconception: 'V09_MAG_NO_ROOT',
+          time_ms: 30_000,
+          xp: 0,
+        }),
+      ],
+      5: [
+        attempt('acct-b', 5, vectorRef('v_quantity', 1, 8), '10:02:00', {
+          kind: 'choice',
+          answer: { kind: 'choice', id: 'vector' },
+          time_ms: 7_000,
+        }),
+      ],
+    }),
+    decisions: among(tables.decisions, {
+      2: [
+        decision('acct-a', 10, '10:00:00', {
+          trigger: 'session_start',
+          candidates: [
+            candidate('c1', 'v_quantity', 1, {
+              rule: 'start',
+              score: 1,
+              scene: { template: 'quantity_sort', beats: ['compare', 'cards', 'ask'] },
+              stepKind: 'concept',
+            }),
+          ],
+          reason: 'start',
+        }),
+        decision('acct-a', 11, '10:01:00', {
+          attempt_id: 'attempt-acct-a-10',
+          candidates: [candidate('c1', 'v_points', 1), candidate('c2', 'v_magnitude', 1)],
+          latency_ms: 4_000,
+          fallback_reason: 'timeout',
+        }),
+        decision('acct-a', 12, '10:03:00', {
+          attempt_id: 'attempt-acct-a-11',
+          mode: 'llm',
+          candidates: [
+            candidate('c1', 'v_magnitude', 1, {
+              rule: 'R1',
+              scene: { template: 'magnitude_box', beats: ['box', 'square', 'root'] },
+              next: { skill: 'v_magnitude', level: 1, purpose: 'probe', target: 'V09_MAG_NO_ROOT' },
+              stepKind: 'remediate',
+              misconception: 'V09_MAG_NO_ROOT',
+            }),
+            candidate('c2', 'v_points', 1),
+          ],
+          // The tutor's pick, not the rules' first.
+          choice: 'c2',
+          latency_ms: 2_100,
+          fallback_reason: null,
+        }),
+      ],
+      5: [
+        decision('acct-b', 10, '10:02:00', {
+          trigger: 'student_request',
+          mode: 'fixed',
+          candidates: [candidate('c1', 'v_quantity', 1, { rule: 'request' })],
+          fallback_reason: null,
+        }),
+      ],
+    }),
+    hint_events: among(tables.hint_events, {
+      2: [hint('acct-a', 10, '10:02:40', magnitude, 1)],
+      5: [hint('acct-b', 10, '10:01:30', vectorRef('v_quantity', 1, 8), 2)],
+    }),
+    learner_profiles: tables.learner_profiles.map((row) => {
+      const extra = vectorMaps[row._id as string];
+      if (!extra) return row;
+      const profile = row.profile as Row;
+      return {
+        ...row,
+        profile: {
+          ...profile,
+          skills: alternate(profile.skills, extra.skills),
+          misconceptions: alternate(profile.misconceptions, extra.misconceptions),
+        },
+      };
+    }),
   };
 }
