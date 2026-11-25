@@ -190,34 +190,6 @@ describe('hasNumberInWords', () => {
     expect(hasNumberInWords(text)).toBe(false);
   });
 
-  // The vector topic's own words (docs/VECTORS.md): every model wrote them, and each was thrown away.
-  it.each([
-    'ยกกำลังสองแล้วบวกกัน',
-    'รวมค่ากำลังสองของแต่ละองค์ประกอบ',
-    'เอาสองแนวทแยงมาลบกัน',
-    'อย่าลืมถอดรากที่สอง',
-    'เวกเตอร์ในสองมิติ',
-    'พิกัดสามมิติ',
-    'เวกเตอร์หนึ่งหน่วย',
-    'มุมระหว่างสองเวกเตอร์',
-    'ปริมาตรจากสามเวกเตอร์',
-    'หาเวกเตอร์จากจุดสองจุด',
-    'สองเส้นทแยงมุม',
-  ])('leaves the maths word %s alone', (text) => {
-    expect(hasNumberInWords(text)).toBe(false);
-  });
-
-  // Counted things the item shows, and "one" meaning "a": seen in the eval, never an answer.
-  it.each([
-    'เทียบเวกเตอร์สองตัว',
-    'เวกเตอร์สองเส้นนี้',
-    'ลำดับของสองตัวนี้สลับกัน',
-    'มีช่องหนึ่งคลาดไป',
-    'ข้ามไปขั้นหนึ่ง',
-  ])('leaves the count of what is on screen %s alone', (text) => {
-    expect(hasNumberInWords(text)).toBe(false);
-  });
-
   it.each([
     'อีกสองตัว',
     'สลับสองช่องบนแนวทแยงหลัก',
@@ -408,22 +380,6 @@ describe('llmConfig', () => {
       }),
     ).toMatchObject({ model: 'x', timeoutMs: 900 });
   });
-});
-
-describe('hasNumber', () => {
-  it.each(['ตอนหา A⁻¹', 'ลองหา (AB)⁻¹ ทีละขั้น', 'B⁻¹A⁻¹ ไม่ใช่ A⁻¹B⁻¹'])(
-    'reads the inverse of a matrix in %s as a name',
-    (text) => {
-      expect(hasNumber(text)).toBe(false);
-    },
-  );
-
-  it.each(['k²', 'ได้ 5', 'x¹', '⁻¹ อย่างเดียว', 'A⁻¹ ได้ ๓', 'ช่องหนึ่งได้สิบ', 'สองคูณสาม'])(
-    'still finds the number in %s',
-    (text) => {
-      expect(hasNumber(text)).toBe(true);
-    },
-  );
 });
 
 describe('a token used as a name', () => {

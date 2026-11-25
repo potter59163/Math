@@ -8,9 +8,6 @@ import { LlmDecision, MAX_NARRATION_LINES, MAX_NARRATION_UNITS, MAX_REASON_UNITS
 /** Arabic and Thai digits, and the superscripts that could say "k²" without a digit. */
 const DIGITS = /[0-9๐-๙⁰¹²³⁴-⁹₀-₉]/;
 
-/** The inverse of a named matrix, A⁻¹ or (AB)⁻¹: a name, never a number. */
-const INVERSE = /([A-Za-z)])⁻¹/g;
-
 /**
  * Number words let a sum through without a digit. These Thai words contain one by accident, and each is
  * common enough in a tutor's sentence to be worth telling apart. A rare miss only means falling back.
@@ -21,15 +18,15 @@ const INVERSE = /([A-Za-z)])⁻¹/g;
  * say how much is left to do.
  */
 const NUMBER_WORDS =
-  /(?<!นิด|ครู่|อย่าง|ส่วน|ครั้ง|ช่อง|ขั้น|ด่าน)หนึ่ง(?!หน่วย)|(?<!กำลัง|รากที่|เวกเตอร์)สอง(?!มิติ|เวกเตอร์|จุด|เส้นทแยง|แนวทแยง|ตัวนี้)|สาม(?!ารถ|เหลี่ยม|มิติ|เวกเตอร์)|สี่(?!เหลี่ยม)|(?<!ก)ห้า(?!ม)|หก(?!ล้ม)|เจ็ด|แปด|เก้า|สิบ|(?<!เรียบ)ร้อย|(?<!สัม)พัน(?!ธ)|ศูนย์/;
+  /(?<!นิด|ครู่|อย่าง|ส่วน|ครั้ง)หนึ่ง|สอง|สาม(?!ารถ|เหลี่ยม)|สี่(?!เหลี่ยม)|(?<!ก)ห้า(?!ม)|หก(?!ล้ม)|เจ็ด|แปด|เก้า|สิบ|(?<!เรียบ)ร้อย|(?<!สัม)พัน(?!ธ)|ศูนย์/;
 
 export function hasNumberInWords(text: string): boolean {
   return NUMBER_WORDS.test(text);
 }
 
 export function hasNumber(text: string): boolean {
-  const plain = text.replace(INVERSE, '$1');
-  return DIGITS.test(plain) || hasNumberInWords(plain);
+  // Exceptions for maths words and A⁻¹ were tried on 25 Nov 2026 and leaked numbers (DECISIONS).
+  return DIGITS.test(text) || hasNumberInWords(text);
 }
 
 /**
