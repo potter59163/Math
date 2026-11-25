@@ -11,6 +11,8 @@ coverage/
 .env
 .env.*
 !.env.example
+# Holds only the topic switch, never a secret (see the file).
+!.env.production
 
 # secrets
 *.pem
