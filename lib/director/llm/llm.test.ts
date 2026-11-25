@@ -9,7 +9,7 @@ import { decideWithLlm, llmDecider } from './decide';
 import { buildDirectorInput } from './input';
 import { systemPrompt } from './prompt';
 import { RateLimitedError, type LlmProvider } from './providers';
-import { hasNumberInWords, validateDecision } from './validate';
+import { hasNumber, hasNumberInWords, validateDecision } from './validate';
 
 const AT = 1_800_000_000_000;
 
@@ -189,6 +189,19 @@ describe('hasNumberInWords', () => {
   ])('leaves %s alone, which only looks like a number', (text) => {
     expect(hasNumberInWords(text)).toBe(false);
   });
+
+  it.each([
+    'อีกสองตัว',
+    'สลับสองช่องบนแนวทแยงหลัก',
+    'คูณสอง',
+    'ยกกำลังสองได้เก้า',
+    'ได้สามแล้ว',
+    'ขนาดเป็นหนึ่ง',
+    'มีสองช่อง',
+    'รากที่สองของสิบแปด',
+  ])('still catches the number in %s', (text) => {
+    expect(hasNumberInWords(text)).toBe(true);
+  });
 });
 
 describe('what the tutor is told', () => {
@@ -347,10 +360,17 @@ describe('llmConfig', () => {
     expect(llmConfig({ LLM_PROVIDER: 'anthropic' })).toBeNull();
     expect(llmConfig({ LLM_PROVIDER: 'gemini', LLM_API_KEY: 'k' })).toBeNull();
   });
-  it('reads what is set, with a fast model and the 4 s limit by default', () => {
-    const config = llmConfig({ LLM_PROVIDER: 'anthropic', LLM_API_KEY: 'k' });
-    expect(config?.model).toBe('claude-haiku-5-5');
-    expect(config?.timeoutMs).toBe(4000);
+  it('reads what is set, with Claude Sonnet 5.5, adaptive thinking and the 5 s limit by default', () => {
+    // Potter moved the tutor from Claude Haiku 5.5 to Claude Sonnet 5.5 on 25 Nov 2026 (DECISIONS).
+    const key = { LLM_PROVIDER: 'anthropic', LLM_API_KEY: 'k' };
+    const config = llmConfig(key);
+    expect(config?.model).toBe('claude-sonnet-5-5');
+    expect(config?.timeoutMs).toBe(5000);
+    expect(config?.thinking).toBe('adaptive');
+    expect(llmConfig({ ...key, LLM_THINKING: 'off' })?.thinking).toBe('off');
+    expect(llmConfig({ ...key, LLM_THINKING: 'lots' })?.thinking).toBe('adaptive');
+    // Measured on Haiku: thinking took answers past the limit, so it stays off there.
+    expect(llmConfig({ ...key, LLM_MODEL: 'claude-haiku-5-5' })?.thinking).toBe('off');
     expect(
       llmConfig({
         LLM_PROVIDER: 'anthropic',
@@ -359,5 +379,104 @@ describe('llmConfig', () => {
         LLM_TIMEOUT_MS: '900',
       }),
     ).toMatchObject({ model: 'x', timeoutMs: 900 });
+  });
+});
+
+describe('a token used as a name', () => {
+  // Filled in, "อินเวอร์สของ {{aCell}}" reads "the inverse of 5" (eval of 25 Nov 2026).
+  const { candidates } = prepared();
+  const checkMessage = (message: string) =>
+    validateDecision({
+      text: decision({ message }),
+      candidates,
+      allowedTokens: ['aCell', 'k', 'det', 'dimsA', 'studentAnswer'],
+      revealAllowed: true,
+    });
+
+  it.each([
+    'สูตรอินเวอร์สของ {{aCell}} ขาดขั้นสลับ',
+    'เมทริกซ์ {{k}} เกือบถูกแล้ว',
+    'det ของ {{det}} ถูกแล้ว',
+  ])('rejects %s', (message) => {
+    expect(checkMessage(message)).toMatchObject({ ok: false, reason: 'token_violation' });
+  });
+
+  it.each([
+    'สูตรอินเวอร์สของ A ขาดขั้นสลับ',
+    'เมทริกซ์ {{dimsA}} มีกี่แถว',
+    'ช่องนี้ของ A คือ {{aCell}}',
+    'ลองดูช่องที่เป็น {{aCell}} อีกที',
+  ])('accepts %s', (message) => {
+    expect(checkMessage(message).ok).toBe(true);
+  });
+});
+
+// Two adversarial reviews on 25 Nov 2026 found every one of these slipping a number past a looser check.
+describe('the number check, held to its adversarial reviews', () => {
+  const vector = { squaredIsName: true };
+
+  it.each([
+    'ลืมยกกำลัง k นะ det(kA) คือ k ยกกำลังสองคูณ det(A)',
+    'det(kA) คือ k กำลังสองคูณ det(A) นะ',
+    'det(kA) ไม่ได้เป็นแค่ k คูณ det(A) นะ k ต้องยกกำลังสองด้วย',
+    'det(kA) เท่ากับกำลังสองของ k คูณ det(A)',
+    'คำตอบผิดอยู่สองจุดนะ ลองไล่ดูทีละช่อง',
+    'เหลืออีกสองจุดที่ต้องแก้นะ',
+    'แก้อีกสองตัวนี้ก็ถูกหมดแล้วนะ',
+    'เหลืออีกช่องหนึ่งก็ครบแล้วนะ',
+    'ผิดแค่ช่องหนึ่งเท่านั้น ลองหาดูนะ',
+    'เกือบแล้ว คำตอบน้อยไปหนึ่งหน่วยเองนะ',
+    'จาก A ไป B เลื่อนไปทางขวาหนึ่งหน่วย',
+    'ขนาดของ u คือหนึ่งหน่วยพอดีนะ',
+    'u คือเวกเตอร์หนึ่งหน่วย',
+    'u ยาวเท่ากับเวกเตอร์หนึ่งหน่วยพอดี',
+    'อีกขั้นหนึ่งก็ได้คำตอบแล้วนะ',
+    'AB เป็นเวกเตอร์สองเท่าของ MN นะ',
+    'ที่ทำมาใช้แค่สองเส้นทแยงเอง',
+    'ใช้เฉพาะสองเส้นทแยงหลัก ยังขาดเส้นที่วนกลับนะ',
+    'ยังขาดทั้งสองแนวทแยงนะ',
+    'ยังต้องบวกอีกสองเวกเตอร์นะ',
+    'ยังไม่ได้บวกเวกเตอร์สองตัวที่เหลือนะ',
+    'ผิดทั้งสองช่อง',
+    'ผิดหมดทั้งสองช่องเลย ลองดูใหม่นะ',
+    'สลับลำดับการคูณมาทั้งสองครั้งแล้ว ลองดูอีกวิธีกันนะ',
+    'แก้ทั้งสองช่องนี้ก็ถูกหมดแล้วนะ',
+    'เหลืออีกช่องนึงนะ',
+    'det(A⁻¹) ได้ ½ นะ',
+    'ช่องนี้ของ A⁻¹ ต้องเป็น ¼ นะ',
+    'ทำขั้น ① ก่อน แล้วค่อยขั้น ②',
+    'ได้ ５ นะ',
+    'ได้ ໕ นะ',
+    'ได้ 𝟓 นะ',
+    'จตุภาคที่ Ⅱ',
+    'ทำครบ 🔟 ข้อแล้ว',
+    'ค่าคือ e⁻¹',
+  ])('catches %s', (text) => {
+    expect(hasNumber(text)).toBe(true);
+    expect(hasNumber(text, vector)).toBe(true);
+  });
+
+  it.each([
+    'อย่าลืมถอดรากที่สอง',
+    'เวกเตอร์ในสองมิติ',
+    'พิกัดสามมิติ',
+    'หาเวกเตอร์หนึ่งหน่วยที่มีทิศเดียวกับ v',
+    'ตอนหา A⁻¹ ลองสลับก่อน',
+    'ลองหา (AB)⁻¹ ทีละขั้น',
+    'พลาดไปนิดนึงนะ',
+  ])('lets the name %s through on any item', (text) => {
+    expect(hasNumber(text)).toBe(false);
+  });
+
+  it.each(['ยกกำลังสองแล้วบวกกัน', 'รวมค่ากำลังสองของแต่ละองค์ประกอบ'])(
+    'lets squared through on a vector item only: %s',
+    (text) => {
+      expect(hasNumber(text, vector)).toBe(false);
+      expect(hasNumber(text)).toBe(true);
+    },
+  );
+
+  it('still refuses squared after a letter on a vector item', () => {
+    expect(hasNumber('ku ยาวเป็น k ยกกำลังสองเท่า', vector)).toBe(true);
   });
 });

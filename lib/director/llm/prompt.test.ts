@@ -6,13 +6,15 @@ import { generate } from '@/lib/topics/matrix/generators';
 import { buildDirectorInput } from './input';
 import { systemPrompt } from './prompt';
 
-// The prompt and the input for matrices were frozen before the topic packs came in. A pack supplies the
-// topic's words and examples now, and the matrix prompt must still be the same text to the byte.
+// The prompt and the input for matrices were frozen before the topic packs came in, and the refactor kept
+// them to the byte. The prompt has changed on purpose once since: for Claude Sonnet 5.5 on 25 Nov 2026
+// (length, short comparisons, the maths words it may use), measured with npm run eval:director. Any
+// other change to these snapshots is a change to what every student's tutor is told: run the eval.
 
 const AT = 1_800_000_000_000;
 
 describe('the matrix prompt', () => {
-  it('is the text it was before the topic packs', async () => {
+  it('is the frozen text, so any change to it is deliberate', async () => {
     await expect(systemPrompt()).toMatchFileSnapshot('./__snapshots__/matrixPrompt.txt');
   });
 

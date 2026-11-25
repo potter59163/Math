@@ -4,21 +4,27 @@ import { commitAttempt, prepareAttempt } from '@/lib/director/rules';
 import { newProfile } from '@/lib/director/turn';
 import { misconceptionAnswer, slipAnswer, unknownAnswer } from '@/lib/sim/answers';
 import { generate } from '@/lib/topics/matrix/generators';
-import type { MatrixItem, MisconceptionId } from '@/lib/topics/matrix/types';
+import type { MisconceptionId } from '@/lib/topics/matrix/types';
+import { generate as generateVector } from '@/lib/topics/vector/generators';
+import type { TopicId } from '@/lib/topics/types';
 import { llmConfig } from './config';
 import { decideWithLlm } from './decide';
 import { createProvider, type LlmProvider } from './providers';
 
 // AI_DIRECTOR §6: every scenario three times against the real provider. It costs real money, and so it
 // runs only by asking for it: LLM_PROVIDER=anthropic LLM_API_KEY=... npm run eval:director
+// Vector scenarios need vectors switched on: NEXT_PUBLIC_TOPICS=matrix,vector.
 
 const AT = 1_800_000_000_000;
 const ROUNDS = 3;
 
+type AttemptItem = Parameters<typeof prepareAttempt>[1]['item'];
+
 interface Scenario {
   name: string;
-  item: MatrixItem;
+  item: AttemptItem;
   answer: Parameters<typeof prepareAttempt>[1]['answer'];
+  topic?: TopicId;
 }
 
 function caught(
@@ -60,6 +66,45 @@ const scenarios: Scenario[] = [
   right('det2', 2),
 ];
 
+type VectorRequest = Parameters<typeof generateVector>[0];
+
+function caughtVector(
+  id: NonNullable<VectorRequest['target']>,
+  skill: VectorRequest['skill'],
+  level: 1 | 2,
+): Scenario {
+  const item = generateVector({ skill, difficulty: level, seed: 7, target: id });
+  return {
+    name: `first catch of ${id}`,
+    item,
+    answer: misconceptionAnswer(item, id)!,
+    topic: 'vector',
+  };
+}
+
+function rightVector(skill: VectorRequest['skill'], level: 1 | 2 | 3): Scenario {
+  const item = generateVector({ skill, difficulty: level, seed: 11 });
+  return { name: `right on ${skill} L${level}`, item, answer: item.correct, topic: 'vector' };
+}
+
+// The vector topic (docs/VECTORS.md), asked the same way, so the tutor's Thai and its choices are seen on
+// roots, arrows and figures before students meet them.
+const vectorScenarios: Scenario[] = [
+  caughtVector('V09_MAG_NO_ROOT', 'v_magnitude', 1),
+  caughtVector('V14_DOT_AS_DET', 'v_dot', 1),
+  caughtVector('V20_CROSS_MIDDLE_SIGN', 'v_cross', 1),
+  caughtVector('V06_SCALAR_PARTIAL', 'v_linear', 1),
+  caughtVector('V02_EQUAL_IGNORES_DIRECTION', 'v_quantity', 2),
+  (() => {
+    const item = generateVector({ skill: 'v_points', difficulty: 2, seed: 13 });
+    return { name: 'slip on v_points', item, answer: slipAnswer(item), topic: 'vector' as const };
+  })(),
+  rightVector('v_unit', 2),
+  rightVector('v_angle', 2),
+];
+
+if (process.env.NEXT_PUBLIC_TOPICS?.includes('vector')) scenarios.push(...vectorScenarios);
+
 it('director eval', async () => {
   const config = llmConfig();
   if (!config) throw new Error('Set LLM_PROVIDER=anthropic and LLM_API_KEY to run the eval.');
@@ -71,17 +116,24 @@ it('director eval', async () => {
       return lastAnswer;
     },
   };
-  const lines: string[] = [`# Director eval\n\nModel ${config.model}\n`];
+  const lines: string[] = [
+    `# Director eval\n\nModel ${config.model}, thinking ${config.thinking ?? 'off'}\n`,
+  ];
   const latencies: number[] = [];
   let valid = 0;
   let total = 0;
   const reasons = new Map<string, number>();
 
-  for (const { name, item, answer } of scenarios) {
+  for (const { name, item, answer, topic = 'matrix' } of scenarios) {
     lines.push(`## ${name}\n`);
     for (let round = 0; round < ROUNDS; round += 1) {
       lastAnswer = '';
-      const student = newProfile({ id: `eval-${round}`, units: [1, 2, 3, 4, 5], theme: 'game' });
+      const student = newProfile({
+        id: `eval-${round}`,
+        units: [1, 2, 3, 4, 5],
+        theme: 'game',
+        activeTopic: topic,
+      });
       const prepared = prepareAttempt(student, {
         item,
         answer,

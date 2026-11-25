@@ -17,6 +17,7 @@ import { LazyScene, preloadScenes } from '@/components/scenes/LazyScene';
 import type { SceneView } from '@/components/scenes/playerState';
 import { sfx } from '@/lib/client/sfx';
 import { soundFor } from '@/lib/practice/rewards';
+import { CONFIG } from '@/lib/config';
 import { th } from '@/lib/content/th';
 import { restoreAnswer, storeAnswer } from '@/lib/core/answerJson';
 import { fillTokens } from '@/lib/core/tokens';
@@ -91,7 +92,7 @@ function sceneTitle(spec: SceneSpec, skill: SkillId): string {
 }
 
 /** How long "ข้อถัดไป" waits for the tutor, a little over the server's own limit (AI_DIRECTOR §4.5). */
-const TUTOR_WAIT_MS = 4500;
+const TUTOR_WAIT_MS = CONFIG.llm.timeoutMs + 500;
 
 function logView(spec: SceneSpec, view: SceneView): void {
   learner.dispatch({
