@@ -380,6 +380,8 @@ export const th = {
     meta: '{{n}} ข้อ ราว {{minutes}} นาที ข้อไหนไม่แน่ใจข้ามได้',
     // TODO(review) a test left half-way, after a reload or a locked screen, carries on where it was.
     resume: 'ทำต่อจากข้อ {{n}}',
+    // TODO(review) the way out of a test, which keeps the answers given so far.
+    exit: 'ออก',
     progress: 'ข้อ {{n}} จาก {{total}}',
     next: 'ข้อถัดไป',
     skip: 'ข้ามข้อนี้',

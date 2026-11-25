@@ -12,6 +12,7 @@ import { ItemPrompt } from '@/components/learn/ItemPrompt';
 import { LoadingScreen } from '@/components/learn/LoadingScreen';
 import { componentsOf, type AnswerAffix } from '@/components/topics';
 import { Button, LinkButton } from '@/components/ui/Button';
+import { ExitLink } from '@/components/ui/ExitLink';
 import { CONFIG } from '@/lib/config';
 import { th } from '@/lib/content/th';
 import { storeAnswer } from '@/lib/core/answerJson';
@@ -153,6 +154,8 @@ function TestItem({
     <div className="flex h-dvh flex-col">
       <header className="shrink-0 border-b border-line bg-surface px-4 py-1.5">
         <div className="mx-auto flex max-w-lg items-center gap-3">
+          {/* Leaving keeps the answers given in this tab, so the test carries on from the same item. */}
+          <ExitLink href="/learn" label={th.test.exit} />
           <div className="flex min-w-0 flex-1 flex-col gap-1">
             <p className="text-sm font-semibold">
               {fillTokens(th.test.progress, { n: String(itemNo), total: String(total) })}

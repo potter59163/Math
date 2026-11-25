@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { Affixed } from '@/components/input/Affixed';
 import { AnswerBox, type ClosedTone } from '@/components/input/AnswerBox';
@@ -11,6 +10,7 @@ import { MatrixInput } from '@/components/input/MatrixInput';
 import { VectorInput } from '@/components/input/VectorInput';
 import { componentsOf } from '@/components/topics';
 import { Button } from '@/components/ui/Button';
+import { ExitLink } from '@/components/ui/ExitLink';
 import { BulbIcon, CheckIcon } from '@/components/ui/Icons';
 import { learner, useLearner, useRequiredProfile } from '@/components/app/useLearner';
 import { LazyScene, preloadScenes } from '@/components/scenes/LazyScene';
@@ -379,12 +379,7 @@ function ItemScreen({
     <div className="flex h-dvh flex-col">
       <header className="shrink-0 border-b border-line bg-surface">
         <div className="mx-auto flex h-12 w-full max-w-lg items-center gap-1 pr-3 pl-1 lg:max-w-5xl">
-          <Link
-            href="/summary"
-            className="flex min-h-11 shrink-0 items-center rounded-lg px-2 text-sm font-medium text-muted"
-          >
-            {th.session.stop}
-          </Link>
+          <ExitLink href="/summary" label={th.session.stop} />
           <div className="flex min-w-0 flex-1 flex-col items-center">
             <p className="max-w-full truncate text-sm font-semibold">{skill.nameTh}</p>
             <LevelDots level={item.ref.difficulty} max={skill.maxLevel} />
