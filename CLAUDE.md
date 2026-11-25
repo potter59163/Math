@@ -81,6 +81,7 @@ scripts/        export-data.mjs
 - Code outside `lib/topics/<topic>/` reaches a topic only through `packOf()`. Vector ids are prefixed (`v_` skills, `V01_…` misconceptions, units 11–15) so both topics share one flat profile.
 - The dev server cannot run in a git worktree whose `node_modules` is a symlink (Turbopack): run `npm ci` there instead.
 - Thai `.length` counts code units including vowel/tone marks. Length limits in docs are code units.
-- LLM calls are server-only (`app/api/**`) with timeout `LLM_TIMEOUT_MS` (default 4000). Never block the UI: the client shows its own instant rule feedback first.
+- LLM calls are server-only (`app/api/**`) with timeout `LLM_TIMEOUT_MS` (default 5000). Never block the UI: the client shows its own instant rule feedback first.
+- The tutor runs on `claude-sonnet-5-5` with adaptive thinking. Sonnet 5.5 rejects `thinking: {type: 'disabled'}` with a 400 (use `between_tools`), and any change to the prompt, the model or the number check needs `npm run eval:director` (≥95% valid) before it ships (`docs/AI_DIRECTOR.md` §7).
 - The repo root already contains these docs: when scaffolding, never overwrite `CLAUDE.md`, `docs/`, `.claude/`.
 - This is Next.js 16, and its APIs may differ from what you remember. Check the version-matched docs in `node_modules/next/dist/docs/` before using an unfamiliar API. `cacheComponents` is off on purpose (see `docs/DECISIONS.md`).
