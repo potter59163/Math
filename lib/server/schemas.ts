@@ -141,8 +141,10 @@ const displayName = z
   .trim()
   .min(1)
   .max(MAX_DISPLAY_NAME)
-  // No line breaks or control characters on anyone else's leaderboard.
-  .regex(/^[^\p{Cc}]+$/u);
+  // No line breaks or control characters on anyone else's leaderboard, and none of the invisible
+  // ones that turn text around or hide in it, with which one name can pass for another. The joiner
+  // inside emoji such as 👩‍💻 stays.
+  .regex(/^[^\p{Cc}\u200B\u200E\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF]+$/u);
 
 export const welcomeRequest = z.strictObject({
   displayName,

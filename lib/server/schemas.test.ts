@@ -35,6 +35,27 @@ describe('a trial link', () => {
   });
 });
 
+describe('a chosen name', () => {
+  const named = (displayName: string) =>
+    welcomeRequest.safeParse({ ...welcome(null), displayName }).success;
+
+  it.each(['ทดสอบ', 'Potter', 'น้องพี 👩‍💻', 'ม.5/1 เบอร์ 7'])('takes %s', (name) => {
+    expect(named(name)).toBe(true);
+  });
+
+  it.each([
+    ['a line break', 'สอง\nบรรทัด'],
+    ['a right-to-left override', 'abc\u202Edcba'],
+    ['an isolate', '\u2067ชื่อ\u2069'],
+    ['a zero-width space', 'ชื่อ\u200B'],
+    // At either end it is trimmed away like a space, so only one inside a name can do harm.
+    ['a byte-order mark', 'ชื่อ\uFEFFเล่น'],
+    ['nothing but spaces', '   '],
+  ])('refuses %s, with which one name could pass for another', (_what, name) => {
+    expect(named(name)).toBe(false);
+  });
+});
+
 describe('a device id', () => {
   const accepted = (deviceId: string) =>
     syncRequest.safeParse({ deviceId, actions: [{ seq: 1, action: { type: 'start' } }] }).success;

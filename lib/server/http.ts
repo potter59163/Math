@@ -19,6 +19,8 @@ export const notConfigured = () => fail(503, 'not_configured');
 
 /** Null when the body is too large or is not JSON. */
 export async function readJson(request: Request): Promise<unknown | null> {
+  // A body that says it is too large is not read at all.
+  if (Number(request.headers.get('content-length') ?? 0) > MAX_BODY_BYTES) return null;
   try {
     const text = await request.text();
     return text.length > MAX_BODY_BYTES ? null : JSON.parse(text);
