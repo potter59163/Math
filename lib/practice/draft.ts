@@ -1,4 +1,5 @@
 import { parseAnswer, type ParseFailure, type RawAnswer } from '@/lib/core/parse';
+import { surdText, type Surd } from '@/lib/core/surd';
 import type { Answer, Item } from '@/lib/core/types';
 
 // What the student has typed so far, and how each keypad press changes it. Pure, so the keypad and a
@@ -59,6 +60,12 @@ export function emptyDraft(item: DraftItem): Draft {
   };
 }
 
+/**
+ * A √ box in the form a student writes, √6/6 and not the stored 1/6√6, with the plain minus a typed box
+ * holds. parseSurd reads it back as the same value.
+ */
+const surdBox = (value: Surd): string => surdText(value).replace('−', '-');
+
 /** What the boxes showed when this answer was sent, for a closed item after a reload. */
 export function draftFromAnswer(item: DraftItem, answer: Answer): Draft {
   const draft = emptyDraft(item);
@@ -66,10 +73,11 @@ export function draftFromAnswer(item: DraftItem, answer: Answer): Draft {
     case 'matrix':
       return { ...draft, cells: answer.value.flat().map((cell) => cell.toString()) };
     case 'scalar':
-    case 'surd':
       return { ...draft, cells: [answer.value.toString()] };
+    case 'surd':
+      return { ...draft, cells: [surdBox(answer.value)] };
     case 'vector':
-      return { ...draft, cells: answer.value.map((part) => part.toString()) };
+      return { ...draft, cells: answer.value.map(surdBox) };
     case 'dims':
       return { ...draft, cells: [String(answer.rows), String(answer.cols)] };
     case 'choice':

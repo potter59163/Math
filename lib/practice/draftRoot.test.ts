@@ -1,6 +1,10 @@
+import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { Surd } from '@/lib/core/surd';
+import { parseSurd } from '@/lib/core/parse';
+import { Rational } from '@/lib/core/rational';
+import { SURD_MAX_RADICAND, Surd, surdText } from '@/lib/core/surd';
 import {
+  boxText,
   draftFromAnswer,
   emptyDraft,
   pressKey,
@@ -74,6 +78,65 @@ describe('vector drafts', () => {
     const draft = draftFromAnswer(VECTOR, answer);
     const ready = readiness(VECTOR, draft);
     expect(ready.ready && ready.answer).toEqual(answer);
+  });
+});
+
+describe('a closed √ item after a reload', () => {
+  it('shows the form a student writes, √6/6, and not the stored 1/6√6', () => {
+    const one = draftFromAnswer(SURD, { kind: 'surd', value: Surd.parse('1/6√6') });
+    expect(one.cells).toEqual(['√6/6']);
+    expect(draftFromAnswer(SURD, { kind: 'surd', value: Surd.parse('-3/2√2') }).cells).toEqual([
+      '-3√2/2',
+    ]);
+    const parts = [Surd.parse('-1/6√6'), Surd.parse('-3/2'), Surd.parse('2√5')];
+    const column = draftFromAnswer(VECTOR, { kind: 'vector', value: parts });
+    expect(column.cells).toEqual(['-√6/6', '-3/2', '2√5']);
+    expect(column.cells.map(boxText)).toEqual(['−√6/6', '−3/2', '2√5']);
+  });
+
+  // Every Surd there is: coefficient parts up to Rational's 1e9, any squarefree radicand Surd keeps.
+  const coeff = fc
+    .tuple(fc.integer({ min: -1e9, max: 1e9 }), fc.integer({ min: 1, max: 1e9 }))
+    .map(([n, d]) => Rational.of(n, d));
+  const radicand = fc
+    .integer({ min: 1, max: SURD_MAX_RADICAND })
+    .map((n) => Surd.of(1, n).radicand);
+  const surd = fc.tuple(coeff, radicand).map(([c, r]) => Surd.of(c, r));
+
+  /** The box reads back as the same value, and shows exactly what surdText prints for students. */
+  const expectReadsBack = (box: string, value: Surd) => {
+    const read = parseSurd(box);
+    expect(read.ok && read.value.equals(value), `${box} for ${value.toString()}`).toBe(true);
+    expect(boxText(box)).toBe(surdText(value));
+  };
+
+  it('fills a surd box with text parseSurd reads back to the same value', () => {
+    fc.assert(
+      fc.property(surd, (value) => {
+        const answer = { kind: 'surd' as const, value };
+        const draft = draftFromAnswer(SURD, answer);
+        expect(draft.cells).toHaveLength(1);
+        expectReadsBack(draft.cells[0], value);
+        const ready = readiness(SURD, draft);
+        expect(ready.ready && ready.answer).toEqual(answer);
+      }),
+      { numRuns: 1000 },
+    );
+  });
+
+  it('fills every component box of a vector with text parseSurd reads back to the same value', () => {
+    fc.assert(
+      fc.property(fc.array(surd, { minLength: 2, maxLength: 3 }), (value) => {
+        const item: DraftItem = { kind: 'vector', grid: { rows: value.length, cols: 1 } };
+        const answer = { kind: 'vector' as const, value };
+        const draft = draftFromAnswer(item, answer);
+        expect(draft.cells).toHaveLength(value.length);
+        draft.cells.forEach((box, i) => expectReadsBack(box, value[i]));
+        const ready = readiness(item, draft);
+        expect(ready.ready && ready.answer).toEqual(answer);
+      }),
+      { numRuns: 1000 },
+    );
   });
 });
 
