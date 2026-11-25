@@ -2,6 +2,7 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import { TutorBubble } from '@/components/app/TutorBubble';
 import { Button } from '@/components/ui/Button';
 import { CheckIcon, NoticeIcon } from '@/components/ui/Icons';
+import { Filled } from '@/components/ui/KeepWords';
 import { th } from '@/lib/content/th';
 import { fillTokens } from '@/lib/core/tokens';
 import type { NextTurn } from '@/lib/director/types';
@@ -114,13 +115,17 @@ export function FeedbackCard({
           {skillPassed &&
             (fastPass ? (
               <Stamp label={th.session.stamps.fastPass}>
-                {fillTokens(th.session.stamps.fastPassNote, {
-                  skill: skillOf(skillPassed).nameTh,
-                })}
+                <Filled
+                  template={th.session.stamps.fastPassNote}
+                  values={{ skill: skillOf(skillPassed).nameTh }}
+                />
               </Stamp>
             ) : (
               <Stamp label={th.session.stamps.passed}>
-                {fillTokens(th.session.skillPassed, { skill: skillOf(skillPassed).nameTh })}
+                <Filled
+                  template={th.session.skillPassed}
+                  values={{ skill: skillOf(skillPassed).nameTh }}
+                />
               </Stamp>
             ))}
           {unitPassed && (

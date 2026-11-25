@@ -431,6 +431,8 @@ export const th = {
     // TODO(review)
     yourAnswer: 'คำตอบของคุณ: {{answer}}',
     // TODO(review)
+    yourAnswerLabel: 'คำตอบของคุณ',
+    // TODO(review)
     skillPassed: 'ผ่านเรื่อง {{skill}} แล้ว',
     // TODO(review)
     unitPassed: 'ผ่านหน่วยที่ {{unit}} แล้ว',
