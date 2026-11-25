@@ -10,6 +10,8 @@ import { generate } from '@/lib/topics/matrix/generators';
 import { conceptScene, introScene, revealScene, type SceneSpec } from '@/lib/topics/matrix/scenes';
 import { SCENE_COMBOS, caughtExample } from '@/lib/topics/matrix/scenes/catalog';
 import { SKILLS } from '@/lib/topics/matrix/skills';
+import { vectorSections } from './vectorEntries';
+import type { TopicId } from '@/lib/topics/types';
 
 const SOUNDS: readonly SoundName[] = ['correct', 'wrong', 'streak', 'done'];
 const THEMES: readonly ThemeId[] = ['game', 'shop', 'food', 'music', 'sport'];
@@ -40,9 +42,12 @@ function caughtEntries(seed: number, theme: ThemeId): Entry[] {
   });
 }
 
+const TOPICS: readonly TopicId[] = ['matrix', 'vector'];
+
 /** Every clip the app can play, to watch and hear without having to get anything wrong on purpose. */
 export function ClipPreview() {
   const [turn, setTurn] = useState(0);
+  const [topic, setTopic] = useState<TopicId>('matrix');
   const [open, setOpen] = useState<string | null>(null);
   const [seen, setSeen] = useState<ReadonlySet<string>>(new Set());
   const skipped = useRef(false);
@@ -51,6 +56,7 @@ export function ClipPreview() {
     const seed = FIRST_SEED + turn * 13;
     const theme = THEMES[turn % THEMES.length];
     const copy = th.clip.preview;
+    if (topic === 'vector') return vectorSections(seed);
     return [
       {
         title: copy.intro,
@@ -78,7 +84,7 @@ export function ClipPreview() {
         })),
       },
     ];
-  }, [turn]);
+  }, [turn, topic]);
 
   const entries = sections.flatMap((section) => section.entries);
   const at = entries.findIndex(({ key }) => key === open);
@@ -104,6 +110,19 @@ export function ClipPreview() {
           >
             {th.clip.preview.again}
           </button>
+        </div>
+        <div role="group" className="grid grid-cols-2 gap-2">
+          {TOPICS.map((id) => (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={topic === id}
+              onClick={() => setTopic(id)}
+              className={`min-h-11 rounded-lg border px-3 py-2 ${topic === id ? 'border-cta text-cta' : 'border-line'}`}
+            >
+              {th.clip.preview.topics[id]}
+            </button>
+          ))}
         </div>
         <section className="flex flex-col gap-2">
           <h2 className="font-hand text-lg text-cta">{th.clip.preview.sounds}</h2>

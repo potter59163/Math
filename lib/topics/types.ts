@@ -1,6 +1,7 @@
 import type { Answer, Classification, Item, ItemKind, ItemRef, Level } from '@/lib/core/types';
 import type { PretestResult, Student, ThemeId } from '@/lib/learner/types';
 import type { ScenePurpose, SceneSpec as MatrixSceneSpec } from '@/lib/topics/matrix/scenes/types';
+import type { VectorTemplateScene } from '@/lib/topics/vector/scenes/types';
 
 // What the app needs from a topic. Everything outside lib/topics/<topic>/ reaches a topic through a
 // TopicPack (`packOf(ref.topic)`), so a second topic can bring its own items, forms, answer kinds and
@@ -56,7 +57,7 @@ export interface Caught {
 }
 
 /** Every topic's clips. A pack with its own templates adds its spec here, and SceneStage a case. */
-export type SceneSpec = MatrixSceneSpec;
+export type SceneSpec = MatrixSceneSpec | VectorTemplateScene;
 export type TemplateId = SceneSpec['template'];
 export type { ScenePurpose };
 

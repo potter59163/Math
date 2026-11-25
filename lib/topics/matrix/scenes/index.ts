@@ -11,6 +11,7 @@ import { equals, matrix, mul, sarrusLines, shape, transpose } from '../ops';
 import type { Skill, SkillId } from '../skills';
 import type { MatrixItem, MisconceptionId } from '../types';
 import type { ThemeId } from '@/lib/learner/types';
+import type { SceneSpec as TopicSceneSpec } from '@/lib/topics/types';
 import { cellByCellScene } from './cellByCell';
 import { cellLocatorScene } from './cellLocator';
 import { detSumScene } from './detSum';
@@ -33,10 +34,12 @@ import type {
 } from './types';
 import { workedScene } from './workedSolution';
 
-export type { SceneSpec, ScenePurpose, TemplateId } from './types';
+export type { ScenePurpose, TemplateId } from './types';
+// Any topic's clip, so that code which plays clips of every topic can name them from here as before.
+export type { SceneSpec } from '@/lib/topics/types';
 
 /** A beat that waits for the student's tap takes as long as they take, so it does not count. */
-export function sceneDurationMs(spec: AnyScene | SceneSpec): number {
+export function sceneDurationMs(spec: AnyScene | TopicSceneSpec): number {
   const { beats, beatMs, waits } = spec as AnyScene;
   return beats.reduce(
     (total, beat) => total + (waits?.includes(beat) ? 0 : (beatMs[beat] ?? 0)),
