@@ -253,8 +253,9 @@ const NODE_LOOK: Record<SkillStatus | 'quick', string> = {
   current: 'border-[3px] border-cta-line bg-cta text-on-cta shadow-[0_4px_0_var(--cta-line)]',
   open: 'border-[3px] border-brand bg-surface text-brand shadow-[0_4px_0_var(--brand)]',
   locked: 'border-2 border-dashed border-edge bg-canvas text-muted',
-  // Known from the pre-test and waiting for its one right answer, wherever it is on the path.
-  quick: 'border-[3px] border-good bg-surface text-good shadow-[0_4px_0_var(--good-edge)]',
+  // Known from the pre-test and waiting for its one right answer, wherever it is on the path: dashed and
+  // flat, so it never reads as the solid green of a skill passed.
+  quick: 'border-[3px] border-dashed border-good bg-surface text-good',
 };
 
 const NODE_ICON = {

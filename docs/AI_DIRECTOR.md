@@ -19,7 +19,7 @@
 
 ## 2. Trigger: director ถูกเรียกเมื่อไหร่
 - `session_start`: เปิด session
-  - เริ่มที่ skill แรกที่ยังไม่ผ่านใน unit ที่เปิด
+  - เริ่มที่ skill แรกที่ยังต้องเรียนใน unit ที่เปิด และเมื่อไม่เหลือแล้วจึงเป็น skill ที่ pre-test ถูกซึ่งรอเช็ก (`nextSkill`, Potter 25 พ.ย. 2569)
   - ถ้า pre-test พบ misconception ใน skill นั้น ข้อแรกจะเป็น probe
   - ถ้าข้อ pre-test ของ skill นั้นถูก ข้อแรกเป็น L2 (SPEC §7.1)
   - ถ้ายังไม่เคยดูคลิปนำของ skill นั้น ให้เล่นก่อนข้อแรก (SPEC §4)

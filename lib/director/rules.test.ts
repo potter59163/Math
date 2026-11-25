@@ -34,9 +34,14 @@ describe('beginSession', () => {
     expect(withClip.turn).toMatchObject({ trigger: 'session_start', revealAllowed: false });
     expect(withClip.turn?.next).toEqual(withClip.profile.current?.ref);
 
+    // Every unit 3 skill right on the pre-test: its first check comes with no clip.
     const pretested = applyPretest(
       newProfile(student([3])),
-      { mult_defined: { outcome: 'correct' } },
+      {
+        mult_defined: { outcome: 'correct' },
+        mult: { outcome: 'correct' },
+        mult_noncomm: { outcome: 'correct' },
+      },
       { at: 0 },
     );
     const noClip = beginSession(pretested);
@@ -440,7 +445,16 @@ describe('requestHelp', () => {
 
 describe('a pre-test through the director (SPEC §7.1)', () => {
   it('a right skill can pass in one item, then moves on', () => {
-    const start = applyPretest(newProfile(student()), { dim: { outcome: 'correct' } }, { at: 0 });
+    // Only known skills are open, so their checks come at once, in teaching order.
+    const start = applyPretest(
+      newProfile(student([1])),
+      {
+        dim: { outcome: 'correct' },
+        index: { outcome: 'correct' },
+        transpose: { outcome: 'correct' },
+      },
+      { at: 0 },
+    );
     const opened = openItem(start);
     expect(opened.item.ref).toMatchObject({ skill: 'dim', difficulty: 2 });
     const { outcome, turn } = answerItem(opened.profile, opened.item, opened.item.correct);
@@ -448,7 +462,13 @@ describe('a pre-test through the director (SPEC §7.1)', () => {
     expect(turn.next?.skill).toBe('index');
   });
 
-  it('advancing into a skill the pre-test flagged starts with a probe', () => {
+  it('goes past a right skill to the first one to learn, and checks it afterwards', () => {
+    const start = applyPretest(newProfile(student()), { dim: { outcome: 'correct' } }, { at: 0 });
+    const opened = openItem(start);
+    expect(opened.item.ref.skill).toBe('index');
+  });
+
+  it('a skill the pre-test flagged starts with a probe, even after a known one', () => {
     const start = applyPretest(
       newProfile(student()),
       {

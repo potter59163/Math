@@ -511,8 +511,7 @@ describe('every decision', () => {
 });
 
 describe('session_start (AI_DIRECTOR §2)', () => {
-  const fresh = (units: UnitId[] = [1, 2, 3, 4, 5]) =>
-    newProfile({ id: 'ABC123-7', units });
+  const fresh = (units: UnitId[] = [1, 2, 3, 4, 5]) => newProfile({ id: 'ABC123-7', units });
 
   it('starts at the first skill with its unit intro, as a single path', () => {
     const candidates = sessionStartCandidates(fresh());
@@ -529,9 +528,23 @@ describe('session_start (AI_DIRECTOR §2)', () => {
     expect(sessionStartCandidates(fresh([3]))[0].next.skill).toBe('mult_defined');
   });
 
-  it('starts at L2, with no clip, on a skill right on the pre-test', () => {
+  it('goes past a skill right on the pre-test, to the first one still to learn', () => {
     const profile = applyPretest(fresh(), { dim: { outcome: 'correct' } }, { at: 0 });
     const [only] = sessionStartCandidates(profile);
+    expect(only).toMatchObject({ next: { skill: 'index' }, scene: { request: { kind: 'intro' } } });
+  });
+
+  it('checks a skill right on the pre-test at L2, with no clip, once nothing is left to learn', () => {
+    const known = applyPretest(
+      { ...fresh(), student: { ...fresh().student, units: [1] } },
+      {
+        dim: { outcome: 'correct' },
+        index: { outcome: 'correct' },
+        transpose: { outcome: 'correct' },
+      },
+      { at: 0 },
+    );
+    const [only] = sessionStartCandidates(known);
     expect(only).toMatchObject({ stepKind: 'skip_clip', next: { skill: 'dim', level: 2 } });
     expect(only.scene).toBeUndefined();
   });

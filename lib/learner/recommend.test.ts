@@ -52,7 +52,7 @@ describe('recommendationFor (SPEC §4)', () => {
 });
 
 describe('after the pre-test (SPEC §4, §7.1)', () => {
-  it('says how many skills are known and that the first one is a quick check', () => {
+  it('says how many skills are known, and starts at the first one still to learn', () => {
     const profile = applyPretest(
       fresh(),
       {
@@ -64,8 +64,8 @@ describe('after the pre-test (SPEC §4, §7.1)', () => {
     );
     expect(recommendationFor(profile)).toEqual({
       kind: 'pretest',
-      skill: 'dim',
-      start: 'quick',
+      skill: 'transpose',
+      start: 'learn',
       known: 2,
     });
   });
@@ -117,7 +117,21 @@ describe('after the pre-test (SPEC §4, §7.1)', () => {
       true,
     );
     expect(known.skills.dim?.passed).toBe(true);
-    expect(recommendationFor(known)).toEqual({ kind: 'nextQuick', skill: 'index' });
+    // A known skill's check waits until nothing is left to learn (Potter, 25 Nov 2026).
+    expect(recommendationFor(known)).toEqual({ kind: 'next', skill: 'transpose' });
+    const onlyKnown = answerDim(
+      applyPretest(
+        newLearnerProfile({ id: 'REC-UNIT-1', units: [1] }),
+        {
+          dim: { outcome: 'correct' },
+          index: { outcome: 'correct' },
+          transpose: { outcome: 'correct' },
+        },
+        { at: 0 },
+      ),
+      true,
+    );
+    expect(recommendationFor(onlyKnown)).toEqual({ kind: 'nextQuick', skill: 'index' });
 
     const flagged = answerDim(
       applyPretest(

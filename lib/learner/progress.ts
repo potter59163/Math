@@ -40,25 +40,47 @@ export function itemsDoneIn(profile: Pick<LearnerProfile, 'skills'>, topic: Topi
   );
 }
 
-/** A prereq in a closed unit counts as passed (SPEC §3). Prereqs never leave their own topic. */
-export function isUnlocked(profile: Progress, id: SkillId): boolean {
-  return skillOf(id).prereq.every(
-    (prereq) => !inOpenUnit(profile, prereq) || hasPassed(profile, prereq),
+/**
+ * A skill the pre-test found known, still waiting for its one-item check (SPEC §7.1). It opens what
+ * follows it, and คิว comes to it once nothing is left to learn (Potter, 25 Nov 2026). A wrong answer
+ * on it makes it a skill to learn like any other.
+ */
+export function awaitsCheck(profile: Pick<LearnerProfile, 'skills'>, id: SkillId): boolean {
+  const state = profile.skills[id];
+  return (
+    state?.pretestCorrect === true &&
+    !state.passed &&
+    state.attempts.every(({ countsCorrect }) => countsCorrect)
   );
 }
 
 /**
- * First skill left in a topic's teaching order, by default the topic the student is learning. A pack
- * lists prereqs first, so it is always unlocked.
+ * A prereq in a closed unit counts as passed (SPEC §3), and so does one the pre-test found known, whose
+ * check need not come first and whose wrong check does not lock again what it opened (SPEC §7.1).
+ * Prereqs never leave their own topic.
+ */
+export function isUnlocked(profile: Progress, id: SkillId): boolean {
+  return skillOf(id).prereq.every(
+    (prereq) =>
+      !inOpenUnit(profile, prereq) ||
+      hasPassed(profile, prereq) ||
+      profile.skills[prereq]?.pretestCorrect === true,
+  );
+}
+
+/**
+ * The skill คิว leads to next in a topic, by default the one the student is learning: the first in
+ * teaching order still to learn, and once there is none, the first known one waiting for its check. A
+ * pack lists prereqs first, and a known prereq opens what follows it, so either is always unlocked.
  */
 export function nextSkill(
   profile: Progress,
   topic: TopicId = activeTopicOf(profile.student),
 ): SkillId | null {
-  const next = packOf(topic).skills.find(
+  const left = packOf(topic).skills.filter(
     ({ id }) => inOpenUnit(profile, id) && !hasPassed(profile, id),
   );
-  return next?.id ?? null;
+  return (left.find(({ id }) => !awaitsCheck(profile, id)) ?? left[0])?.id ?? null;
 }
 
 export function skillStatus(profile: Progress, id: SkillId): SkillStatus {

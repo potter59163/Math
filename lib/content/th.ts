@@ -156,11 +156,13 @@ export const th = {
     // TODO(review) P(L) is the tutor's estimate that the skill is known, not a score, so it says so.
     mastery: `${CONFIG.tutorName}ประเมินว่าเข้าใจ {{p}}%`,
     // TODO(review) the sheet of a skill: what the pre-test said about it, or that it has not begun.
-    sheetQuick: 'ทำได้แล้วจากแบบทดสอบ ตอบถูกข้อเดียวก็ผ่าน',
+    // TODO(review) a known skill no longer blocks what follows it (Potter, 25 Nov 2026).
+    sheetQuick: 'ทำได้แล้วจากแบบทดสอบ ข้ามไปเรื่องใหม่ได้เลย ตอบถูกข้อเดียวทีหลังก็ผ่าน',
     sheetCheck: 'ตอนแบบทดสอบ{{m}} ข้อแรกของเรื่องนี้จะเช็กจุดนี้',
     sheetNotStarted: 'ยังไม่ได้เริ่ม',
     // TODO(review) the marks under a skill on the map, and the way back to the pre-test result.
-    markQuick: 'เช็กเร็ว',
+    // TODO(review) under a known skill on the map: known, and one item to check, not passed yet.
+    markQuick: 'รู้แล้ว เช็ก 1 ข้อ',
     markCheck: 'เช็กก่อน',
     pretestLink: 'ดูผลแบบทดสอบก่อนเรียน',
     // TODO(review) offered on a topic's tab until its first item, like the welcome screen's matrix offer.
@@ -686,7 +688,8 @@ export const th = {
     scoreLabel: '{{score}} จาก {{total}} คะแนน',
     points: 'คะแนน',
     known: 'ทำได้แล้ว {{n}} เรื่อง',
-    knownNote: 'ไม่ต้องดูคลิป เช็กเรื่องละข้อเดียว ถูกก็ผ่าน',
+    // TODO(review) the known skills wait for their checks while the new ones are taught first.
+    knownNote: 'ข้ามไปเรื่องใหม่ได้เลย เรื่องพวกนี้เช็กเรื่องละข้อเดียวทีหลัง ไม่ต้องดูคลิป',
     caught: `${CONFIG.tutorName}เห็นจุดที่พลาด {{n}} จุด`,
     caughtNote: `ถึงเรื่องไหน ${CONFIG.tutorName}จะเช็กจุดนั้นก่อน`,
     toLearn: 'เรียนพร้อมคลิป {{n}} เรื่อง',

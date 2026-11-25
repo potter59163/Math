@@ -1,8 +1,18 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { SKILLS } from '@/lib/topics/matrix/skills';
-import { newLearnerProfile } from './profile';
-import { ALL_UNITS, isUnitPassed, isUnlocked, mapOf, nextSkill, skillStatus } from './progress';
+import { unknownAnswer } from '@/lib/sim/answers';
+import { generate } from '@/lib/topics/matrix/generators';
+import { applyAttempt, applyPretest, newLearnerProfile } from './profile';
+import {
+  ALL_UNITS,
+  awaitsCheck,
+  isUnitPassed,
+  isUnlocked,
+  mapOf,
+  nextSkill,
+  skillStatus,
+} from './progress';
 import type { LearnerProfile, Student, SkillState, UnitId } from './types';
 
 function student(units: readonly UnitId[] = ALL_UNITS): Student {
@@ -94,5 +104,55 @@ describe('the path through the skills (SPEC §3, §4)', () => {
     expect(map[1].passed).toBe(false);
     expect(map[0].skills.map(({ id }) => id)).toEqual(['mult_defined', 'mult', 'mult_noncomm']);
     expect(isUnitPassed(profile, 3)).toBe(true);
+  });
+});
+
+describe('skills the pre-test found known (SPEC §7.1, Potter 25 Nov 2026)', () => {
+  // Right on dim and index, wrong on transpose, nothing else asked.
+  const tested = () =>
+    applyPretest(
+      newLearnerProfile(student()),
+      {
+        dim: { outcome: 'correct' },
+        index: { outcome: 'correct' },
+        transpose: { outcome: 'other_wrong' },
+      },
+      { at: 0 },
+    );
+
+  it('open what follows them before their own check', () => {
+    const profile = tested();
+    expect(isUnlocked(profile, 'transpose')).toBe(true);
+    expect(isUnlocked(profile, 'addsub')).toBe(true);
+    expect(skillStatus(profile, 'transpose')).toBe('current');
+    expect(skillStatus(profile, 'dim')).toBe('open');
+  });
+
+  it('wait for their check until nothing is left to learn, then come in teaching order', () => {
+    const profile = tested();
+    expect(awaitsCheck(profile, 'dim')).toBe(true);
+    expect(awaitsCheck(profile, 'transpose')).toBe(false);
+    expect(nextSkill(profile)).toBe('transpose');
+
+    const rest = SKILLS.map(({ id }) => id).filter((id) => id !== 'dim' && id !== 'index');
+    expect(nextSkill(withPassed(profile, ...rest))).toBe('dim');
+    expect(nextSkill(withPassed(profile, ...rest, 'dim'))).toBe('index');
+    expect(nextSkill(withPassed(profile, ...rest, 'dim', 'index'))).toBeNull();
+  });
+
+  it('become a skill to learn after a wrong check, and leave what follows open', () => {
+    const item = generate({ skill: 'dim', difficulty: 2, seed: 11 });
+    const { profile: wrong } = applyAttempt(tested(), {
+      item,
+      answer: unknownAnswer(item),
+      hintLevel: 0,
+      timeMs: 4000,
+      at: 1,
+    });
+    expect(wrong.skills.dim?.passed).toBe(false);
+    expect(awaitsCheck(wrong, 'dim')).toBe(false);
+    expect(nextSkill(wrong)).toBe('dim');
+    expect(isUnlocked(wrong, 'index')).toBe(true);
+    expect(isUnlocked(wrong, 'transpose')).toBe(true);
   });
 });

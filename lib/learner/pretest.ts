@@ -1,7 +1,7 @@
 import { packOf } from '@/lib/topics';
 import type { MisconceptionId, SkillId, TopicId } from '@/lib/topics/types';
 import { openMisconceptions } from './profile';
-import { hasPassed, inOpenUnit, nextSkill } from './progress';
+import { awaitsCheck, hasPassed, inOpenUnit, nextSkill } from './progress';
 import type { LearnerProfile } from './types';
 
 // What the pre-test changed for one student, read back from their profile (SPEC §4, §7.1). The flags
@@ -31,10 +31,12 @@ export interface PretestSummary {
   start: ({ skill: SkillId } & SkillStart) | null;
 }
 
-/** Right on the pre-test and not passed yet: one right answer will pass it (SPEC §7.1). */
+/**
+ * Right on the pre-test, not passed yet and not answered wrong since: one right answer will pass it
+ * (SPEC §7.1). A wrong one makes it a skill to learn, which the map and คิว then call it.
+ */
 export function isQuickCheck(profile: Pick<LearnerProfile, 'skills'>, skill: SkillId): boolean {
-  const state = profile.skills[skill];
-  return state?.pretestCorrect === true && !state.passed;
+  return awaitsCheck(profile, skill);
 }
 
 /**

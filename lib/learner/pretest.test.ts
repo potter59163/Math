@@ -70,8 +70,18 @@ describe('what the pre-test changed (SPEC §4, §7.1)', () => {
     expect(toLearn.map(({ skill }) => skill)).toEqual(['det3', 'det_props', 'inv2']);
   });
 
-  it('starts where the director starts: dim, which is a quick check', () => {
-    expect(pretestSummaryOf(tested(), 'matrix').start).toEqual({ skill: 'dim', kind: 'quick' });
+  it('starts where the director starts: past the known skills, at the first one to learn', () => {
+    // dim, index and transpose are known, and wait for their checks (Potter, 25 Nov 2026).
+    expect(pretestSummaryOf(tested(), 'matrix').start).toEqual({
+      skill: 'addsub',
+      kind: 'check',
+      misconception: 'M05_SUB_REVERSED',
+    });
+  });
+
+  it('comes to the checks of the known skills once nothing is left to learn', () => {
+    const unit1 = applyPretest(newLearnerProfile({ ...STUDENT, units: [1] }), RESULTS, { at: 0 });
+    expect(pretestSummaryOf(unit1, 'matrix').start).toEqual({ skill: 'dim', kind: 'quick' });
   });
 
   it('says a skill with a caught mistake starts with a check of that mistake', () => {
@@ -97,7 +107,11 @@ describe('what the pre-test changed (SPEC §4, §7.1)', () => {
     expect(passed.skills.dim?.passed).toBe(true);
     expect(isQuickCheck(passed, 'dim')).toBe(false);
     expect(pretestSummaryOf(passed, 'matrix').known[0]).toEqual({ skill: 'dim', passed: true });
-    expect(pretestSummaryOf(passed, 'matrix').start).toEqual({ skill: 'index', kind: 'quick' });
+    expect(pretestSummaryOf(passed, 'matrix').start).toEqual({
+      skill: 'addsub',
+      kind: 'check',
+      misconception: 'M05_SUB_REVERSED',
+    });
   });
 
   it('stops calling a mistake waiting once its skill has started', () => {
@@ -159,6 +173,6 @@ describe('what the pre-test changed (SPEC §4, §7.1)', () => {
       'M11_MULT_COMMUTATIVE',
     ]);
     expect(toLearn).toEqual([]);
-    expect(start).toEqual({ skill: 'mult_defined', kind: 'quick' });
+    expect(start).toEqual({ skill: 'mult', kind: 'check', misconception: 'M09_MULT_ELEMENTWISE' });
   });
 });

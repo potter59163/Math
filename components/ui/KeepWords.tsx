@@ -27,14 +27,24 @@ export function KeepWords({ text }: { text: string }) {
 
 const TOKEN = /^\{\{(\w+)\}\}$/;
 
-/** A copy template from th.ts with its values filled in, every phrase kept whole. */
+/**
+ * A copy template from th.ts with its values filled in, every phrase kept whole. A short value, such as a
+ * skill's name, stays whole even across its own spaces: "บวก ลบ คูณสเกลาร์ในรูป" is one name, not three.
+ */
 export function Filled({ template, values }: { template: string; values: Record<string, string> }) {
   return (
     <>
       {template.split(/(\{\{\w+\}\})/).map((part, index) => {
         const name = TOKEN.exec(part)?.[1];
-        const text = name === undefined ? part : (values[name] ?? part);
-        return <KeepWords key={index} text={text} />;
+        if (name === undefined) return <KeepWords key={index} text={part} />;
+        const value = values[name] ?? part;
+        return value.length <= LONGEST_KEPT ? (
+          <span key={index} className="whitespace-nowrap">
+            {value}
+          </span>
+        ) : (
+          <KeepWords key={index} text={value} />
+        );
       })}
     </>
   );
