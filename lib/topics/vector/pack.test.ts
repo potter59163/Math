@@ -179,8 +179,8 @@ describe('what the tutor is told about vectors', () => {
   });
 });
 
-describe('the stand-in clips', () => {
-  it('build every kind of clip for every skill as a worked solution', () => {
+describe('the clips', () => {
+  it('build every kind of clip for every skill', () => {
     for (const { id, unit } of SKILLS) {
       const [item] = itemsOf(id);
       const answer = item.diagnostics[0]?.answer ?? item.correct;
@@ -192,15 +192,14 @@ describe('the stand-in clips', () => {
           ? [pack.scenes.remediate(item, answer, { id: item.diagnostics[0]?.id ?? 'x' })]
           : []),
       ];
+      // Lengths and beats of every clip are checked in scenes/scenes.test.ts; here, that the pack's
+      // own entry points reach them for every skill.
       for (const spec of specs) {
-        expect(spec.template).toBe('worked_solution');
         expect(spec.beats.length).toBeGreaterThan(0);
-        expect(spec.beats.length).toBeLessThanOrEqual(6);
         if (spec.template !== 'worked_solution') continue;
-        const total = Object.values(spec.beatMs).reduce((sum: number, ms) => sum + (ms ?? 0), 0);
-        expect(total).toBeLessThanOrEqual(22000);
         for (const step of spec.params.steps) expect(spec.beats).toContain(step.beat);
       }
+      expect(pack.scenes.reveal(item).template).toBe('worked_solution');
     }
   });
 });

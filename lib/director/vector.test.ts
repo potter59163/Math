@@ -40,11 +40,11 @@ describe('with vectors as the active topic', () => {
     expect(activeTopicOf(vectorStudent().student)).toBe('vector');
   });
 
-  it('starts on the first vector skill, after a worked example as its lead clip', () => {
+  it('starts on the first vector skill, after the intro clip of unit V1', () => {
     const started = startSession(vectorStudent());
     const [clip] = started.pending?.turn.scenes ?? [];
     expect(clip?.request.kind).toBe('intro');
-    expect(clip?.template).toBe('worked_solution');
+    expect(clip?.template).toBe('quantity_sort');
     const item = currentItem(settled(started));
     expect(item?.ref).toMatchObject({ topic: 'vector', skill: 'v_quantity', difficulty: 1 });
   });
@@ -73,7 +73,8 @@ describe('with vectors as the active topic', () => {
     expect(feedbackFor(outcome.classification, 'vector').detail).toContain('ลืมถอดราก');
 
     const remediate = turn.candidates.find(({ scene }) => scene?.request.kind === 'remediate');
-    expect(remediate?.scene?.template).toBe('worked_solution');
+    // VECTORS §4: V09 is fixed by magnitude_box.
+    expect(remediate?.scene?.template).toBe('magnitude_box');
     for (const { next } of turn.candidates) {
       expect(packOfSkill(next.skill).id).toBe('vector');
       if (next.target) {

@@ -1,8 +1,11 @@
 import { th } from '@/lib/content/th';
+import vectorRecorded from '../../vector/scenes/voice.json';
 import recorded from './voice.json';
 
-// The recorded voice of every clip. `npm run voice` writes the file these come from, so a line that has
-// not been recorded yet simply has no sound, and the clip runs on its declared lengths.
+// The recorded voice of every clip. `npm run voice` writes the files these come from, so a line that has
+// not been recorded yet simply has no sound, and the clip runs on its declared lengths. Each topic has
+// its own manifest, so recording one never touches another's lines; their ids never clash, since vector
+// takes start with v_.
 
 export type VoiceTake = keyof typeof th.voice;
 
@@ -16,7 +19,10 @@ export interface RecordedLine {
   ms: number;
 }
 
-const LINES: Partial<Record<string, RecordedLine>> = recorded.lines;
+const LINES: Partial<Record<string, RecordedLine>> = {
+  ...(vectorRecorded.lines as Record<string, RecordedLine>),
+  ...recorded.lines,
+};
 
 /** The breath after a line, before the clip moves on. */
 export const VOICE_TAIL_MS = 450;

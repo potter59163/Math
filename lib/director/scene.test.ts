@@ -129,6 +129,9 @@ describe('a concept clip is never the item that follows it (SPEC §4)', () => {
         return data.form === 'det_sum' && same([spec.params.A, spec.params.B], [data.A, data.B]);
       case 'worked_solution':
         return false;
+      // Another topic's templates, which a matrix lesson never plays.
+      default:
+        return false;
       case 'grid_transform': {
         if (data.form === 'det_scaled') {
           const [before, after] = spec.params.shown.map(({ value }) => value);
