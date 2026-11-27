@@ -19,7 +19,7 @@ import { th } from '@/lib/content/th';
 import { fillTokens } from '@/lib/core/tokens';
 import { latestStepsIn } from '@/lib/director/pathStep';
 import type { PathStep, Profile } from '@/lib/director/types';
-import { itemsOn, streakOf } from '@/lib/learner/activity';
+import { flameOut, itemsOn, streakOf } from '@/lib/learner/activity';
 import { hasPretestMarks, isQuickCheck, pretestCheckOf } from '@/lib/learner/pretest';
 import { skillStateOf } from '@/lib/learner/profile';
 import {
@@ -193,7 +193,13 @@ function ForYou({
       <div className="flex items-center gap-3">
         <Mascot
           className="size-14 shrink-0 -rotate-3"
-          mood={recommendation.kind === 'done' ? 'cheer' : 'happy'}
+          mood={
+            recommendation.kind === 'done'
+              ? 'cheer'
+              : flameOut(profile.activity, now)
+                ? 'asleep'
+                : 'happy'
+          }
         />
         <p className="font-hand text-lg leading-snug">
           <Filled {...recommendationCopy(recommendation)} />

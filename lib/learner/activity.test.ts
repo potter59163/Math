@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dayOf, itemsOn, lastDays, logActivity, streakOf } from './activity';
+import { dayOf, flameOut, itemsOn, lastDays, logActivity, streakOf } from './activity';
 
 const bangkok = (day: string, hour = 12) =>
   Date.parse(`${day}T${String(hour).padStart(2, '0')}:00:00+07:00`);
@@ -23,8 +23,9 @@ describe('logActivity', () => {
   });
 });
 
+const on = (...dates: string[]) => dates.map((day) => ({ day, items: 1, xp: 1 }));
+
 describe('streakOf', () => {
-  const on = (...dates: string[]) => dates.map((day) => ({ day, items: 1, xp: 1 }));
   it('counts days in a row up to today', () => {
     expect(streakOf(on('2026-11-01', '2026-11-02', '2026-11-03'), bangkok('2026-11-03'))).toBe(3);
   });
@@ -40,6 +41,20 @@ describe('streakOf', () => {
   });
   it('is zero with nothing done', () => {
     expect(streakOf(undefined, bangkok('2026-11-01'))).toBe(0);
+  });
+});
+
+describe('flameOut', () => {
+  it('is out only after work on some day and none today or yesterday', () => {
+    expect(flameOut(on('2026-11-01'), bangkok('2026-11-03'))).toBe(true);
+    expect(flameOut(on('2026-10-20', '2026-10-21'), bangkok('2026-11-03'))).toBe(true);
+  });
+
+  it('is not out while the streak lives, or before the first day of work', () => {
+    expect(flameOut(on('2026-11-02'), bangkok('2026-11-03'))).toBe(false);
+    expect(flameOut(on('2026-11-03'), bangkok('2026-11-03'))).toBe(false);
+    expect(flameOut(undefined, bangkok('2026-11-03'))).toBe(false);
+    expect(flameOut([], bangkok('2026-11-03'))).toBe(false);
   });
 });
 

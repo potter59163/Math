@@ -27,7 +27,7 @@ export function TabBar() {
       className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] md:inset-x-auto md:top-0 md:left-0 md:flex md:w-56 md:flex-col md:gap-6 md:border-t-0 md:border-r-2 md:border-margin md:p-4"
     >
       <div className="hidden items-center gap-2 px-2 pt-1 md:flex">
-        <Mascot className="size-9 -rotate-3" />
+        <Mascot still className="size-9 -rotate-3" />
         <span className="font-display text-2xl leading-tight font-semibold tracking-tight">
           {CONFIG.appName}
         </span>

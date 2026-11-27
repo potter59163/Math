@@ -5,7 +5,7 @@ import { newLearnerProfile } from '@/lib/learner/profile';
 import { ALL_UNITS, isUnitPassed } from '@/lib/learner/progress';
 import type { LearnerProfile, MisconceptionState, SkillState } from '@/lib/learner/types';
 import { packOf } from '@/lib/topics';
-import { badgesOf, comboAfter, soundFor, xpFor, type Badge } from './rewards';
+import { badgesOf, comboAfter, mascotFor, soundFor, xpFor, type Badge } from './rewards';
 
 describe('soundFor', () => {
   it('tells a right answer from a wrong one, whatever the run so far', () => {
@@ -24,6 +24,27 @@ describe('soundFor', () => {
     expect(soundFor(true, CONFIG.sound.streakEvery)).toBe('streak');
     expect(soundFor(true, CONFIG.sound.streakEvery * 2)).toBe('streak');
     expect(soundFor(true, CONFIG.sound.streakEvery + 1)).toBe('correct');
+  });
+});
+
+describe('mascotFor', () => {
+  it('cheers a right answer and comforts a wrong one', () => {
+    expect(mascotFor(true, 1)).toBe('cheer');
+    expect(mascotFor(false, 0)).toBe('comfort');
+  });
+
+  it('throws a party exactly when the answer has a sound of its own', () => {
+    expect(mascotFor(true, CONFIG.sound.streakEvery)).toBe('party');
+    expect(mascotFor(true, CONFIG.sound.streakEvery + 1)).toBe('cheer');
+    expect(mascotFor(true, 1, true)).toBe('party');
+    expect(mascotFor(false, 0, true)).toBe('comfort');
+    fc.assert(
+      fc.property(fc.boolean(), fc.nat(50), fc.boolean(), (correct, combo, milestone) => {
+        const sound = soundFor(correct, combo, milestone);
+        const mood = mascotFor(correct, combo, milestone);
+        return (mood === 'party') === (sound === 'streak' || sound === 'done');
+      }),
+    );
   });
 });
 

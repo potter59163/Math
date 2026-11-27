@@ -20,7 +20,7 @@ export function PathStrip({ note, kind }: { note: string; kind?: PathKind | null
         role="status"
         className="mx-auto flex h-8 max-w-lg items-center gap-1.5 border-l-2 border-margin pl-2 text-sm text-muted"
       >
-        {note && <Mascot className="size-4 shrink-0" />}
+        {note && <Mascot still className="size-4 shrink-0" />}
         {note && label && (
           <span
             className={`shrink-0 rounded-full px-1.5 text-xs leading-5 font-semibold ${label.look}`}

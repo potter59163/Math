@@ -44,6 +44,11 @@ export function streakOf(activity: readonly DayActivity[] | undefined, now: numb
   return streak;
 }
 
+/** There was a streak once and it is gone: work on some day, but none today or yesterday. */
+export function flameOut(activity: readonly DayActivity[] | undefined, now: number): boolean {
+  return (activity?.length ?? 0) > 0 && streakOf(activity, now) === 0;
+}
+
 export function itemsOn(activity: readonly DayActivity[] | undefined, now: number): number {
   const today = dayOf(now);
   return activity?.find(({ day }) => day === today)?.items ?? 0;

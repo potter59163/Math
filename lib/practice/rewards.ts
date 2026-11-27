@@ -32,6 +32,20 @@ export function soundFor(
   return combo > 0 && combo % CONFIG.sound.streakEvery === 0 ? 'streak' : 'correct';
 }
 
+/**
+ * How คิว takes an answer, on the same occasions as the sounds: a party for a milestone or a run of
+ * right answers, a cheer for any other right one, and comfort for a wrong one.
+ */
+export function mascotFor(
+  correct: boolean,
+  combo: number,
+  milestone = false,
+): 'cheer' | 'party' | 'comfort' {
+  const sound = soundFor(correct, combo, milestone);
+  if (sound === 'wrong') return 'comfort';
+  return sound === 'correct' ? 'cheer' : 'party';
+}
+
 export type Badge = { kind: 'unit'; unit: UnitId } | { kind: 'fixed' };
 
 /** SPEC §11. A badge stays once earned: a later relapse does not take back a fix that happened. */

@@ -62,6 +62,19 @@
   --animate-spark: spark 700ms ease-out both;
   /* A bar that fills to where it stands, from nothing, as a summary opens. */
   --animate-grow-x: grow-x 700ms ease-out 150ms both;
+  /* คิว the mascot: it breathes and blinks while it waits, and takes each answer its own way. Every
+     part moves about its own box (`transform-box: fill-box` on the element, see Mascot.tsx). */
+  --animate-mascot-breathe: mascot-breathe 3.4s ease-in-out infinite;
+  --animate-mascot-doze: mascot-breathe 5.5s ease-in-out infinite;
+  --animate-mascot-blink: mascot-blink 4.8s linear infinite;
+  --animate-mascot-sway: mascot-sway 2.4s ease-in-out infinite;
+  --animate-mascot-hop: mascot-hop 640ms cubic-bezier(0.3, 0.7, 0.3, 1) both;
+  --animate-mascot-party: mascot-party 1150ms ease-in-out both;
+  --animate-mascot-shake: mascot-shake 520ms ease-in-out both;
+  --animate-mascot-comfort: mascot-comfort 1500ms ease-in-out both;
+  --animate-mascot-frown: mascot-leave 1500ms linear both;
+  --animate-mascot-smile: mascot-arrive 1500ms linear both;
+  --animate-mascot-zed: mascot-zed 2.8s ease-out infinite both;
 
   @keyframes rise {
     from {
@@ -134,6 +147,151 @@
     to {
       opacity: 0;
       transform: translateY(-12px) scale(1.3);
+    }
+  }
+
+  @keyframes mascot-breathe {
+    50% {
+      transform: scaleY(1.035);
+    }
+  }
+
+  @keyframes mascot-blink {
+    0%,
+    95%,
+    100% {
+      transform: scaleY(1);
+    }
+    97.5% {
+      transform: scaleY(0.1);
+    }
+  }
+
+  @keyframes mascot-sway {
+    0%,
+    100% {
+      transform: rotate(-4deg);
+    }
+    50% {
+      transform: rotate(4deg);
+    }
+  }
+
+  /* A right answer: it squats, jumps and lands. */
+  @keyframes mascot-hop {
+    0% {
+      transform: scale(1.07, 0.92);
+    }
+    40% {
+      transform: translateY(-16%) scale(0.95, 1.07);
+    }
+    75% {
+      transform: translateY(0) scale(1.05, 0.94);
+    }
+    100% {
+      transform: none;
+    }
+  }
+
+  /* A run of right answers, a milestone, the end of a lesson: two jumps, leaning each way. */
+  @keyframes mascot-party {
+    0% {
+      transform: scale(1.07, 0.92);
+    }
+    22% {
+      transform: translateY(-20%) rotate(-9deg) scale(0.95, 1.07);
+    }
+    44% {
+      transform: translateY(0) rotate(0deg) scale(1.06, 0.93);
+    }
+    66% {
+      transform: translateY(-13%) rotate(8deg) scale(0.97, 1.05);
+    }
+    86% {
+      transform: translateY(0) rotate(0deg) scale(1.04, 0.96);
+    }
+    100% {
+      transform: none;
+    }
+  }
+
+  @keyframes mascot-shake {
+    0%,
+    100% {
+      transform: none;
+    }
+    20% {
+      transform: translateX(-7%);
+    }
+    40% {
+      transform: translateX(7%);
+    }
+    60% {
+      transform: translateX(-5%);
+    }
+    80% {
+      transform: translateX(4%);
+    }
+  }
+
+  /* A wrong answer: the same shake, a beat, then it leans over to say "try again" and stays there. */
+  @keyframes mascot-comfort {
+    0%,
+    40%,
+    55% {
+      transform: none;
+    }
+    8% {
+      transform: translateX(-7%);
+    }
+    16% {
+      transform: translateX(7%);
+    }
+    24% {
+      transform: translateX(-5%);
+    }
+    32% {
+      transform: translateX(4%);
+    }
+    100% {
+      transform: rotate(6deg);
+    }
+  }
+
+  /* The frown of a wrong answer leaves as the smile arrives, while the note leans over. */
+  @keyframes mascot-leave {
+    0%,
+    55% {
+      opacity: 1;
+    }
+    72%,
+    100% {
+      opacity: 0;
+    }
+  }
+
+  @keyframes mascot-arrive {
+    0%,
+    55% {
+      opacity: 0;
+    }
+    72%,
+    100% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes mascot-zed {
+    0% {
+      opacity: 0;
+      transform: translate(-2px, 4px) scale(0.7);
+    }
+    30% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: translate(3px, -5px) scale(1.05);
     }
   }
 }

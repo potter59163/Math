@@ -8,6 +8,7 @@ import { fillTokens } from '@/lib/core/tokens';
 import type { NextTurn } from '@/lib/director/types';
 import type { AttemptOutcome } from '@/lib/learner/types';
 import { feedbackFor } from '@/lib/practice/feedback';
+import { mascotFor } from '@/lib/practice/rewards';
 import { DEFAULT_TOPIC, misconceptionShortOf, skillOf, unitNumberOf } from '@/lib/topics';
 import type { TopicId } from '@/lib/topics/types';
 
@@ -19,6 +20,8 @@ interface FeedbackCardProps {
   turn: NextTurn;
   /** A line under the feedback, such as the simplest form of a right answer. */
   note?: string;
+  /** Right answers in a row, this one counted: คิว makes more of every few (as the sound does). */
+  combo?: number;
   /** The skill passed on its one quick check, because the pre-test got it right (SPEC §7.1). */
   fastPass?: boolean;
   /** The tutor may still answer, and its words would replace the ones shown. */
@@ -60,6 +63,7 @@ export function FeedbackCard({
   topic = DEFAULT_TOPIC,
   turn,
   note,
+  combo = 0,
   fastPass = false,
   thinking,
   waiting,
@@ -100,10 +104,17 @@ export function FeedbackCard({
           )}
         </div>
 
-        <div className="flex min-h-0 flex-col gap-2 overflow-y-auto">
+        {/* A scroll area cuts off whatever leaves its box, and คิว hops, shakes and throws sparks a
+            little past its own: the padding is that room, and the margins take it back, so nothing
+            here sits anywhere else than without it. */}
+        <div className="-mt-3 -ml-1 flex min-h-0 flex-col gap-2 overflow-y-auto pt-3 pl-1">
           {feedback.detail && <p>{feedback.detail}</p>}
           {note && <p>{note}</p>}
-          <TutorBubble message={turn.message} thinking={thinking} />
+          <TutorBubble
+            message={turn.message}
+            thinking={thinking}
+            mood={mascotFor(isCorrect, combo, Boolean(skillPassed || unitPassed || resolved))}
+          />
           {resolved && (
             <Stamp label={th.session.stamps.fixed}>
               {fillTokens(th.session.misconceptionFixed, {
