@@ -2,48 +2,13 @@
 
 import { useId, useState } from 'react';
 import { buttonClass } from '@/components/ui/Button';
+import { shrinkPhoto } from '@/lib/client/photo';
 import { th } from '@/lib/content/th';
 import type { Account } from '@/lib/sync/types';
 import { ProfilePicture } from './Avatar';
 import { learner } from './useLearner';
 
-/** Small enough that the picture leaves this device as about 20 KB, and sharp on a profile header. */
-const PHOTO_SIZE = 256;
-
-/**
- * The picture, cut square from its middle and made small here, so a full photo with its EXIF (place,
- * time, camera) never leaves the device: only the pixels of a 256 px JPEG do.
- */
-async function shrink(file: File): Promise<Blob> {
-  const bitmap = await createImageBitmap(file);
-  const side = Math.min(bitmap.width, bitmap.height);
-  const canvas = document.createElement('canvas');
-  canvas.width = PHOTO_SIZE;
-  canvas.height = PHOTO_SIZE;
-  const context = canvas.getContext('2d');
-  if (!context) throw new Error('shrink: no canvas');
-  context.drawImage(
-    bitmap,
-    (bitmap.width - side) / 2,
-    (bitmap.height - side) / 2,
-    side,
-    side,
-    0,
-    0,
-    PHOTO_SIZE,
-    PHOTO_SIZE,
-  );
-  bitmap.close();
-  return new Promise((resolve, reject) =>
-    canvas.toBlob(
-      (blob) => (blob ? resolve(blob) : reject(new Error('shrink: no blob'))),
-      'image/jpeg',
-      0.85,
-    ),
-  );
-}
-
-/** The student's own photo, set or removed in Settings, and seen by them alone. */
+/** The student's own photo, changed or removed in Settings, and seen by them alone. */
 export function PhotoPicker({ account }: { account: Account }) {
   const [state, setState] = useState<'idle' | 'saving' | 'failed'>('idle');
   const inputId = useId();
@@ -67,7 +32,7 @@ export function PhotoPicker({ account }: { account: Account }) {
   const pick = async (file: File | undefined) => {
     if (!file) return;
     try {
-      await send('PUT', await shrink(file));
+      await send('PUT', await shrinkPhoto(file));
     } catch {
       setState('failed');
     }

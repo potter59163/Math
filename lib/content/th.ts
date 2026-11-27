@@ -61,6 +61,10 @@ export const th = {
     nameLabel: 'ชื่อที่แสดง',
     nameTooLong: 'ยาวไปหน่อย ขอไม่เกิน {{max}} ตัวอักษร',
     avatarTitle: 'เลือกสัญลักษณ์ของคุณ',
+    // TODO(review) the student's own photo, offered at the welcome too (Potter, 27 Nov 2026). It stays
+    // on the device until the welcome is finished, and only they ever see it.
+    photoTitle: 'รูปโปรไฟล์ (ไม่ใส่ก็ได้)',
+    photoFailed: 'ใช้รูปนี้ไม่ได้ ลองรูปอื่น',
     themeTitle: 'ยกตัวอย่างเรื่องอะไรดี',
     // TODO(review) says why the theme is asked: the opening clips tell their story with it.
     themeHelp: 'คลิปเปิดแต่ละหน่วยจะเล่าโจทย์ด้วยเรื่องนี้ เปลี่ยนได้ในตั้งค่า',
