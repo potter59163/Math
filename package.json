@@ -15,7 +15,8 @@
     "eval:director": "vitest run --config vitest.eval.config.mts",
     "voice": "vitest run --config vitest.voice.config.mts",
     "voice:dry": "VOICE_DRY=1 vitest run --config vitest.voice.config.mts",
-    "export": "node --env-file=.env.local scripts/export-data.mjs"
+    "export": "node --env-file=.env.local scripts/export-data.mjs",
+    "photos": "node --env-file=.env.local scripts/review-photos.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "1.3.0",

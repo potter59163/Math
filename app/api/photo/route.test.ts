@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 // The route as it runs on the server, for one signed-in student whose photo is kept in memory.
 const server = vi.hoisted(() => ({
   signedIn: true as boolean,
+  welcomed: true as boolean,
   photo: null as { type: string; data: Uint8Array; at: string } | null,
   saved: [] as { type: string; size: number }[],
 }));
@@ -16,6 +17,7 @@ vi.mock('@/lib/server/store', () => ({
   createStore: () => ({
     loadPhoto: async () => server.photo,
     savePhoto: async (_userId: string, photo: { type: string; data: Uint8Array }) => {
+      if (!server.welcomed) return null;
       server.saved.push({ type: photo.type, size: photo.data.length });
       server.photo = { ...photo, at: '2026-11-25T08:00:00.000Z' };
       return server.photo.at;
@@ -121,6 +123,16 @@ describe('/api/photo', () => {
     expect(removed.status).toBe(200);
     expect(await removed.json()).toEqual({ photoAt: null });
     expect((await GET()).status).toBe(404);
+  });
+
+  it('keeps nothing for someone who has not finished the welcome', async () => {
+    server.saved = [];
+    server.welcomed = false;
+    const refused = await put(JPEG);
+    expect(refused.status).toBe(409);
+    expect(await refused.json()).toEqual({ error: 'no_account' });
+    expect(server.saved).toEqual([]);
+    server.welcomed = true;
   });
 
   it('does nothing for someone signed out', async () => {

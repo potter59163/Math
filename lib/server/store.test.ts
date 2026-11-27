@@ -120,6 +120,13 @@ describe.skipIf(!uri)('on a real MongoDB', () => {
       });
     });
 
+    it('can count the reports of a photo, of a student this week, and find them to delete', async () => {
+      const names = (await db.collection('photo_reports').indexes()).map(({ name }) => name);
+      expect(names).toEqual(
+        expect.arrayContaining(['photo_key_1', 'reporter_id_1_created_at_1', 'owner_id_1']),
+      );
+    });
+
     it('have MongoDB remove expired sessions by itself', async () => {
       const indexes = await db.collection('auth_sessions').indexes();
       expect(indexes.find(({ name }) => name === 'expires_at_1')?.expireAfterSeconds).toBe(0);
@@ -491,6 +498,20 @@ describe.skipIf(!uri)('on a real MongoDB', () => {
       expect(await store.loadAccount(id)).not.toHaveProperty('photoAt');
     });
 
+    it('is not kept for someone who has not finished the welcome', async () => {
+      const stranger = randomUUID();
+      expect(await store.savePhoto(stranger, { type: 'image/jpeg', data: JPEG })).toBeNull();
+      // Signed in once, so there is a row, but the consent line has not been passed.
+      const halfway = randomUUID();
+      await db.collection<{ _id: string }>('profiles').insertOne({ _id: halfway });
+      expect(await store.savePhoto(halfway, { type: 'image/jpeg', data: JPEG })).toBeNull();
+      for (const id of [stranger, halfway]) {
+        expect(await db.collection<{ _id: string }>('photos').findOne({ _id: id })).toBeNull();
+        expect(await store.loadPhoto(id)).toBeNull();
+      }
+      expect(await photoKeyOf(halfway)).toBe('');
+    });
+
     it('is shown to others only once its student says so, under a key that is not their id', async () => {
       const { id } = await student();
       // With no picture there is nothing to show, so the switch stays off.
@@ -602,6 +623,197 @@ describe.skipIf(!uri)('on a real MongoDB', () => {
       await store.deleteAccount(id);
       expect(await store.loadSharedPhoto(key)).toBeNull();
       expect(await db.collection<{ _id: string }>('photos').findOne({ _id: id })).toBeNull();
+    });
+  });
+
+  describe('reporting a photo', () => {
+    const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 4]);
+    const RULES = { toHide: 3, perReporterPerWeek: 5, maxTakedowns: 2 };
+    const NOW = new Date('2026-11-27T05:00:00.000Z');
+    const DAY = 86_400_000;
+
+    /** A student whose photo is on the board, and the key the board hands out for it. */
+    async function shownPhoto() {
+      const { id } = await student();
+      await store.savePhoto(id, { type: 'image/jpeg', data: JPEG });
+      await store.updateAccount(id, { showPhoto: true });
+      return { id, key: await photoKeyOf(id) };
+    }
+    const reporters = (n: number) => Promise.all(Array.from({ length: n }, () => student()));
+    const reportsOf = (key: string) =>
+      db.collection('photo_reports').countDocuments({ photo_key: key });
+
+    it('takes the photo off the board once enough different students report it', async () => {
+      const owner = await shownPhoto();
+      const [first, second, third] = await reporters(3);
+
+      expect(await store.reportPhoto(owner.key, first.id, NOW, RULES)).toBe('recorded');
+      // One student counts once, however often they ask.
+      expect(await store.reportPhoto(owner.key, first.id, NOW, RULES)).toBe('ignored');
+      expect(await store.reportPhoto(owner.key, second.id, NOW, RULES)).toBe('recorded');
+      expect(await reportsOf(owner.key)).toBe(2);
+      expect(await store.loadSharedPhoto(owner.key)).not.toBeNull();
+      // Short of enough, the owner is told nothing: who reported could be guessed from when.
+      expect(await store.loadAccount(owner.id)).toEqual({
+        ...ACCOUNT,
+        photoAt: expect.any(String),
+        showPhoto: true,
+      });
+
+      expect(await store.reportPhoto(owner.key, third.id, NOW, RULES)).toBe('recorded');
+      expect(await store.loadSharedPhoto(owner.key)).toBeNull();
+      const told = await store.loadAccount(owner.id);
+      expect(told).toMatchObject({ photoReported: true });
+      expect(told).not.toHaveProperty('showPhoto');
+      expect(told).not.toHaveProperty('photoLocked');
+      // It is still the owner's own photo, for their own eyes.
+      expect(await store.loadPhoto(owner.id)).not.toBeNull();
+      // And a report after it is down changes nothing more.
+      const [late] = await reporters(1);
+      expect(await store.reportPhoto(owner.key, late.id, NOW, RULES)).toBe('ignored');
+    });
+
+    it('says nothing in the account that could tell who reported, or how many', async () => {
+      const owner = await shownPhoto();
+      const three = await reporters(3);
+      for (const { id } of three) await store.reportPhoto(owner.key, id, NOW, RULES);
+      const text = JSON.stringify(await store.loadAccount(owner.id));
+      for (const { id } of three) expect(text).not.toContain(id);
+      expect(Object.keys((await store.loadAccount(owner.id)) ?? {}).sort()).toEqual(
+        [
+          'avatar',
+          'condition',
+          'displayName',
+          'photoAt',
+          'photoReported',
+          'showOnLeaderboard',
+        ].sort(),
+      );
+    });
+
+    it('does not show a reported photo again as it is, and shows the next one if asked', async () => {
+      const owner = await shownPhoto();
+      for (const { id } of await reporters(3)) await store.reportPhoto(owner.key, id, NOW, RULES);
+
+      await store.updateAccount(owner.id, { showPhoto: true });
+      expect(await store.loadAccount(owner.id)).not.toHaveProperty('showPhoto');
+      expect(await store.loadSharedPhoto(owner.key)).toBeNull();
+
+      await store.savePhoto(owner.id, { type: 'image/jpeg', data: JPEG });
+      const fresh = await store.loadAccount(owner.id);
+      expect(fresh).not.toHaveProperty('photoReported');
+      // A new photo starts out private again: showing it is asked for anew.
+      expect(fresh).not.toHaveProperty('showPhoto');
+      await store.updateAccount(owner.id, { showPhoto: true });
+      const key = await photoKeyOf(owner.id);
+      expect(await store.loadSharedPhoto(key)).not.toBeNull();
+      // The reports were of the photo before it, so this one starts with none.
+      const [again] = await reporters(1);
+      expect(await store.reportPhoto(key, again.id, NOW, RULES)).toBe('recorded');
+      expect(await store.loadSharedPhoto(key)).not.toBeNull();
+    });
+
+    it('shows no more photos of a student whose photos were taken down twice', async () => {
+      const owner = await shownPhoto();
+      for (const { id } of await reporters(3)) await store.reportPhoto(owner.key, id, NOW, RULES);
+      await store.savePhoto(owner.id, { type: 'image/jpeg', data: JPEG });
+      await store.updateAccount(owner.id, { showPhoto: true });
+      const second = await photoKeyOf(owner.id);
+      expect(await store.loadAccount(owner.id)).not.toHaveProperty('photoLocked');
+      for (const { id } of await reporters(3)) await store.reportPhoto(second, id, NOW, RULES);
+      expect(await store.loadAccount(owner.id)).toMatchObject({
+        photoReported: true,
+        photoLocked: true,
+      });
+
+      await store.savePhoto(owner.id, { type: 'image/jpeg', data: JPEG });
+      const third = await photoKeyOf(owner.id);
+      await store.updateAccount(owner.id, { showPhoto: true });
+      const locked = await store.loadAccount(owner.id);
+      expect(locked).toMatchObject({ photoLocked: true });
+      expect(locked).not.toHaveProperty('showPhoto');
+      expect(locked).not.toHaveProperty('photoReported');
+      expect(await store.loadSharedPhoto(third)).toBeNull();
+      // Removing the photo does not wipe the slate either.
+      await store.deletePhoto(owner.id);
+      expect(await store.loadAccount(owner.id)).toMatchObject({ photoLocked: true });
+    });
+
+    it("ignores a report of one's own photo, of a photo not shown, and of a key that is nobody's", async () => {
+      const owner = await shownPhoto();
+      const [other] = await reporters(1);
+      expect(await store.reportPhoto(owner.key, owner.id, NOW, RULES)).toBe('ignored');
+
+      const hidden = await student();
+      await store.savePhoto(hidden.id, { type: 'image/jpeg', data: JPEG });
+      expect(await store.reportPhoto(await photoKeyOf(hidden.id), other.id, NOW, RULES)).toBe(
+        'ignored',
+      );
+      expect(await store.reportPhoto('AbCdEfGhIjKlMnOpQrSt_-', other.id, NOW, RULES)).toBe(
+        'ignored',
+      );
+
+      await store.updateAccount(owner.id, { showOnLeaderboard: false });
+      expect(await store.reportPhoto(owner.key, other.id, NOW, RULES)).toBe('ignored');
+      expect(await db.collection('photo_reports').countDocuments({ reporter_id: other.id })).toBe(
+        0,
+      );
+      expect(await reportsOf(owner.key)).toBe(0);
+    });
+
+    it('keeps no report from someone who has not finished the welcome', async () => {
+      const owner = await shownPhoto();
+      const stranger = randomUUID();
+      expect(await store.reportPhoto(owner.key, stranger, NOW, RULES)).toBe('ignored');
+      expect(await reportsOf(owner.key)).toBe(0);
+    });
+
+    it('lets one student report only so many photos in seven days', async () => {
+      const [reporter] = await reporters(1);
+      const photos = await Promise.all(Array.from({ length: 7 }, () => shownPhoto()));
+      for (const { key } of photos.slice(0, 5)) {
+        expect(await store.reportPhoto(key, reporter.id, NOW, RULES)).toBe('recorded');
+      }
+      expect(await store.reportPhoto(photos[5].key, reporter.id, NOW, RULES)).toBe('too_many');
+      expect(await reportsOf(photos[5].key)).toBe(0);
+      // One already made is not a new one, so it is not refused.
+      expect(await store.reportPhoto(photos[0].key, reporter.id, NOW, RULES)).toBe('ignored');
+      // Six days on the week is still full, and eight days on it has moved.
+      const later = (days: number) => new Date(NOW.getTime() + days * DAY);
+      expect(await store.reportPhoto(photos[5].key, reporter.id, later(6), RULES)).toBe('too_many');
+      expect(await store.reportPhoto(photos[5].key, reporter.id, later(8), RULES)).toBe('recorded');
+      // Another student is not held back by this one's count.
+      const [other] = await reporters(1);
+      expect(await store.reportPhoto(photos[6].key, other.id, NOW, RULES)).toBe('recorded');
+    });
+
+    it('cannot be used by a few to take down everyone: each of them runs out', async () => {
+      const gang = await reporters(3);
+      const photos = await Promise.all(Array.from({ length: 6 }, () => shownPhoto()));
+      for (const { key } of photos) {
+        for (const { id } of gang) await store.reportPhoto(key, id, NOW, RULES);
+      }
+      const down = await Promise.all(photos.map(({ key }) => store.loadSharedPhoto(key)));
+      expect(down.filter((photo) => photo === null)).toHaveLength(RULES.perReporterPerWeek);
+      expect(down[5]).not.toBeNull();
+    });
+
+    it('forgets a report with the account of who made it, and of whose photo it was', async () => {
+      const owner = await shownPhoto();
+      const [reporter, other] = await reporters(2);
+      await store.reportPhoto(owner.key, reporter.id, NOW, RULES);
+      await store.reportPhoto(owner.key, other.id, NOW, RULES);
+      expect(await reportsOf(owner.key)).toBe(2);
+
+      await store.deleteAccount(reporter.id);
+      expect(
+        await db.collection('photo_reports').countDocuments({ reporter_id: reporter.id }),
+      ).toBe(0);
+      expect(await reportsOf(owner.key)).toBe(1);
+
+      await store.deleteAccount(owner.id);
+      expect(await db.collection('photo_reports').countDocuments({ owner_id: owner.id })).toBe(0);
+      expect(await reportsOf(owner.key)).toBe(0);
     });
   });
 

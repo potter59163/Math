@@ -400,6 +400,8 @@ export function createLearner(env: LearnerEnv): Learner {
       const id = state.profile?.student.id;
       if (!state.account || !id) return;
       const account: Account = { ...state.account, photoAt: photoAt ?? undefined };
+      // Reports were of the photo before this change, and the server lets them go with it.
+      delete account.photoReported;
       if (!photoAt) {
         // The server ends the showing with the photo, so the next one starts out seen by its student alone.
         delete account.photoAt;

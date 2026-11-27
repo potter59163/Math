@@ -34,6 +34,13 @@ export interface Account {
    * 2026). Absent means off, which is how every photo starts: then only they see it.
    */
   showPhoto?: boolean;
+  /**
+   * Enough students reported the photo they have now, so it is off the leaderboard until they change
+   * it. Said to its owner alone, and neither who reported nor how many is ever said.
+   */
+  photoReported?: boolean;
+  /** Their photos were taken down more than once, so none is shown on the leaderboard any more. */
+  photoLocked?: boolean;
 }
 
 /** GET /api/me. `configured` is false until the server's keys are set, when only guest mode can work. */

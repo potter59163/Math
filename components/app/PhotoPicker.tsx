@@ -11,7 +11,9 @@ import { learner } from './useLearner';
 
 /**
  * The student's own photo, changed or removed in Settings. Only they see it until they turn the switch
- * under it, which shows it beside their name on the leaderboard and is off for every new photo.
+ * under it, which shows it beside their name on the leaderboard and is off for every new photo. In
+ * place of the switch they are told when reports took the photo off the board: a new photo can be
+ * shown again, unless it has happened once too often.
  */
 export function PhotoPicker({ account }: { account: Account }) {
   const [state, setState] = useState<'idle' | 'saving' | 'failed'>('idle');
@@ -86,7 +88,15 @@ export function PhotoPicker({ account }: { account: Account }) {
           )}
         </div>
       </div>
-      {account.photoAt ? (
+      {account.photoLocked ? (
+        <p role="status" className="text-sm text-warn">
+          {th.settings.photo.locked}
+        </p>
+      ) : account.photoAt && account.photoReported ? (
+        <p role="status" className="text-sm text-warn">
+          {th.settings.photo.reported}
+        </p>
+      ) : account.photoAt ? (
         <Toggle
           label={th.settings.photo.share}
           help={

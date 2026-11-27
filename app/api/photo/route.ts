@@ -46,6 +46,8 @@ export async function PUT(request: Request) {
   if (!photoFits(bytes, type)) return fail(413, 'too_big');
 
   const photoAt = await createStore(await database()).savePhoto(userId, { type, data: bytes });
+  // Signed in, but the welcome is not finished: nothing is stored before consent (SPEC §15).
+  if (!photoAt) return fail(409, 'no_account');
   return ok({ photoAt });
 }
 

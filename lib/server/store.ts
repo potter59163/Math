@@ -43,6 +43,16 @@ const LLM_LIMITS: LlmLimits = {
   perDay: CONFIG.llm.maxCallsPerDay,
 };
 
+/** When reports take a photo off the board, and how far one student's reports go (CONFIG.photoReports). */
+export interface PhotoReportRules {
+  toHide: number;
+  perReporterPerWeek: number;
+  maxTakedowns: number;
+}
+
+/** `ignored`: it changed nothing, for a reason the reporter has no need to learn. */
+export type PhotoReportResult = 'recorded' | 'ignored' | 'too_many';
+
 function isDuplicateKey(error: unknown): boolean {
   return error instanceof MongoServerError && error.code === DUPLICATE_KEY;
 }
@@ -64,6 +74,14 @@ export async function ensureIndexes(db: Db): Promise<void> {
     db
       .collection('profiles')
       .createIndexes([{ key: { photo_key: 1 }, unique: true, sparse: true }]),
+    // Counted per photo and per reporter's week, and found by either student when an account goes.
+    db
+      .collection('photo_reports')
+      .createIndexes([
+        { key: { photo_key: 1 } },
+        { key: { reporter_id: 1, created_at: 1 } },
+        { key: { owner_id: 1 } },
+      ]),
     db.collection('auth_sessions').createIndexes([
       // MongoDB removes a session by itself once its date has passed.
       { key: { expires_at: 1 }, expireAfterSeconds: 0 },
@@ -193,8 +211,11 @@ export interface AppStore extends SyncStore {
   weeklyLeaderboard(weekStart: string, maxRows: number, cohort?: string): Promise<BoardRow[]>;
   /** The class link this student came in through, which is compared on the server and never sent. */
   cohortOf(userId: string): Promise<string | null>;
-  /** Keeps this student's photo in place of any earlier one, under a new key, and says when. */
-  savePhoto(userId: string, photo: { type: PhotoType; data: Uint8Array }): Promise<string>;
+  /**
+   * Keeps this student's photo in place of any earlier one, under a new key, and says when. Null, and
+   * nothing kept, for someone who has not finished the welcome: consent comes before any data.
+   */
+  savePhoto(userId: string, photo: { type: PhotoType; data: Uint8Array }): Promise<string | null>;
   /** This student's own photo, for themselves (app/api/photo). */
   loadPhoto(userId: string): Promise<{ type: PhotoType; data: Uint8Array; at: string } | null>;
   /**
@@ -204,6 +225,17 @@ export interface AppStore extends SyncStore {
   loadSharedPhoto(key: string): Promise<{ type: PhotoType; data: Uint8Array } | null>;
   /** Removes the photo and ends its showing, so a later one starts out seen by its student alone. */
   deletePhoto(userId: string): Promise<void>;
+  /**
+   * One student's report of a photo shown on the board, counted once. Enough of them from different
+   * students take the photo off the board until its owner changes it, and a student whose photos keep
+   * coming down shows no more. Nothing about a report is ever sent to a browser.
+   */
+  reportPhoto(
+    key: string,
+    reporterId: string,
+    at: Date,
+    rules?: PhotoReportRules,
+  ): Promise<PhotoReportResult>;
 }
 
 interface ProfileDoc {
@@ -222,6 +254,11 @@ interface ProfileDoc {
   photo_key?: string;
   /** The student switched on showing the photo on the board. Never true without a photo. */
   show_photo?: boolean;
+  /** When reports took the photo they have now off the board. Gone with the photo. */
+  photo_reported_at?: Date;
+  /** How many of their photos reports have taken down, and whether that was once too many. */
+  photo_takedowns?: number;
+  photo_locked?: boolean;
   created_at: Date;
   updated_at: Date;
 }
@@ -242,6 +279,15 @@ interface PhotoDoc {
   updated_at: Date;
 }
 
+/** `_id` is the photo's key and the reporter's id together, so a student counts once per photo. */
+interface PhotoReportDoc {
+  _id: string;
+  photo_key: string;
+  owner_id: string;
+  reporter_id: string;
+  created_at: Date;
+}
+
 interface AssessmentDoc {
   _id: string;
   user_id: string;
@@ -260,6 +306,7 @@ export function createStore(db: Db): AppStore {
   const learners = db.collection<LearnerDoc>('learner_profiles');
   const testsOf = (topic: TopicId) => db.collection<AssessmentDoc>(TEST_TABLES[topic].tests);
   const photos = db.collection<PhotoDoc>('photos');
+  const photoReports = db.collection<PhotoReportDoc>('photo_reports');
   const attempts = db.collection('attempts');
   const decisions = db.collection('decisions');
   const llmCalls = db.collection<{ _id: string; n: number; user_id?: string; expires_at: Date }>(
@@ -356,6 +403,8 @@ export function createStore(db: Db): AppStore {
         condition: row.condition,
         ...(row.photo_at && { photoAt: row.photo_at.toISOString() }),
         ...(row.photo_at && row.show_photo && { showPhoto: true }),
+        ...(row.photo_at && row.photo_reported_at && { photoReported: true }),
+        ...(row.photo_locked && { photoLocked: true }),
       };
     },
 
@@ -406,9 +455,15 @@ export function createStore(db: Db): AppStore {
         },
       );
       if (!showPhoto) return;
-      // Showing takes a photo to show, so without one the switch stays off. A photo from before
+      // Showing takes a photo to show, so without one the switch stays off, as it does for a photo
+      // that reports took down and for a student whose photos are shown no more. A photo from before
       // there were keys gets its key here; any other keeps the one the board has handed out.
-      const withPhoto = { _id: userId, photo_at: { $exists: true } };
+      const withPhoto = {
+        _id: userId,
+        photo_at: { $exists: true },
+        photo_reported_at: { $exists: false },
+        photo_locked: { $ne: true },
+      };
       await profiles.updateOne(
         { ...withPhoto, photo_key: { $exists: false } },
         { $set: { photo_key: newPhotoKey() } },
@@ -443,6 +498,8 @@ export function createStore(db: Db): AppStore {
         learners.deleteOne({ _id: userId }),
         profiles.deleteOne({ _id: userId }),
         photos.deleteOne({ _id: userId }),
+        // The reports this student made, and those made of their photos.
+        photoReports.deleteMany({ $or: [{ reporter_id: userId }, { owner_id: userId }] }),
       ]);
       await db.collection('auth_sessions').deleteMany({ user_id: userId });
       await db.collection<{ _id: string }>('users').deleteOne({ _id: userId });
@@ -519,16 +576,19 @@ export function createStore(db: Db): AppStore {
     },
 
     async savePhoto(userId, { type, data }) {
+      const consented = { _id: userId, consent_at: { $exists: true } };
+      if (!(await profiles.findOne(consented, { projection: { _id: 1 } }))) return null;
       const at = new Date();
       await photos.updateOne(
         { _id: userId },
         { $set: { type, data: new Binary(data), size: data.length, updated_at: at } },
         { upsert: true },
       );
-      // A new key with every photo: the address of the one before it then shows nothing.
+      // A new key with every photo: the address of the one before it then shows nothing, and the
+      // reports of that one are not held against this one.
       await profiles.updateOne(
         { _id: userId },
-        { $set: { photo_at: at, photo_key: newPhotoKey() } },
+        { $set: { photo_at: at, photo_key: newPhotoKey() }, $unset: { photo_reported_at: '' } },
       );
       return at.toISOString();
     },
@@ -553,8 +613,52 @@ export function createStore(db: Db): AppStore {
       await photos.deleteOne({ _id: userId });
       await profiles.updateOne(
         { _id: userId },
-        { $unset: { photo_at: '', photo_key: '', show_photo: '' } },
+        { $unset: { photo_at: '', photo_key: '', show_photo: '', photo_reported_at: '' } },
       );
+    },
+
+    async reportPhoto(key, reporterId, at, rules = CONFIG.photoReports) {
+      // Only what the board is showing can be reported, and nobody reports themselves.
+      const shown = { photo_key: key, show_photo: true, show_on_leaderboard: true };
+      const owner = await profiles.findOne(shown, { projection: { _id: 1 } });
+      if (!owner || owner._id === reporterId) return 'ignored';
+      // A report is kept under the reporter's account, so there has to be one: consent comes first.
+      const reporter = { _id: reporterId, consent_at: { $exists: true } };
+      if (!(await profiles.findOne(reporter, { projection: { _id: 1 } }))) return 'ignored';
+
+      const id = `${key}:${reporterId}`;
+      if (await photoReports.findOne({ _id: id }, { projection: { _id: 1 } })) return 'ignored';
+      const thisWeek = await photoReports.countDocuments({
+        reporter_id: reporterId,
+        created_at: { $gt: new Date(at.getTime() - 7 * DAY_MS) },
+      });
+      if (thisWeek >= rules.perReporterPerWeek) return 'too_many';
+      try {
+        await photoReports.insertOne({
+          _id: id,
+          photo_key: key,
+          owner_id: owner._id,
+          reporter_id: reporterId,
+          created_at: at,
+        });
+      } catch (error) {
+        // The same report sent twice at once: the first one counted.
+        if (isDuplicateKey(error)) return 'ignored';
+        throw error;
+      }
+
+      if ((await photoReports.countDocuments({ photo_key: key })) >= rules.toHide) {
+        // Matched once only: after it the photo is no longer shown, so a late report finds nothing.
+        const taken = await profiles.findOneAndUpdate(
+          { _id: owner._id, ...shown },
+          { $set: { show_photo: false, photo_reported_at: at }, $inc: { photo_takedowns: 1 } },
+          { returnDocument: 'after', projection: { photo_takedowns: 1 } },
+        );
+        if ((taken?.photo_takedowns ?? 0) >= rules.maxTakedowns) {
+          await profiles.updateOne({ _id: owner._id }, { $set: { photo_locked: true } });
+        }
+      }
+      return 'recorded';
     },
 
     async cohortOf(userId) {

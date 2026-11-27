@@ -22,7 +22,7 @@ Successor of QEDify (physics). Built for the Chula Innovative Award 2027 (submis
 2. The app must work 100% with `LLM_PROVIDER=none` (rules director). LLM output is Zod-validated; invalid / timeout / 429 → rules decision, logged with `fallback_reason`.
 3. The LLM may only pick one of the candidates the rules engine offers. Student-facing LLM text contains no digit characters (0-9, ๐-๙); numbers appear only through whitelisted `{{tokens}}` resolved server-side.
 4. Every generated item passes `validateItem` (MISCONCEPTIONS.md §2). Deterministic: seeded PRNG only. No `Math.random` / `Date.now` inside engine, learner model or rules director.
-5. Privacy: a student signs in with Google, but only the name they chose is ever shown, and sign-in asks Google for `openid` alone, so the app never receives their email or real name. `LearnerProfile` holds no name or email, and nothing identifying goes to the LLM. Consent is asked once, before any data is stored. A student can leave the leaderboard and delete their account in Settings. No camera, mic or location, no face recognition, and no Google photo. A student may upload a photo of their own for their profile (Potter, 25 Nov 2026): the browser shrinks it to 256 px first, it is never sent to the LLM, and it is deleted from Settings or with the account. Only that student sees it unless they themselves switch on showing it on the leaderboard (Potter, 27 Nov 2026): the switch starts off for every photo, and the photo is then served to signed-in students by a random key, never by user id.
+5. Privacy: a student signs in with Google, but only the name they chose is ever shown, and sign-in asks Google for `openid` alone, so the app never receives their email or real name. `LearnerProfile` holds no name or email, and nothing identifying goes to the LLM. Consent is asked once, before any data is stored. A student can leave the leaderboard and delete their account in Settings. No camera, mic or location, no face recognition, and no Google photo. A student may upload a photo of their own for their profile (Potter, 25 Nov 2026): the browser shrinks it to 256 px first, it is never sent to the LLM, and it is deleted from Settings or with the account. Only that student sees it unless they themselves switch on showing it on the leaderboard (Potter, 27 Nov 2026): the switch starts off for every photo, and the photo is then served to signed-in students by a random key, never by user id. Another student can report a shown photo: enough different reporters take it off the board, and who reported is never shown to anyone.
 6. Scope is matrices and vectors. No story/open-world mode, no runtime video generation, no native app.
 7. UI text is Thai and lives in `lib/content/th.ts`. Code, comments and commits are English.
 8. Mobile-first: works at 360px wide, touch targets ≥ 44px, custom on-screen keypad (no system keyboard, no sliders), honors `prefers-reduced-motion`.
@@ -40,6 +40,7 @@ Next.js (App Router) + TypeScript strict + Tailwind · `motion` (Framer Motion) 
 - `npm run eval:director`: LLM director eval (needs an LLM key, and costs real money)
 - `npm run voice`: records changed lines of `th.voice` (needs `ELEVENLABS_API_KEY`, and spends credits). `npm run voice -- vector` records one topic; `npm run voice:dry` prints the credits and records nothing
 - `npm run export -- <cohort>`: research CSVs into `exports/` (needs `MONGODB_URI`)
+- `npm run photos`: the photos students reported on the leaderboard, with `-- hide|lock|clear <id>` to act on one (needs `MONGODB_URI`, `docs/SETUP.md` §8)
 - `python analysis/analyze.py <export-dir>`: research report (Phase 9)
 
 ## Layout
@@ -48,7 +49,7 @@ app/(tabs)/     learn · leaderboard · profile · settings
 app/(student)/  welcome · learn/session · test/[phase] · summary
 app/auth/       google · callback · signout
 app/dev/        engine · scenes · director  (dev-only playgrounds)
-app/api/        me · welcome · sync · leaderboard · assessment/[phase] · photo · photo/[key]
+app/api/        me · welcome · sync · leaderboard · assessment/[phase] · photo · photo/[key] · photo/[key]/report
 lib/config.ts   all tunable numbers (BKT, thresholds, timeouts, XP, names)
 lib/core/       rational · surd · prng · types · parse · validate · classify · tokens (topic-agnostic)
 lib/topics/     index (registry: packOf) · types (TopicPack)
@@ -64,7 +65,7 @@ lib/content/th.ts   Thai copy: prompts, feedback, hints, captions
 lib/sim/        simulated learners (tests + `npm run sim`, which runs through vitest)
 components/     app/ (screens) · input/ (MatrixInput, Keypad) · clip/ (player, voice, drawing kit) · scenes/ · learn/ · ui/
 analysis/       analyze.py, requirements.txt
-scripts/        export-data.mjs
+scripts/        export-data.mjs · review-photos.mjs (npm run photos)
 ```
 
 ## Workflow

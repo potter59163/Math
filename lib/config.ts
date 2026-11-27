@@ -43,6 +43,11 @@ export const CONFIG = {
   xp: { firstTry: 10, withL1Hint: 7, withDeepHint: 3, misconceptionResolved: 20 },
   // SCENES §1. A scene's length is the sum of its beats' declared times, not the wait for a tap.
   sound: { streakEvery: 5 },
+  // A photo shown on the leaderboard comes off it once `toHide` different students have reported it.
+  // One student may report `perReporterPerWeek` photos in seven days, so a few friends cannot clear
+  // the board, and after `maxTakedowns` a student's photos are shown no more until that is lifted
+  // by hand (scripts/photo-reports.mjs).
+  photoReports: { toHide: 3, perReporterPerWeek: 5, maxTakedowns: 2 },
   scenes: {
     // A spoken line sets the pace now, and the longest of them takes just over 5 seconds.
     maxBeatMs: 5700,
