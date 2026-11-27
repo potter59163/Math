@@ -2,7 +2,13 @@ import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { cohortFromLink } from '@/lib/sync/types';
 import { packOf } from '@/lib/topics';
-import { syncRequest, syncRequestFor, welcomeRequest, type SchemaTopic } from './schemas';
+import {
+  accountUpdate,
+  syncRequest,
+  syncRequestFor,
+  welcomeRequest,
+  type SchemaTopic,
+} from './schemas';
 
 const welcome = (cohort: string | null) => ({
   displayName: 'ทดสอบ',
@@ -53,6 +59,23 @@ describe('a chosen name', () => {
     ['nothing but spaces', '   '],
   ])('refuses %s, with which one name could pass for another', (_what, name) => {
     expect(named(name)).toBe(false);
+  });
+});
+
+describe('a change to the account', () => {
+  it('takes the switch that shows the photo on the leaderboard, on or off', () => {
+    expect(accountUpdate.safeParse({ showPhoto: true }).success).toBe(true);
+    expect(accountUpdate.safeParse({ showPhoto: false }).success).toBe(true);
+    expect(accountUpdate.safeParse({ showPhoto: true, showOnLeaderboard: true }).success).toBe(
+      true,
+    );
+  });
+
+  it('refuses a switch that is not on or off, a key of its own choosing, and a change of nothing', () => {
+    expect(accountUpdate.safeParse({ showPhoto: 'yes' }).success).toBe(false);
+    expect(accountUpdate.safeParse({ photoKey: 'abc' }).success).toBe(false);
+    expect(accountUpdate.safeParse({ photoAt: '2026-11-27T00:00:00.000Z' }).success).toBe(false);
+    expect(accountUpdate.safeParse({}).success).toBe(false);
   });
 });
 

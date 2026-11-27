@@ -13,7 +13,8 @@ import { GoogleButton } from './SignInButtons';
 import { useLearner, useRequiredProfile } from './useLearner';
 
 // The weekly board as Potter chose it (25 Nov 2026): the student's own class first, a podium, their own
-// place on top, the top ten and the places around them. Chosen names, avatars and XP only.
+// place on top, the top ten and the places around them. Chosen names, symbols and XP, and the photo of
+// whoever switched on showing theirs (27 Nov 2026).
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
@@ -58,8 +59,35 @@ function movedSinceLastTime(student: string, board: LeaderboardResponse): number
   }
 }
 
+/**
+ * Beside a name: the photo that student chose to show here, and their symbol otherwise. A photo that
+ * does not come, because its owner switched it off a moment ago say, gives way to the symbol.
+ */
+function BoardPicture({
+  entry,
+  className = 'size-10 text-lg',
+}: {
+  entry: LeaderboardEntry;
+  className?: string;
+}) {
+  const [failed, setFailed] = useState<string | null>(null);
+  const { photo, avatar } = entry;
+  if (!photo || failed === photo) return <Avatar avatar={avatar} className={className} />;
+  return (
+    // It comes from a signed-in route that the image optimizer could not reach, so a plain img. The name
+    // stands right beside it, so it says nothing of its own.
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={`/api/photo/${photo}`}
+      alt=""
+      onError={() => setFailed(photo)}
+      className={`inline-block shrink-0 rounded-full bg-sunken object-cover ${className}`}
+    />
+  );
+}
+
 function Row({ entry }: { entry: LeaderboardEntry }) {
-  const { rank, avatar, displayName, xp, isMe } = entry;
+  const { rank, displayName, xp, isMe } = entry;
   return (
     <li
       aria-current={isMe ? 'true' : undefined}
@@ -73,7 +101,7 @@ function Row({ entry }: { entry: LeaderboardEntry }) {
       >
         {rank}
       </span>
-      <Avatar avatar={avatar} />
+      <BoardPicture entry={entry} />
       <span className="min-w-0 flex-1 truncate font-semibold">
         {displayName}
         {isMe && <span className="ml-1 text-sm font-normal text-muted">({th.board.you})</span>}
@@ -100,7 +128,7 @@ function Podium({ top }: { top: LeaderboardEntry[] }) {
           aria-current={entry.isMe ? 'true' : undefined}
           className="flex min-w-0 flex-col items-center gap-1"
         >
-          <Avatar avatar={entry.avatar} className="size-12 text-xl" />
+          <BoardPicture entry={entry} className="size-12 text-xl" />
           <span className="w-full truncate text-sm font-semibold">
             {entry.displayName}
             {entry.isMe && <span className="sr-only"> ({th.board.you})</span>}

@@ -32,6 +32,13 @@ describe('rankEntries', () => {
     const board = rankEntries([row('secret-id', 5)], 'secret-id', 'w', false);
     expect(JSON.stringify(board)).not.toContain('secret-id');
   });
+  it('passes on the key of a photo its owner chose to show, and nothing where there is none', () => {
+    const rows = [{ ...row('a', 30), photo: 'key-of-a' }, row('b', 20)];
+    const { entries, me } = rankEntries(rows, 'b', 'w', false);
+    expect(entries[0].photo).toBe('key-of-a');
+    expect(entries[1]).not.toHaveProperty('photo');
+    expect(me).not.toHaveProperty('photo');
+  });
   it('still tells a student their place when they are below the list', () => {
     const rows = Array.from({ length: SHOWN_ON_BOARD + 5 }, (_, n) => row(`u${n}`, 1000 - n));
     const board = rankEntries(rows, `u${SHOWN_ON_BOARD + 2}`, 'w', false);

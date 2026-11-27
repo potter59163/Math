@@ -9,6 +9,7 @@ import type { Profile } from '@/lib/director/types';
 import type { Account, QueuedAction } from '@/lib/sync/types';
 import type { MatrixItem } from '@/lib/topics/matrix/types';
 import { createAuthStore, SESSION_MAX_AGE_S } from './authStore';
+import { PHOTO_KEY } from './photo';
 import { createStore, ensureIndexes, type AppStore, type AssessmentResponseRow } from './store';
 import { processActions, type LogEntry } from './sync';
 
@@ -98,9 +99,25 @@ describe.skipIf(!uri)('on a real MongoDB', () => {
 
   const countOf = (name: string, id: string) => db.collection(name).countDocuments({ user_id: id });
 
+  /** The key a student's photo is asked for by, which no route ever gives to its owner by name. */
+  const photoKeyOf = async (id: string) => {
+    const row = await db
+      .collection<{ _id: string; photo_key?: string }>('profiles')
+      .findOne({ _id: id });
+    return row?.photo_key ?? '';
+  };
+
   describe('indexes', () => {
     it('can be asked for again, as every new server process does', async () => {
       await expect(ensureIndexes(db)).resolves.toBeUndefined();
+    });
+
+    it('let no two photos answer to one key, and leave students without one alone', async () => {
+      const indexes = await db.collection('profiles').indexes();
+      expect(indexes.find(({ name }) => name === 'photo_key_1')).toMatchObject({
+        unique: true,
+        sparse: true,
+      });
     });
 
     it('have MongoDB remove expired sessions by itself', async () => {
@@ -473,6 +490,119 @@ describe.skipIf(!uri)('on a real MongoDB', () => {
       expect(await store.loadPhoto(id)).toBeNull();
       expect(await store.loadAccount(id)).not.toHaveProperty('photoAt');
     });
+
+    it('is shown to others only once its student says so, under a key that is not their id', async () => {
+      const { id } = await student();
+      // With no picture there is nothing to show, so the switch stays off.
+      await store.updateAccount(id, { showPhoto: true });
+      expect(await store.loadAccount(id)).not.toHaveProperty('showPhoto');
+
+      await store.savePhoto(id, { type: 'image/jpeg', data: JPEG });
+      const key = await photoKeyOf(id);
+      expect(key).toMatch(PHOTO_KEY);
+      expect(key).not.toContain(id);
+      expect(await store.loadAccount(id)).not.toHaveProperty('showPhoto');
+      expect(await store.loadSharedPhoto(key)).toBeNull();
+
+      await store.updateAccount(id, { showPhoto: true });
+      expect(await store.loadAccount(id)).toMatchObject({ showPhoto: true });
+      const shown = await store.loadSharedPhoto(key);
+      expect(shown?.type).toBe('image/jpeg');
+      expect(new Uint8Array(shown?.data ?? [])).toEqual(JPEG);
+      // Asking by the student's id, as their own route does, is not a way in.
+      expect(await store.loadSharedPhoto(id)).toBeNull();
+
+      // Whoever leaves the board takes their picture with them, and brings it back.
+      await store.updateAccount(id, { showOnLeaderboard: false });
+      expect(await store.loadSharedPhoto(key)).toBeNull();
+      await store.updateAccount(id, { showOnLeaderboard: true });
+      expect(await store.loadSharedPhoto(key)).not.toBeNull();
+
+      await store.updateAccount(id, { showPhoto: false });
+      expect(await store.loadSharedPhoto(key)).toBeNull();
+      expect(await store.loadAccount(id)).not.toHaveProperty('showPhoto');
+      // Their own copy never depended on any of this.
+      expect(await store.loadPhoto(id)).not.toBeNull();
+    });
+
+    it('changes nothing else about the account when the switch is turned', async () => {
+      const { id } = await student({ ...ACCOUNT, displayName: 'ชื่อเดิม', avatar: 'theta' });
+      const at = await store.savePhoto(id, { type: 'image/jpeg', data: JPEG });
+      await store.updateAccount(id, { showPhoto: true });
+      expect(await store.loadAccount(id)).toEqual({
+        ...ACCOUNT,
+        displayName: 'ชื่อเดิม',
+        avatar: 'theta',
+        photoAt: at,
+        showPhoto: true,
+      });
+      await store.updateAccount(id, { displayName: 'ชื่อใหม่' });
+      expect(await store.loadAccount(id)).toMatchObject({
+        displayName: 'ชื่อใหม่',
+        showPhoto: true,
+      });
+    });
+
+    it('gets a new key with every new picture, so the old address shows nothing', async () => {
+      const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 9]);
+      const { id } = await student();
+      await store.savePhoto(id, { type: 'image/jpeg', data: JPEG });
+      await store.updateAccount(id, { showPhoto: true });
+      const first = await photoKeyOf(id);
+
+      await store.savePhoto(id, { type: 'image/png', data: PNG });
+      const second = await photoKeyOf(id);
+      expect(second).toMatch(PHOTO_KEY);
+      expect(second).not.toBe(first);
+      expect(await store.loadSharedPhoto(first)).toBeNull();
+      // A replaced picture stays shown: the switch is the student's, and it is still on.
+      expect((await store.loadSharedPhoto(second))?.type).toBe('image/png');
+    });
+
+    it('gives a picture from before there were keys its key when it is first shown', async () => {
+      const { id } = await student();
+      await store.savePhoto(id, { type: 'image/jpeg', data: JPEG });
+      await db
+        .collection<{ _id: string }>('profiles')
+        .updateOne({ _id: id }, { $unset: { photo_key: '' } });
+      expect(await photoKeyOf(id)).toBe('');
+
+      await store.updateAccount(id, { showPhoto: true });
+      const key = await photoKeyOf(id);
+      expect(key).toMatch(PHOTO_KEY);
+      expect(await store.loadSharedPhoto(key)).not.toBeNull();
+      // Turning the switch again keeps the address the board has already handed out.
+      await store.updateAccount(id, { showPhoto: true });
+      expect(await photoKeyOf(id)).toBe(key);
+    });
+
+    it('stops being shown when it is removed, and the next one starts out hidden', async () => {
+      const { id } = await student();
+      await store.savePhoto(id, { type: 'image/jpeg', data: JPEG });
+      await store.updateAccount(id, { showPhoto: true });
+      const key = await photoKeyOf(id);
+
+      await store.deletePhoto(id);
+      expect(await store.loadSharedPhoto(key)).toBeNull();
+      expect(await photoKeyOf(id)).toBe('');
+      expect(await store.loadAccount(id)).not.toHaveProperty('showPhoto');
+
+      await store.savePhoto(id, { type: 'image/jpeg', data: JPEG });
+      expect(await store.loadAccount(id)).not.toHaveProperty('showPhoto');
+      expect(await store.loadSharedPhoto(await photoKeyOf(id))).toBeNull();
+    });
+
+    it('is gone from everyone with its account', async () => {
+      const { id } = await student();
+      await store.savePhoto(id, { type: 'image/jpeg', data: JPEG });
+      await store.updateAccount(id, { showPhoto: true });
+      const key = await photoKeyOf(id);
+      expect(await store.loadSharedPhoto(key)).not.toBeNull();
+
+      await store.deleteAccount(id);
+      expect(await store.loadSharedPhoto(key)).toBeNull();
+      expect(await db.collection<{ _id: string }>('photos').findOne({ _id: id })).toBeNull();
+    });
   });
 
   describe('the leaderboard', () => {
@@ -509,6 +639,37 @@ describe.skipIf(!uri)('on a real MongoDB', () => {
         { user_id: second.id, display_name: 'สอง', avatar: 'sigma', xp: 10 },
       ]);
       expect(await store.weeklyLeaderboard(WEEK, 1)).toHaveLength(1);
+    });
+
+    it('carries the key of a photo for those who chose to show it, and for no one else', async () => {
+      const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 4]);
+      const shows = await student({ ...ACCOUNT, displayName: 'เปิดรูป' }, 'ห้องรูป');
+      const keeps = await student({ ...ACCOUNT, displayName: 'ไม่เปิด' }, 'ห้องรูป');
+      const none = await student({ ...ACCOUNT, displayName: 'ไม่มีรูป' }, 'ห้องรูป');
+      await store.savePhoto(shows.id, { type: 'image/jpeg', data: JPEG });
+      await store.savePhoto(keeps.id, { type: 'image/jpeg', data: JPEG });
+      await store.updateAccount(shows.id, { showPhoto: true });
+      await earned(shows.id, 30);
+      await earned(keeps.id, 20);
+      await earned(none.id, 10);
+
+      const board = await store.weeklyLeaderboard(WEEK, 10, 'ห้องรูป');
+      expect(board).toEqual([
+        {
+          user_id: shows.id,
+          display_name: 'เปิดรูป',
+          avatar: 'pi',
+          xp: 30,
+          photo: await photoKeyOf(shows.id),
+        },
+        { user_id: keeps.id, display_name: 'ไม่เปิด', avatar: 'pi', xp: 20 },
+        { user_id: none.id, display_name: 'ไม่มีรูป', avatar: 'pi', xp: 10 },
+      ]);
+      expect(board[0].photo).toMatch(PHOTO_KEY);
+
+      await store.updateAccount(shows.id, { showPhoto: false });
+      const after = await store.weeklyLeaderboard(WEEK, 10, 'ห้องรูป');
+      expect(after[0]).not.toHaveProperty('photo');
     });
 
     it('keeps a class board to the students of that class link', async () => {

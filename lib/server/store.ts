@@ -6,7 +6,7 @@ import { ASSESSED_TOPIC, type AssessmentPhase, type AssessmentStatus } from '@/l
 import type { BoardRow } from '@/lib/sync/leaderboard';
 import type { Account, AccountUpdate, AvatarId } from '@/lib/sync/types';
 import type { TopicId } from '@/lib/topics/types';
-import type { PhotoType } from './photo';
+import { newPhotoKey, type PhotoType } from './photo';
 import type { LogEntry, SyncStore } from './sync';
 
 /** A form of a topic's pre/post test, 'A' or 'B' (lib/topics/<topic>/assessment.ts). */
@@ -60,6 +60,10 @@ async function logged(what: string, write: () => Promise<unknown>): Promise<void
 export async function ensureIndexes(db: Db): Promise<void> {
   await Promise.all([
     db.collection('users').createIndexes([{ key: { google_sub: 1 }, unique: true }]),
+    // A photo shown on the board is asked for by its key. Most students have none, hence sparse.
+    db
+      .collection('profiles')
+      .createIndexes([{ key: { photo_key: 1 }, unique: true, sparse: true }]),
     db.collection('auth_sessions').createIndexes([
       // MongoDB removes a session by itself once its date has passed.
       { key: { expires_at: 1 }, expireAfterSeconds: 0 },
@@ -189,10 +193,16 @@ export interface AppStore extends SyncStore {
   weeklyLeaderboard(weekStart: string, maxRows: number, cohort?: string): Promise<BoardRow[]>;
   /** The class link this student came in through, which is compared on the server and never sent. */
   cohortOf(userId: string): Promise<string | null>;
-  /** Keeps this student's photo in place of any earlier one, and says when. */
+  /** Keeps this student's photo in place of any earlier one, under a new key, and says when. */
   savePhoto(userId: string, photo: { type: PhotoType; data: Uint8Array }): Promise<string>;
-  /** This student's own photo, which is only ever served back to them (app/api/photo). */
+  /** This student's own photo, for themselves (app/api/photo). */
   loadPhoto(userId: string): Promise<{ type: PhotoType; data: Uint8Array; at: string } | null>;
+  /**
+   * The photo behind a key from the board, while its owner shows it there and is on the board
+   * themselves (app/api/photo/[key]). The key is the only way in: nothing here takes another's id.
+   */
+  loadSharedPhoto(key: string): Promise<{ type: PhotoType; data: Uint8Array } | null>;
+  /** Removes the photo and ends its showing, so a later one starts out seen by its student alone. */
   deletePhoto(userId: string): Promise<void>;
 }
 
@@ -208,6 +218,10 @@ interface ProfileDoc {
   form_post?: FormId;
   /** When the student's own photo was last set, which also tells the browser to fetch it again. */
   photo_at?: Date;
+  /** What that photo is asked for by on the board: new with every photo, and never the user id. */
+  photo_key?: string;
+  /** The student switched on showing the photo on the board. Never true without a photo. */
+  show_photo?: boolean;
   created_at: Date;
   updated_at: Date;
 }
@@ -238,6 +252,8 @@ interface AssessmentDoc {
   started_at: Date;
   submitted_at: Date;
 }
+
+const bytesOf = (data: Binary) => new Uint8Array(data.read(0, data.length()));
 
 export function createStore(db: Db): AppStore {
   const profiles = db.collection<ProfileDoc>('profiles');
@@ -339,6 +355,7 @@ export function createStore(db: Db): AppStore {
         showOnLeaderboard: row.show_on_leaderboard,
         condition: row.condition,
         ...(row.photo_at && { photoAt: row.photo_at.toISOString() }),
+        ...(row.photo_at && row.show_photo && { showPhoto: true }),
       };
     },
 
@@ -375,7 +392,7 @@ export function createStore(db: Db): AppStore {
       );
     },
 
-    async updateAccount(userId, { displayName, avatar, showOnLeaderboard }) {
+    async updateAccount(userId, { displayName, avatar, showOnLeaderboard, showPhoto }) {
       await profiles.updateOne(
         { _id: userId },
         {
@@ -383,10 +400,20 @@ export function createStore(db: Db): AppStore {
             ...(displayName !== undefined && { display_name: displayName }),
             ...(avatar !== undefined && { avatar }),
             ...(showOnLeaderboard !== undefined && { show_on_leaderboard: showOnLeaderboard }),
+            ...(showPhoto === false && { show_photo: false }),
             updated_at: new Date(),
           },
         },
       );
+      if (!showPhoto) return;
+      // Showing takes a photo to show, so without one the switch stays off. A photo from before
+      // there were keys gets its key here; any other keeps the one the board has handed out.
+      const withPhoto = { _id: userId, photo_at: { $exists: true } };
+      await profiles.updateOne(
+        { ...withPhoto, photo_key: { $exists: false } },
+        { $set: { photo_key: newPhotoKey() } },
+      );
+      await profiles.updateOne(withPhoto, { $set: { show_photo: true } });
     },
 
     async deleteAccount(userId) {
@@ -498,23 +525,36 @@ export function createStore(db: Db): AppStore {
         { $set: { type, data: new Binary(data), size: data.length, updated_at: at } },
         { upsert: true },
       );
-      await profiles.updateOne({ _id: userId }, { $set: { photo_at: at } });
+      // A new key with every photo: the address of the one before it then shows nothing.
+      await profiles.updateOne(
+        { _id: userId },
+        { $set: { photo_at: at, photo_key: newPhotoKey() } },
+      );
       return at.toISOString();
     },
 
     async loadPhoto(userId) {
       const row = await photos.findOne({ _id: userId });
       if (!row) return null;
-      return {
-        type: row.type,
-        data: new Uint8Array(row.data.read(0, row.data.length())),
-        at: row.updated_at.toISOString(),
-      };
+      return { type: row.type, data: bytesOf(row.data), at: row.updated_at.toISOString() };
+    },
+
+    async loadSharedPhoto(key) {
+      const owner = await profiles.findOne(
+        { photo_key: key, show_photo: true, show_on_leaderboard: true },
+        { projection: { _id: 1 } },
+      );
+      if (!owner) return null;
+      const row = await photos.findOne({ _id: owner._id });
+      return row && { type: row.type, data: bytesOf(row.data) };
     },
 
     async deletePhoto(userId) {
       await photos.deleteOne({ _id: userId });
-      await profiles.updateOne({ _id: userId }, { $unset: { photo_at: '' } });
+      await profiles.updateOne(
+        { _id: userId },
+        { $unset: { photo_at: '', photo_key: '', show_photo: '' } },
+      );
     },
 
     async cohortOf(userId) {
@@ -545,6 +585,10 @@ export function createStore(db: Db): AppStore {
               display_name: '$owner.display_name',
               avatar: '$owner.avatar',
               xp: 1,
+              // The key of a photo, for those who show theirs: no field at all for everyone else.
+              photo: {
+                $cond: [{ $eq: ['$owner.show_photo', true] }, '$owner.photo_key', '$$REMOVE'],
+              },
             },
           },
         ])

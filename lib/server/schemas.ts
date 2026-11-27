@@ -161,6 +161,7 @@ export const accountUpdate = z
     displayName: displayName.optional(),
     avatar: avatar.optional(),
     showOnLeaderboard: z.boolean().optional(),
+    showPhoto: z.boolean().optional(),
   })
   .refine((update) => Object.keys(update).length > 0);
 

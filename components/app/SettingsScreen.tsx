@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useId, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { LoadingScreen } from '@/components/learn/LoadingScreen';
 import { Button } from '@/components/ui/Button';
+import { Toggle } from '@/components/ui/Toggle';
 import { signOut } from '@/lib/client/auth';
 import { deviceSettings, type ColorScheme } from '@/lib/client/settings';
 import { th } from '@/lib/content/th';
@@ -25,40 +26,6 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
       <h2 className="text-lg">{title}</h2>
       {children}
     </section>
-  );
-}
-
-function Toggle({
-  label,
-  help,
-  checked,
-  onChange,
-}: {
-  label: string;
-  help?: string;
-  checked: boolean;
-  onChange(next: boolean): void;
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      onClick={() => onChange(!checked)}
-      className="flex min-h-11 w-full items-center justify-between gap-3 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
-    >
-      <span className="min-w-0">
-        <span className="block font-medium">{label}</span>
-        {help && <span className="block text-sm text-muted">{help}</span>}
-      </span>
-      <span
-        className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${checked ? 'bg-brand' : 'bg-edge'}`}
-      >
-        <span
-          className={`absolute top-0.5 left-0.5 size-6 rounded-full bg-surface transition-transform ${checked ? 'translate-x-5' : ''}`}
-        />
-      </span>
-    </button>
   );
 }
 

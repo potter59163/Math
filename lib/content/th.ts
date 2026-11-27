@@ -62,7 +62,7 @@ export const th = {
     nameTooLong: 'ยาวไปหน่อย ขอไม่เกิน {{max}} ตัวอักษร',
     avatarTitle: 'เลือกสัญลักษณ์ของคุณ',
     // TODO(review) the student's own photo, offered at the welcome too (Potter, 27 Nov 2026). It stays
-    // on the device until the welcome is finished, and only they ever see it.
+    // on the device until the welcome is finished, and only they see it unless they switch on showing it.
     photoTitle: 'รูปโปรไฟล์ (ไม่ใส่ก็ได้)',
     photoFailed: 'ใช้รูปนี้ไม่ได้ ลองรูปอื่น',
     themeTitle: 'ยกตัวอย่างเรื่องอะไรดี',
@@ -259,14 +259,19 @@ export const th = {
     account: 'บัญชี',
     displayName: 'ชื่อที่แสดง',
     avatar: 'สัญลักษณ์',
-    // TODO(review) the student's own photo (Potter, 25 Nov 2026), seen by them alone.
+    // TODO(review) the student's own photo (Potter, 25 Nov 2026). Seen by them alone, until they turn
+    // the switch that shows it on the leaderboard (Potter, 27 Nov 2026), which starts off.
     photo: {
       title: 'รูปโปรไฟล์',
       upload: 'อัปโหลดรูป',
       change: 'เปลี่ยนรูป',
       remove: 'ลบรูป',
       saving: 'กำลังอัปโหลด…',
-      note: 'รูปนี้เห็นแค่คุณ ในตารางอันดับ เพื่อนจะเห็นสัญลักษณ์',
+      note: 'รูปนี้เห็นแค่คุณ จนกว่าคุณจะเปิดให้แสดงในตารางอันดับ',
+      share: 'แสดงรูปในตารางอันดับ',
+      shareOff: 'ตอนนี้รูปเห็นแค่คุณ คนอื่นเห็นสัญลักษณ์',
+      shareOn: 'ทุกคนที่เห็นตารางอันดับจะเห็นรูปนี้ข้างชื่อคุณ ปิดได้ทุกเมื่อ',
+      shareOffBoard: 'คุณซ่อนชื่อจากตารางอันดับอยู่ จึงยังไม่มีใครเห็นรูป',
       failed: 'อัปโหลดไม่สำเร็จ ลองรูปอื่นหรือลองใหม่',
       alt: 'รูปโปรไฟล์ของคุณ',
     },
@@ -308,7 +313,8 @@ export const th = {
       },
       {
         title: 'ใครเห็นอะไร',
-        body: 'คนอื่นเห็นแค่ชื่อที่ตั้ง สัญลักษณ์ที่เลือก และ XP สัปดาห์นี้ในตารางอันดับ ซึ่งปิดได้ในตั้งค่า รูปโปรไฟล์ที่อัปโหลดเห็นแค่คุณคนเดียว',
+        // TODO(review) the photo is no longer for its student's eyes only once they switch it on.
+        body: 'คนอื่นเห็นแค่ชื่อที่ตั้ง สัญลักษณ์ที่เลือก และ XP สัปดาห์นี้ในตารางอันดับ ซึ่งปิดได้ในตั้งค่า รูปโปรไฟล์ที่อัปโหลดเห็นแค่คุณคนเดียว เว้นแต่คุณเปิดให้แสดงในตารางอันดับเอง คนที่ล็อกอินและเห็นตารางจึงจะเห็นรูปข้างชื่อคุณ และปิดได้ทุกเมื่อ',
       },
       {
         title: 'ส่งอะไรให้ AI',

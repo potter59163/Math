@@ -400,7 +400,11 @@ export function createLearner(env: LearnerEnv): Learner {
       const id = state.profile?.student.id;
       if (!state.account || !id) return;
       const account: Account = { ...state.account, photoAt: photoAt ?? undefined };
-      if (!photoAt) delete account.photoAt;
+      if (!photoAt) {
+        // The server ends the showing with the photo, so the next one starts out seen by its student alone.
+        delete account.photoAt;
+        delete account.showPhoto;
+      }
       writeJson(accountKey(id), account);
       setState({ account });
     },

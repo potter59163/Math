@@ -1,5 +1,6 @@
 // A student's own profile picture, on its way from their device to their account. It is offered at
-// the welcome and in Settings, and only that student ever sees it (SPEC §15).
+// the welcome and in Settings, and only that student sees it unless they choose to show it on the
+// leaderboard (SPEC §15).
 
 /** Small enough that the picture leaves this device as about 20 KB, and sharp on a profile header. */
 const PHOTO_SIZE = 256;

@@ -24,6 +24,8 @@ export interface BoardRow {
   display_name: string;
   avatar: string;
   xp: number;
+  /** The key of the photo this student chose to show on the board, if they did. */
+  photo?: string;
 }
 
 /** Ties share a rank. No user id leaves this function: `isMe` is all the browser learns. */
@@ -47,6 +49,7 @@ export function rankEntries(
       avatar: row.avatar as AvatarId,
       xp: row.xp,
       isMe: row.user_id === userId,
+      ...(row.photo && { photo: row.photo }),
     };
   });
   const mine = entries.findIndex(({ isMe }) => isMe);

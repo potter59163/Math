@@ -26,10 +26,15 @@ vi.mock('@/lib/server/store', () => ({
   }),
 }));
 
-import { MAX_PHOTO_BYTES } from '@/lib/server/photo';
+import { MAX_PHOTO_BYTES, MAX_PHOTO_SIDE } from '@/lib/server/photo';
+import {
+  jpegOf,
+  pngOf,
+  TINY_JPEG as JPEG,
+  TINY_PNG,
+  webpLossyOf,
+} from '@/lib/server/photo.samples';
 import { DELETE, GET, PUT } from './route';
-
-const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 4]);
 
 const put = (body: Uint8Array, type = 'image/jpeg') =>
   PUT(
@@ -71,6 +76,43 @@ describe('/api/photo', () => {
     expect((await put(big)).status).toBe(413);
     expect((await put(new Uint8Array())).status).toBe(400);
     expect(server.saved).toEqual([]);
+  });
+
+  it('turns away a small file that states a size no phone could draw', async () => {
+    server.saved = [];
+    for (const bomb of [
+      jpegOf(65535, 65535),
+      jpegOf(MAX_PHOTO_SIDE + 1, 16),
+      pngOf(50000, 50000),
+      webpLossyOf(16383, 16383),
+    ]) {
+      expect(bomb.length).toBeLessThan(100);
+      const refused = await put(bomb);
+      expect(refused.status).toBe(413);
+      expect(await refused.json()).toEqual({ error: 'too_big' });
+    }
+    expect(server.saved).toEqual([]);
+  });
+
+  it('turns away a file that begins like a picture and states no size', async () => {
+    server.saved = [];
+    expect((await put(new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 4]))).status).toBe(415);
+    expect((await put(pngOf(0, 0))).status).toBe(415);
+    expect(server.saved).toEqual([]);
+  });
+
+  it('keeps a picture of the size this app makes, in each kind it may come in', async () => {
+    server.saved = [];
+    expect((await put(jpegOf(256, 256))).status).toBe(200);
+    expect((await put(TINY_PNG)).status).toBe(200);
+    expect((await put(webpLossyOf(256, 256))).status).toBe(200);
+    expect((await put(jpegOf(MAX_PHOTO_SIDE, MAX_PHOTO_SIDE))).status).toBe(200);
+    expect(server.saved.map(({ type }) => type)).toEqual([
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+      'image/jpeg',
+    ]);
   });
 
   it('removes the picture, and then has none to give', async () => {

@@ -1,11 +1,11 @@
 import { signedInUserId, signInConfigured } from '@/lib/server/auth';
 import { database } from '@/lib/server/db';
 import { fail, notConfigured, ok, unauthorized } from '@/lib/server/http';
-import { MAX_PHOTO_BYTES, photoTypeOf } from '@/lib/server/photo';
+import { MAX_PHOTO_BYTES, photoFits, photoSizeOf, photoTypeOf } from '@/lib/server/photo';
 import { createStore } from '@/lib/server/store';
 
-// A student's own profile photo. It is served back to that student alone: the leaderboard and everyone
-// else see the symbol they chose (SPEC §15).
+// A student's own profile photo. This address serves it back to that student alone. Others see it only
+// if its owner switched that on, and then by its key, at /api/photo/[key] (SPEC §15).
 
 /** This student's photo, never anyone else's. */
 export async function GET() {
@@ -40,6 +40,10 @@ export async function PUT(request: Request) {
   if (bytes.length > MAX_PHOTO_BYTES) return fail(413, 'too_big');
   const type = photoTypeOf(bytes);
   if (!type) return fail(415, 'not_an_image');
+  // This app sends 256 px. A file that states no size is no picture, and one that states a huge size
+  // could freeze the device of whoever is shown it, so neither is kept (lib/server/photo.ts).
+  if (!photoSizeOf(bytes, type)) return fail(415, 'not_an_image');
+  if (!photoFits(bytes, type)) return fail(413, 'too_big');
 
   const photoAt = await createStore(await database()).savePhoto(userId, { type, data: bytes });
   return ok({ photoAt });

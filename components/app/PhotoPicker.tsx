@@ -2,13 +2,17 @@
 
 import { useId, useState } from 'react';
 import { buttonClass } from '@/components/ui/Button';
+import { Toggle } from '@/components/ui/Toggle';
 import { shrinkPhoto } from '@/lib/client/photo';
 import { th } from '@/lib/content/th';
 import type { Account } from '@/lib/sync/types';
 import { ProfilePicture } from './Avatar';
 import { learner } from './useLearner';
 
-/** The student's own photo, changed or removed in Settings, and seen by them alone. */
+/**
+ * The student's own photo, changed or removed in Settings. Only they see it until they turn the switch
+ * under it, which shows it beside their name on the leaderboard and is off for every new photo.
+ */
 export function PhotoPicker({ account }: { account: Account }) {
   const [state, setState] = useState<'idle' | 'saving' | 'failed'>('idle');
   const inputId = useId();
@@ -82,7 +86,22 @@ export function PhotoPicker({ account }: { account: Account }) {
           )}
         </div>
       </div>
-      <p className="text-sm text-muted">{th.settings.photo.note}</p>
+      {account.photoAt ? (
+        <Toggle
+          label={th.settings.photo.share}
+          help={
+            !account.showPhoto
+              ? th.settings.photo.shareOff
+              : account.showOnLeaderboard
+                ? th.settings.photo.shareOn
+                : th.settings.photo.shareOffBoard
+          }
+          checked={account.showPhoto ?? false}
+          onChange={(showPhoto) => void learner.updateAccount({ showPhoto })}
+        />
+      ) : (
+        <p className="text-sm text-muted">{th.settings.photo.note}</p>
+      )}
       {state === 'failed' && (
         <p role="alert" className="text-sm text-warn">
           {th.settings.photo.failed}

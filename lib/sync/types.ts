@@ -27,8 +27,13 @@ export interface Account {
   avatar: AvatarId;
   showOnLeaderboard: boolean;
   condition: Condition;
-  /** When the student last set their own photo, which only they ever see. None means the symbol. */
+  /** When the student last set their own photo. None means the symbol. */
   photoAt?: string;
+  /**
+   * The student switched on showing that photo beside their name on the leaderboard (Potter, 27 Nov
+   * 2026). Absent means off, which is how every photo starts: then only they see it.
+   */
+  showPhoto?: boolean;
 }
 
 /** GET /api/me. `configured` is false until the server's keys are set, when only guest mode can work. */
@@ -72,7 +77,9 @@ export interface WelcomeRequest {
   guestProfile?: Profile;
 }
 
-export type AccountUpdate = Partial<Pick<Account, 'displayName' | 'avatar' | 'showOnLeaderboard'>>;
+export type AccountUpdate = Partial<
+  Pick<Account, 'displayName' | 'avatar' | 'showOnLeaderboard' | 'showPhoto'>
+>;
 
 export interface LeaderboardEntry {
   rank: number;
@@ -80,6 +87,11 @@ export interface LeaderboardEntry {
   avatar: AvatarId;
   xp: number;
   isMe: boolean;
+  /**
+   * The key of this student's photo, when they chose to show it here: `/api/photo/<key>`. It is random
+   * and changes with the picture, so it is not a way to tell who someone is.
+   */
+  photo?: string;
 }
 
 /** A board of the student's own class (their `?cohort=` link), or of everyone. */

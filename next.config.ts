@@ -25,6 +25,19 @@ const nextConfig: NextConfig = {
         ],
       },
       {
+        // A student's photo is the one thing another student's browser is handed as it was uploaded.
+        // Whatever its bytes turn out to be, they may load nothing and run nothing. A route cannot say
+        // so itself, because the rule above replaces its policy, and the last rule to match is the one
+        // that counts: so this one stays below it (app/api/photo/headers.test.ts).
+        source: '/api/photo/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: "default-src 'none'; frame-ancestors 'none'; sandbox",
+          },
+        ],
+      },
+      {
         // A recorded line's name changes with its recording, so a browser can keep the file for good.
         source: '/voice/:path*',
         headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],

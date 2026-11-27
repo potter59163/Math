@@ -13,6 +13,7 @@ import {
   MusicIcon,
 } from '@/components/ui/Icons';
 import { KeepWords } from '@/components/ui/KeepWords';
+import { Toggle } from '@/components/ui/Toggle';
 import { sendPhoto, shrinkPhoto } from '@/lib/client/photo';
 import { th } from '@/lib/content/th';
 import { fillTokens } from '@/lib/core/tokens';
@@ -170,16 +171,21 @@ interface PickedPhoto {
 
 /**
  * The student's own photo, offered beside the symbol. It stays on this device until the welcome is
- * finished: nothing is stored before the consent line has been seen (SPEC §15).
+ * finished: nothing is stored before the consent line has been seen (SPEC §15). Whether the leaderboard
+ * shows it is a switch of its own, which starts off.
  */
 function OwnPhoto({
   picked,
   avatar,
+  shown,
   onChange,
+  onShow,
 }: {
   picked: PickedPhoto | null;
   avatar: AvatarId;
+  shown: boolean;
   onChange(picked: PickedPhoto | null): void;
+  onShow(shown: boolean): void;
 }) {
   const [failed, setFailed] = useState(false);
   const inputId = useId();
@@ -230,7 +236,11 @@ function OwnPhoto({
           {picked && (
             <button
               type="button"
-              onClick={() => onChange(null)}
+              onClick={() => {
+                onChange(null);
+                // The next picture is asked about afresh.
+                onShow(false);
+              }}
               className="min-h-11 px-2 text-sm font-medium text-warn underline"
             >
               {th.settings.photo.remove}
@@ -238,7 +248,16 @@ function OwnPhoto({
           )}
         </div>
       </div>
-      <p className="text-sm text-muted">{th.settings.photo.note}</p>
+      {picked ? (
+        <Toggle
+          label={th.settings.photo.share}
+          help={shown ? th.settings.photo.shareOn : th.settings.photo.shareOff}
+          checked={shown}
+          onChange={onShow}
+        />
+      ) : (
+        <p className="text-sm text-muted">{th.settings.photo.note}</p>
+      )}
       {failed && (
         <p role="alert" className="text-sm text-warn">
           {th.welcome.photoFailed}
@@ -279,6 +298,7 @@ export function WelcomeFlow() {
   const [name, setName] = useState('');
   const [avatar, setAvatar] = useState<AvatarId>('bracket');
   const [photo, setPhoto] = useState<PickedPhoto | null>(null);
+  const [showPhoto, setShowPhoto] = useState(false);
   const [theme, setTheme] = useState<ThemeId>('shop');
   const [topic, setTopic] = useState<TopicId>(topics[0]);
   const [saving, setSaving] = useState(false);
@@ -340,10 +360,15 @@ export function WelcomeFlow() {
       // The account exists from here on, so the picture chosen on the way may be stored. One that will
       // not go up leaves the symbol in its place, for Settings to try again: it keeps nobody from the lessons.
       if (photo) {
-        await sendPhoto(photo.blob).then(
-          (photoAt) => learner.photoChanged(photoAt),
-          () => {},
+        const sent = await sendPhoto(photo.blob).then(
+          (photoAt) => {
+            learner.photoChanged(photoAt);
+            return true;
+          },
+          () => false,
         );
+        // Only a picture that went up can be shown, and only if its student turned the switch.
+        if (sent && showPhoto) await learner.updateAccount({ showPhoto: true });
       }
       enterTopic();
       router.replace('/learn');
@@ -428,7 +453,13 @@ export function WelcomeFlow() {
             <h2 className="font-sans font-medium">{th.welcome.avatarTitle}</h2>
             <AvatarPicker value={avatar} label={th.welcome.avatarTitle} onPick={setAvatar} />
           </div>
-          <OwnPhoto picked={photo} avatar={avatar} onChange={setPhoto} />
+          <OwnPhoto
+            picked={photo}
+            avatar={avatar}
+            shown={showPhoto}
+            onChange={setPhoto}
+            onShow={setShowPhoto}
+          />
           {footer(trimmed.length > 0 && !tooLong)}
         </section>
       )}

@@ -1,7 +1,7 @@
 import { th } from '@/lib/content/th';
 import { AVATARS, type AvatarId } from '@/lib/sync/types';
 
-/** Symbols rather than photos, so no student's face ever appears next to their rank. */
+/** A symbol stands for every student on the board unless they chose to show a photo of their own. */
 const AVATAR_LOOK: Record<AvatarId, { glyph: string; className: string }> = {
   bracket: { glyph: '[ ]', className: 'bg-brand-soft text-brand' },
   sigma: { glyph: 'Σ', className: 'bg-good-soft text-good' },
@@ -31,7 +31,7 @@ export function Avatar({ avatar, className = 'size-10 text-lg' }: AvatarProps) {
 
 /**
  * A student's own picture where they have one, for their own eyes (their profile and settings), and
- * their symbol otherwise. The leaderboard draws symbols only, with Avatar, so no face reaches anyone else.
+ * their symbol otherwise. What others see on the leaderboard is drawn there, from what the board sends.
  */
 export function ProfilePicture({
   avatar,
