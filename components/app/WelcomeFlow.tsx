@@ -436,7 +436,8 @@ export function WelcomeFlow() {
       {shown === 'theme' && (
         <section className="flex flex-1 flex-col gap-5 motion-safe:animate-rise">
           <div className="flex items-center gap-3">
-            <Mascot className="size-14 shrink-0 -rotate-3" />
+            {/* คิว tries on each choice as it is made. */}
+            <Mascot className="size-14 shrink-0 -rotate-3" wear={theme} />
             <div className="flex flex-col gap-1">
               <h1 className="text-2xl leading-snug font-semibold">{th.welcome.themeTitle}</h1>
               <p className="text-sm text-muted">{th.welcome.themeHelp}</p>
@@ -451,7 +452,7 @@ export function WelcomeFlow() {
       {shown === 'topic' && (
         <section className="flex flex-1 flex-col gap-5 motion-safe:animate-rise">
           <div className="flex items-center gap-3">
-            <Mascot className="size-14 shrink-0 -rotate-3" mood="cheer" />
+            <Mascot className="size-14 shrink-0 -rotate-3" mood="cheer" wear={theme} />
             <div className="flex flex-col gap-1">
               <h1 className="text-2xl leading-snug font-semibold">{th.welcome.topicTitle}</h1>
               <p className="text-sm text-muted">

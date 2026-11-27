@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
+import { THEMES } from '@/lib/sync/types';
 import { Mascot, type MascotMood } from './Mascot';
 
 const MOODS: MascotMood[] = ['happy', 'thinking', 'cheer', 'party', 'oops', 'comfort', 'asleep'];
@@ -9,6 +10,33 @@ const SMILE = 'M25 43q7 6 14 0';
 const draw = (mood: MascotMood, still = false) =>
   renderToStaticMarkup(<Mascot mood={mood} still={still} />);
 const count = (markup: string, part: string) => markup.split(part).length - 1;
+
+describe('what the mascot wears', () => {
+  const dressed = (wear: (typeof THEMES)[number], still = false) =>
+    renderToStaticMarkup(<Mascot wear={wear} still={still} />);
+
+  it('has one thing for every interest a student can choose, each its own', () => {
+    const drawings = THEMES.map((theme) => {
+      const markup = dressed(theme);
+      expect(markup).toContain(`data-wear="${theme}"`);
+      return markup.slice(markup.indexOf('data-wear'));
+    });
+    expect(new Set(drawings).size).toBe(THEMES.length);
+  });
+
+  it('wears nothing unless told, and nothing on a mark kept still', () => {
+    expect(draw('happy')).not.toContain('data-wear');
+    for (const theme of THEMES) expect(dressed(theme, true)).not.toContain('data-wear');
+  });
+
+  it('keeps what it wears on through every mood', () => {
+    for (const mood of MOODS) {
+      expect(renderToStaticMarkup(<Mascot mood={mood} wear="food" />)).toContain(
+        'data-wear="food"',
+      );
+    }
+  });
+});
 
 describe('Mascot', () => {
   it('is decoration in every mood, hidden from screen readers', () => {

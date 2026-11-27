@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { Mascot, type MascotMood } from '@/components/app/Mascot';
 import { TutorBubble } from '@/components/app/TutorBubble';
+import type { ThemeId } from '@/lib/learner/types';
+import { THEMES } from '@/lib/sync/types';
 
 /** Each mood, and the moment of the app it belongs to. */
 const MOODS: readonly { mood: MascotMood; when: string }[] = [
@@ -19,12 +21,13 @@ const MOODS: readonly { mood: MascotMood; when: string }[] = [
 export function MascotLab() {
   const [mood, setMood] = useState<MascotMood>('happy');
   const [turn, setTurn] = useState(0);
+  const [wear, setWear] = useState<ThemeId | undefined>(undefined);
   const when = MOODS.find((entry) => entry.mood === mood)?.when;
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-6 px-5 py-8">
       <h1 className="text-xl font-semibold">Mascot</h1>
       <div className="flex h-44 flex-col items-center justify-center gap-3">
-        <Mascot key={turn} mood={mood} className="size-28 -rotate-3" />
+        <Mascot key={turn} mood={mood} wear={wear} className="size-28 -rotate-3" />
         <p className="text-sm text-muted">{when}</p>
       </div>
       <div className="grid grid-cols-2 gap-2">
@@ -46,9 +49,38 @@ export function MascotLab() {
         ))}
       </div>
       <section className="flex flex-col gap-3">
+        <h2 className="font-hand text-lg text-cta">What it wears, by the student&apos;s theme</h2>
+        <div className="grid grid-cols-3 gap-2">
+          {[undefined, ...THEMES].map((theme) => (
+            <button
+              key={theme ?? 'none'}
+              type="button"
+              aria-pressed={theme === wear}
+              onClick={() => setWear(theme)}
+              className={`min-h-11 rounded-lg border px-3 py-2 text-left ${
+                theme === wear ? 'border-cta text-cta' : 'border-line'
+              }`}
+            >
+              {theme ?? 'nothing'}
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-end gap-5 pt-4">
+          {THEMES.map((theme) => (
+            <Mascot key={theme} wear={theme} className="size-14 -rotate-3" />
+          ))}
+        </div>
+      </section>
+      <section className="flex flex-col gap-3">
         <h2 className="font-hand text-lg text-cta">As small as in the feedback card</h2>
         <div className="rounded-xl bg-good-soft p-3">
-          <TutorBubble key={`right-${turn}`} message="right answer" thinking={false} mood="cheer" />
+          <TutorBubble
+            key={`right-${turn}`}
+            message="right answer"
+            thinking={false}
+            mood="cheer"
+            wear={wear}
+          />
         </div>
         <div className="rounded-xl bg-warn-soft p-3">
           <TutorBubble
@@ -56,6 +88,7 @@ export function MascotLab() {
             message="wrong answer"
             thinking={false}
             mood="comfort"
+            wear={wear}
           />
         </div>
       </section>

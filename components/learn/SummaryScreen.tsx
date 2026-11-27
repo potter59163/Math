@@ -103,7 +103,11 @@ function Summary({ profile, now }: { profile: Profile; now: number }) {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col gap-6 px-5 py-8">
       <header className="flex items-center gap-3">
-        <Mascot className="size-16 shrink-0 -rotate-3" mood={didSome ? 'party' : 'happy'} />
+        <Mascot
+          className="size-16 shrink-0 -rotate-3"
+          mood={didSome ? 'party' : 'happy'}
+          wear={profile.student.theme}
+        />
         <h1 className="text-3xl font-semibold">
           <span className="marker">{th.summary.title}</span>
         </h1>
@@ -197,7 +201,7 @@ function Summary({ profile, now }: { profile: Profile; now: number }) {
       )}
 
       <section className="flex items-center gap-3 rounded-xl bg-marker-soft px-4 py-3">
-        <Mascot className="size-10 shrink-0 -rotate-3" />
+        <Mascot className="size-10 shrink-0 -rotate-3" wear={profile.student.theme} />
         <div className="min-w-0">
           <p className="text-xs text-muted">{th.summary.nextTime}</p>
           <p className="font-hand leading-snug">

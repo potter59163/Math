@@ -1,4 +1,5 @@
 import { th } from '@/lib/content/th';
+import type { ThemeId } from '@/lib/learner/types';
 import { Mascot, type MascotMood } from './Mascot';
 
 interface TutorBubbleProps {
@@ -10,6 +11,8 @@ interface TutorBubbleProps {
    * still on their way: the answer was already judged on this device.
    */
   mood?: MascotMood;
+  /** The student's chosen stories, which คิว dresses for. */
+  wear?: ThemeId;
 }
 
 /**
@@ -17,13 +20,14 @@ interface TutorBubbleProps {
  * area, so it moves nothing. The room under the note is for its tilt: a turned note is a little taller
  * than its box, and without the room a one-line bubble could be scrolled by that much.
  */
-export function TutorBubble({ message, thinking, mood }: TutorBubbleProps) {
+export function TutorBubble({ message, thinking, mood, wear }: TutorBubbleProps) {
   if (!message && !thinking) return null;
   return (
     <div className="flex items-start gap-2 pb-1">
       <Mascot
         className="mt-0.5 size-8 shrink-0 -rotate-3"
         mood={mood ?? (thinking ? 'thinking' : 'happy')}
+        wear={wear}
       />
       <p
         key={message ?? 'thinking'}

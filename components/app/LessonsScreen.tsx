@@ -135,7 +135,7 @@ function PretestOffer({ profile, now, topic }: { profile: Profile; now: number; 
   return (
     <section className="flex flex-col gap-3">
       <div className="flex items-center gap-3">
-        <Mascot className="size-14 shrink-0 -rotate-3" mood="happy" />
+        <Mascot className="size-14 shrink-0 -rotate-3" mood="happy" wear={profile.student.theme} />
         <p className="font-hand text-lg leading-snug">
           <Filled
             template={th.learn.pretestOffer.title}
@@ -200,6 +200,7 @@ function ForYou({
                 ? 'asleep'
                 : 'happy'
           }
+          wear={profile.student.theme}
         />
         <p className="font-hand text-lg leading-snug">
           <Filled {...recommendationCopy(recommendation)} />

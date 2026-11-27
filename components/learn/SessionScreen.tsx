@@ -466,6 +466,7 @@ function ItemScreen({
                 topic={packOf(item.ref.topic).id}
                 turn={closed.turn}
                 combo={profile.combo}
+                theme={profile.student.theme}
                 fastPass={fastPass}
                 note={
                   simplified
